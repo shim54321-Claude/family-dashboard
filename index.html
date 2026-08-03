@@ -456,6 +456,7 @@
   const SHEET_ID        = '14pc25RoS8YFjLAjo3s-9BdoFR2P1pf54OPyIwRmrLmo';
   const GENERAL_SHEET   = 'כללי';
   const CHUGIM_SHEET    = 'חוגים';
+  const SHIRT_SHEET     = 'חולצה לבנה';
   const KIDS = [
     { name: 'איתמר', cls: 'itamar' },
     { name: 'עדי',   cls: 'adi' },
@@ -650,6 +651,22 @@
     return schedule;
   }
 
+  /* "חולצה לבנה" tab: תאריך | סיבה  -> [{ date, label }] */
+  function parseShirtSheet(rows) {
+    let headerIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if ((rows[i][0] || '').includes('תאריך')) { headerIdx = i; break; }
+    }
+    if (headerIdx === -1) return [];
+    const out = [];
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const d = parseSheetDate(rows[i][0]);
+      if (!d) continue;
+      out.push({ date: d, label: (rows[i][1] || '').trim() });
+    }
+    return out;
+  }
+
   /* חוגים tab: תאריך | ילד | שם החוג | שעה  -> only rows matching the target date */
   function parseChugim(rows, targetDate) {
     let headerIdx = -1;
@@ -805,7 +822,15 @@
       renderHeader(targetDate, showingTomorrow);
 
       const { note, periodTime, whiteShirtDates } = parseGeneral(await fetchSheetCSV(GENERAL_SHEET));
-      renderWhiteShirt(targetDate, whiteShirtDates);
+
+      /* Dedicated "חולצה לבנה" tab is the main way in; the old cell still works if present */
+      let shirtDates = whiteShirtDates;
+      try {
+        const fromTab = parseShirtSheet(await fetchSheetCSV(SHIRT_SHEET));
+        if (fromTab.length) shirtDates = shirtDates.concat(fromTab);
+      } catch (e) { /* tab not created yet - fine */ }
+
+      renderWhiteShirt(targetDate, shirtDates);
 
       const noteEl = document.getElementById('parentNote');
       if (note) { noteEl.textContent = '📌 ' + note; noteEl.classList.add('visible'); }
