@@ -291,7 +291,7 @@
   // ---- Photo gallery config ----
   // Fill in your own restricted Google Cloud API key below (Drive API, HTTP-referrer restricted
   // to your GitHub Pages URL). See ההוראות-הפעלה.md for the exact steps.
-  const DRIVE_API_KEY = 'PASTE_YOUR_API_KEY_HERE';
+  const DRIVE_API_KEY = 'AIzaSyDZ82Ry6p-UXpWP5fzkmTrUz3_xnJjjo8w';
   const PHOTOS_FOLDER_ID = '1vdIFM_X1TIWpi5EB5ij8GRP8E90i-RB3';
   const PHOTOS_TO_SHOW = 4;
 
@@ -500,7 +500,7 @@
   async function loadPhotos() {
     const panel = document.getElementById('photosPanel');
     const gallery = document.getElementById('galleryContainer');
-    if (!DRIVE_API_KEY || DRIVE_API_KEY === 'AIzaSyDZ82Ry6p-UXpWP5fzkmTrUz3_xnJjjo8w') {
+    if (!DRIVE_API_KEY || DRIVE_API_KEY.includes('PASTE_YOUR')) {
       panel.style.display = 'none';
       return;
     }
