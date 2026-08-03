@@ -26,21 +26,33 @@
 
   * { box-sizing: border-box; }
 
-  html, body {
+  html {
     margin: 0;
     padding: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'Heebo', sans-serif;
     height: 100%;
   }
 
   body {
+    margin: 0;
+    padding: 0;
+    background: #14170F;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stage {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Heebo', sans-serif;
+    width: min(100vw, 177.78vh);
+    height: min(100vh, 56.25vw);
     padding: 28px 36px;
     display: flex;
     flex-direction: column;
     gap: 18px;
-    min-height: 100vh;
+    overflow: auto;
   }
 
   header {
@@ -67,24 +79,36 @@
     margin-top: 4px;
   }
 
+  .weather-group {
+    display: flex;
+    gap: 12px;
+  }
+
   .weather {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 18px;
-    padding: 14px 22px;
+    padding: 12px 18px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    min-width: 190px;
+    gap: 12px;
+    min-width: 150px;
   }
 
-  .weather .icon { font-size: 34px; line-height: 1; }
+  .weather .label {
+    font-family: 'Rubik', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .weather .icon { font-size: 30px; line-height: 1; }
   .weather .temp {
     font-family: 'Rubik', sans-serif;
     font-weight: 700;
-    font-size: 26px;
+    font-size: 22px;
   }
-  .weather .desc { font-size: 13px; color: var(--ink-soft); }
+  .weather .desc { font-size: 12px; color: var(--ink-soft); }
 
   .note {
     background: var(--note-bg);
@@ -207,17 +231,29 @@
 </style>
 </head>
 <body>
+<div class="stage">
 
   <header>
     <div class="date-block">
       <h1 id="todayDate">—</h1>
       <div class="day-label" id="dayLabel">טוען...</div>
     </div>
-    <div class="weather" id="weatherBox">
-      <div class="icon" id="weatherIcon">⛅</div>
-      <div>
-        <div class="temp" id="weatherTemp">--°</div>
-        <div class="desc" id="weatherDesc">מעלי זהב</div>
+    <div class="weather-group">
+      <div class="weather" id="weatherToday">
+        <div class="icon" id="weatherIconToday">⛅</div>
+        <div>
+          <div class="label">היום</div>
+          <div class="temp" id="weatherTempToday">--°</div>
+          <div class="desc" id="weatherDescToday">עלי זהב</div>
+        </div>
+      </div>
+      <div class="weather" id="weatherTomorrow">
+        <div class="icon" id="weatherIconTomorrow">⛅</div>
+        <div>
+          <div class="label">מחר</div>
+          <div class="temp" id="weatherTempTomorrow">--°</div>
+          <div class="desc" id="weatherDescTomorrow">עלי זהב</div>
+        </div>
       </div>
     </div>
   </header>
@@ -237,6 +273,8 @@
 
   <footer id="lastUpdated"></footer>
 
+</div>
+
 <script>
   // ---- Configuration ----
   const SHEET_ID = '14pc25RoS8YFjLAjo3s-9BdoFR2P1pf54OPyIwRmrLmo';
@@ -253,7 +291,7 @@
   // ---- Photo gallery config ----
   // Fill in your own restricted Google Cloud API key below (Drive API, HTTP-referrer restricted
   // to your GitHub Pages URL). See ההוראות-הפעלה.md for the exact steps.
-  const DRIVE_API_KEY = 'AIzaSyDZ82Ry6p-UXpWP5fzkmTrUz3_xnJjjo8w';
+  const DRIVE_API_KEY = 'PASTE_YOUR_API_KEY_HERE';
   const PHOTOS_FOLDER_ID = '1vdIFM_X1TIWpi5EB5ij8GRP8E90i-RB3';
   const PHOTOS_TO_SHOW = 4;
 
@@ -357,16 +395,27 @@
 
   async function loadWeather() {
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m,weather_code&timezone=Asia%2FJerusalem`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=2&timezone=Asia%2FJerusalem`;
       const res = await fetch(url, { cache: 'no-store' });
       const data = await res.json();
-      const temp = Math.round(data.current.temperature_2m);
-      const [icon, desc] = renderWeatherIcon(data.current.weather_code);
-      document.getElementById('weatherTemp').textContent = temp + '°C';
-      document.getElementById('weatherIcon').textContent = icon;
-      document.getElementById('weatherDesc').textContent = desc + ' · עלי זהב';
+
+      // Today: current conditions right now
+      const todayTemp = Math.round(data.current.temperature_2m);
+      const [todayIcon, todayDesc] = renderWeatherIcon(data.current.weather_code);
+      document.getElementById('weatherTempToday').textContent = todayTemp + '°C';
+      document.getElementById('weatherIconToday').textContent = todayIcon;
+      document.getElementById('weatherDescToday').textContent = todayDesc + ' · עלי זהב';
+
+      // Tomorrow: forecast max/min from the daily block (index 1 = tomorrow)
+      const tMax = Math.round(data.daily.temperature_2m_max[1]);
+      const tMin = Math.round(data.daily.temperature_2m_min[1]);
+      const [tomIcon, tomDesc] = renderWeatherIcon(data.daily.weather_code[1]);
+      document.getElementById('weatherTempTomorrow').textContent = tMin + '°-' + tMax + '°C';
+      document.getElementById('weatherIconTomorrow').textContent = tomIcon;
+      document.getElementById('weatherDescTomorrow').textContent = tomDesc + ' · עלי זהב';
     } catch (e) {
-      document.getElementById('weatherDesc').textContent = 'מזג אוויר לא זמין';
+      document.getElementById('weatherDescToday').textContent = 'מזג אוויר לא זמין';
+      document.getElementById('weatherDescTomorrow').textContent = 'מזג אוויר לא זמין';
     }
   }
 
@@ -451,7 +500,7 @@
   async function loadPhotos() {
     const panel = document.getElementById('photosPanel');
     const gallery = document.getElementById('galleryContainer');
-    if (!DRIVE_API_KEY || DRIVE_API_KEY === 'PASTE_YOUR_API_KEY_HERE') {
+    if (!DRIVE_API_KEY || DRIVE_API_KEY === 'AIzaSyDZ82Ry6p-UXpWP5fzkmTrUz3_xnJjjo8w') {
       panel.style.display = 'none';
       return;
     }
