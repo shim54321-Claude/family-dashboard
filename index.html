@@ -637,6 +637,10 @@
       })
       .filter(Boolean);
 
+    /* Also catch a תאריך/סיבה table typed inside this same tab (not its own tab) */
+    const embedded = parseShirtSheet(rows);
+    for (const e of embedded) whiteShirtDates.push(e);
+
     return { note, periodTime, whiteShirtDates };
   }
 
