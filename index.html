@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דשבורד המשפחה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F1F3EE;
+    --panel: #FFFFFF;
+    --ink: #23291F;
+    --ink-soft: #5B6355;
+    --line: #D9DED2;
+    --note-bg: #FFF6DD;
+    --note-ink: #6B5424;
+
+    --itamar: #1F6F6B;
+    --itamar-bg: #E5F1F0;
+    --adi: #B85C6B;
+    --adi-bg: #F7E9EB;
+    --inbar: #5B4B8A;
+    --inbar-bg: #ECE8F5;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Heebo', sans-serif;
+    height: 100%;
+  }
+
+  body {
+    padding: 28px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .date-block h1 {
+    font-family: 'Rubik', sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 4vw, 44px);
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .date-block .day-label {
+    font-family: 'Rubik', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .weather {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 190px;
+  }
+
+  .weather .icon { font-size: 34px; line-height: 1; }
+  .weather .temp {
+    font-family: 'Rubik', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+  }
+  .weather .desc { font-size: 13px; color: var(--ink-soft); }
+
+  .note {
+    background: var(--note-bg);
+    color: var(--note-ink);
+    border-radius: 14px;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    display: none;
+  }
+  .note.visible { display: block; }
+
+  .schedule {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 24px 28px;
+    flex: 1;
+  }
+
+  .schedule h2 {
+    font-family: 'Rubik', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 18px 0;
+    color: var(--ink-soft);
+  }
+
+  table.grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+  }
+
+  table.grid th, table.grid td {
+    padding: 12px 10px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 18px;
+  }
+
+  table.grid th.time-col, table.grid td.time-col {
+    width: 90px;
+    font-family: 'Rubik', sans-serif;
+    font-weight: 700;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  table.grid thead th {
+    font-family: 'Rubik', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid var(--line);
+  }
+
+  table.grid td { border-bottom: 1px solid var(--line); }
+  table.grid tr:last-child td { border-bottom: none; }
+
+  /* full separating border between each kid column */
+  th.kid-col, td.kid-col { border-right: 2px solid var(--line); }
+  th.kid-col:last-child, td.kid-col:last-child { border-left: 2px solid var(--line); }
+
+  .kid-itamar { color: var(--itamar); }
+  .kid-adi { color: var(--adi); }
+  .kid-inbar { color: var(--inbar); }
+
+  td.kid-itamar-cell { background: var(--itamar-bg); }
+  td.kid-adi-cell { background: var(--adi-bg); }
+  td.kid-inbar-cell { background: var(--inbar-bg); }
+
+  .period-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'Rubik', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--ink-soft);
+    font-size: 17px;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 18px; }
+    table.grid th, table.grid td { font-size: 15px; padding: 8px 4px; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="date-block">
+      <h1 id="todayDate">—</h1>
+      <div class="day-label" id="dayLabel">טוען...</div>
+    </div>
+    <div class="weather" id="weatherBox">
+      <div class="icon" id="weatherIcon">⛅</div>
+      <div>
+        <div class="temp" id="weatherTemp">--°</div>
+        <div class="desc" id="weatherDesc">מעלי זהב</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="note" id="parentNote"></div>
+
+  <div class="schedule">
+    <h2 id="scheduleTitle">מערכת שעות</h2>
+    <div id="scheduleContainer">
+      <div class="empty-state">טוען מערכת שעות...</div>
+    </div>
+  </div>
+
+  <footer id="lastUpdated"></footer>
+
+<script>
+  // ---- Configuration ----
+  const SHEET_ID = '14pc25RoS8YFjLAjo3s-9BdoFR2P1pf54OPyIwRmrLmo';
+  const GENERAL_SHEET = 'כללי';
+  const KIDS = [
+    { name: 'איתמר', cls: 'itamar' },
+    { name: 'עדי',    cls: 'adi' },
+    { name: 'ענבר',   cls: 'inbar' }
+  ];
+  const WEATHER_LAT = 32.07167;
+  const WEATHER_LON = 35.06417;
+  const REFRESH_MINUTES = 5;
+
+  const HEBREW_DAY_COLS = ['יום א', 'יום ב', 'יום ג', 'יום ד', 'יום ה', 'יום ו'];
+  const HEBREW_DAY_FULL = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
+
+  // ---- Tiny CSV parser (handles quoted fields) ----
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else { inQuotes = false; }
+        } else field += c;
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+        else if (c === '\r') { /* skip */ }
+        else field += c;
+      }
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    return rows.map(r => r.map(c => c.trim()));
+  }
+
+  async function fetchSheetCSV(sheetName) {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('sheet fetch failed: ' + sheetName);
+    return parseCSV(await res.text());
+  }
+
+  // ---- Which school day + time to show ----
+  function getTargetDayIndex(now) {
+    let day = now.getDay(); // 0=Sun ... 6=Sat
+    const showTomorrow = now.getHours() >= 12;
+    if (showTomorrow) day = (day + 1) % 7;
+    // school runs Sun-Fri; if we land on Saturday, roll to Sunday
+    if (day === 6) day = 0;
+    return day; // 0=Sun..5=Fri maps to HEBREW_DAY_COLS[0..5]
+  }
+
+  // ---- Parse general tab: parent note + period->time table ----
+  function parseGeneral(rows) {
+    let note = '';
+    const periodTime = {};
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (r[0] === 'הערת הורים:' && r[1]) note = r[1];
+      if (r[0] === 'מספר שיעור' && r[1] === 'שעה') {
+        for (let j = i + 1; j < rows.length; j++) {
+          const p = rows[j][0], t = rows[j][1];
+          if (!p) break;
+          periodTime[p] = t;
+        }
+      }
+    }
+    return { note, periodTime };
+  }
+
+  // ---- Parse a kid tab into { period: [day0..day5] } ----
+  function parseKidSheet(rows) {
+    let headerRowIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i][0] === 'מספר שיעור') { headerRowIdx = i; break; }
+    }
+    const schedule = {};
+    if (headerRowIdx === -1) return schedule;
+    for (let i = headerRowIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      const period = r[0];
+      if (!period) continue;
+      schedule[period] = [r[1] || '', r[2] || '', r[3] || '', r[4] || '', r[5] || '', r[6] || ''];
+    }
+    return schedule;
+  }
+
+  function renderWeatherIcon(code) {
+    // simplified WMO weather code -> icon/text
+    if (code === 0) return ['☀️', 'בהיר'];
+    if ([1, 2].includes(code)) return ['🌤️', 'מעונן חלקית'];
+    if (code === 3) return ['☁️', 'מעונן'];
+    if ([45, 48].includes(code)) return ['🌫️', 'ערפל'];
+    if ([51, 53, 55, 56, 57].includes(code)) return ['🌦️', 'טפטוף'];
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return ['🌧️', 'גשם'];
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return ['❄️', 'שלג'];
+    if ([95, 96, 99].includes(code)) return ['⛈️', 'סופת רעמים'];
+    return ['⛅', ''];
+  }
+
+  async function loadWeather() {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}&current=temperature_2m,weather_code&timezone=Asia%2FJerusalem`;
+      const res = await fetch(url, { cache: 'no-store' });
+      const data = await res.json();
+      const temp = Math.round(data.current.temperature_2m);
+      const [icon, desc] = renderWeatherIcon(data.current.weather_code);
+      document.getElementById('weatherTemp').textContent = temp + '°C';
+      document.getElementById('weatherIcon').textContent = icon;
+      document.getElementById('weatherDesc').textContent = desc + ' · עלי זהב';
+    } catch (e) {
+      document.getElementById('weatherDesc').textContent = 'מזג אוויר לא זמין';
+    }
+  }
+
+  function renderHeader(targetDayIdx, showingTomorrow) {
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long' });
+    document.getElementById('todayDate').textContent = fmt.format(now);
+    const label = showingTomorrow
+      ? `מציג מערכת ל${HEBREW_DAY_FULL[targetDayIdx] === 'יום ראשון' ? 'מחר, ' : 'מחר, '}${HEBREW_DAY_FULL[targetDayIdx]}`
+      : `מציג מערכת להיום, ${HEBREW_DAY_FULL[targetDayIdx]}`;
+    document.getElementById('dayLabel').textContent = label;
+  }
+
+  async function loadAll() {
+    try {
+      const now = new Date();
+      const targetDayIdx = getTargetDayIndex(now);
+      const showingTomorrow = now.getHours() >= 12;
+      renderHeader(targetDayIdx, showingTomorrow);
+
+      const generalRows = await fetchSheetCSV(GENERAL_SHEET);
+      const { note, periodTime } = parseGeneral(generalRows);
+
+      const noteEl = document.getElementById('parentNote');
+      if (note) { noteEl.textContent = '📌 ' + note; noteEl.classList.add('visible'); }
+      else { noteEl.classList.remove('visible'); }
+
+      const kidSchedules = {};
+      for (const kid of KIDS) {
+        const rows = await fetchSheetCSV(kid.name);
+        kidSchedules[kid.name] = parseKidSheet(rows);
+      }
+
+      // find last period with any content across all kids for target day
+      const allPeriods = Object.keys(periodTime).sort((a, b) => Number(a) - Number(b));
+      let lastActivePeriod = 0;
+      for (const p of allPeriods) {
+        const hasContent = KIDS.some(k => (kidSchedules[k.name][p] || [])[targetDayIdx]);
+        if (hasContent) lastActivePeriod = Number(p);
+      }
+      const periodsToShow = lastActivePeriod > 0
+        ? allPeriods.filter(p => Number(p) <= lastActivePeriod)
+        : allPeriods;
+
+      const container = document.getElementById('scheduleContainer');
+      if (!allPeriods.length) {
+        container.innerHTML = '<div class="empty-state">לא נמצאו נתוני מערכת שעות</div>';
+      } else {
+        let html = '<table class="grid"><thead><tr><th class="time-col">שעה</th>';
+        for (const kid of KIDS) html += `<th class="kid-col kid-${kid.cls}">${kid.name}</th>`;
+        html += '</tr></thead><tbody>';
+        for (const p of periodsToShow) {
+          html += `<tr><td class="time-col"><span class="period-badge">${p}</span><br>${periodTime[p] || ''}</td>`;
+          for (const kid of KIDS) {
+            const val = (kidSchedules[kid.name][p] || [])[targetDayIdx] || '';
+            html += `<td class="kid-col kid-${kid.cls}-cell">${val}</td>`;
+          }
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      }
+
+      document.getElementById('lastUpdated').textContent =
+        'עודכן לאחרונה: ' + now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      document.getElementById('scheduleContainer').innerHTML =
+        `<div class="empty-state">שגיאה בטעינת הנתונים. ודא שהגיליון משותף כ"כל מי שיש לו את הקישור - צפייה".</div>`;
+      console.error(e);
+    }
+  }
+
+  loadAll();
+  loadWeather();
+  setInterval(loadAll, REFRESH_MINUTES * 60 * 1000);
+  setInterval(loadWeather, 30 * 60 * 1000);
+</script>
+</body>
+</html>
