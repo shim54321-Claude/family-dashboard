@@ -275,19 +275,21 @@
   }
 
   // ---- Parse general tab: parent note + period->time table ----
+  // Real sheet layout: row 0 col A holds "הערת הורים: {note} טבלת המרה: ... מספר שיעור",
+  // row 0 col B holds "שעה", and every following row is a period,time pair.
   function parseGeneral(rows) {
     let note = '';
     const periodTime = {};
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      if (r[0] === 'הערת הורים:' && r[1]) note = r[1];
-      if (r[0] === 'מספר שיעור' && r[1] === 'שעה') {
-        for (let j = i + 1; j < rows.length; j++) {
-          const p = rows[j][0], t = rows[j][1];
-          if (!p) break;
-          periodTime[p] = t;
-        }
-      }
+    if (!rows.length) return { note, periodTime };
+
+    const headerCell = rows[0][0] || '';
+    const noteMatch = headerCell.match(/הערת הורים:\s*([\s\S]*?)\s*טבלת המרה/);
+    if (noteMatch && noteMatch[1].trim()) note = noteMatch[1].trim();
+
+    for (let i = 1; i < rows.length; i++) {
+      const p = rows[i][0], t = rows[i][1];
+      if (!p) continue;
+      periodTime[p] = t;
     }
     return { note, periodTime };
   }
