@@ -275,17 +275,22 @@
   }
 
   // ---- Parse general tab: parent note + period->time table ----
-  // Real sheet layout: row 0 col A holds "הערת הורים: {note} טבלת המרה: ... מספר שיעור",
-  // row 0 col B holds "שעה", and every following row is a period,time pair.
+  // The sheet's header row mixes labels across both cells inconsistently depending on
+  // where the note was typed, so we strip all known label fragments from both header
+  // cells and whatever text remains (from either cell) is the parent's note.
+  const KNOWN_LABELS = ['הערת הורים:', 'טבלת המרה:', 'מספר שיעור', '→', 'שעה'];
+  function extractNote(cellA, cellB) {
+    let combined = (cellA || '') + ' ' + (cellB || '');
+    for (const label of KNOWN_LABELS) combined = combined.split(label).join(' ');
+    return combined.replace(/\s+/g, ' ').trim();
+  }
+
   function parseGeneral(rows) {
-    let note = '';
+    if (!rows.length) return { note: '', periodTime: {} };
+
+    const note = extractNote(rows[0][0], rows[0][1]);
+
     const periodTime = {};
-    if (!rows.length) return { note, periodTime };
-
-    const headerCell = rows[0][0] || '';
-    const noteMatch = headerCell.match(/הערת הורים:\s*([\s\S]*?)\s*טבלת המרה/);
-    if (noteMatch && noteMatch[1].trim()) note = noteMatch[1].trim();
-
     for (let i = 1; i < rows.length; i++) {
       const p = rows[i][0], t = rows[i][1];
       if (!p) continue;
