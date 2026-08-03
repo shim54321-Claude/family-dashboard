@@ -496,7 +496,10 @@
   }
 
   async function fetchSheetCSV(sheetName) {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    /* headers=0 is essential: without it gviz guesses how many leading rows are
+       "headers" and fuses them into a single row, which silently corrupts parsing. */
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
+              + `?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheetName)}`;
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('sheet fetch failed: ' + sheetName);
     return parseCSV(await res.text());
@@ -611,7 +614,8 @@
       }
     } else if (rows.length) {
       /* legacy layout: everything crammed into row 0, periods from row 1 on */
-      const LABELS = ['הערת הורים:', 'טבלת המרה:', 'מספר שיעור', '→', 'שעה'];
+      const LABELS = ['הערת הורים:', 'הערת הורים', 'טבלת המרה:', 'חולצה לבנה בתאריכים',
+                      'חולצה לבנה', 'מספר שיעור', '→', 'שעה'];
       let combined = (rows[0][0] || '') + ' ' + (rows[0][1] || '');
       for (const l of LABELS) combined = combined.split(l).join(' ');
       note = combined.replace(/\s+/g, ' ').trim();
