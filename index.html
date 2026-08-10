@@ -2,895 +2,752 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>דשבורד המשפחה</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>לוח המשפחה</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FBF8F3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="לוח המשפחה">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
-  :root {
-    --bg: #F1F3EE;
-    --panel: #FFFFFF;
-    --ink: #23291F;
-    --ink-soft: #5B6355;
-    --line: #D9DED2;
-    --note-bg: #FFF6DD;
-    --note-ink: #6B5424;
-    --shirt-bg: #FFFFFF;
-    --shirt-ink: #1B2430;
-    --shirt-accent: #2C6FB5;
+/* ============================================================
+   קובץ הגדרות מרכזי
+   --k = מקדם קנה מידה. נקבע אוטומטית כדי שהדף תמיד ייכנס במסך.
+   כל הגדלים ברם (rem) = יחידת גובה מסך × המקדם.
+   ============================================================ */
+:root{
+  --k:1;
+  --bg:#FBF8F3; --bg-warm:#FAF0E4;
+  --ink:#2A2A2E; --ink-soft:#6E6E76; --ink-faint:#A8A8B0;
+  --line:#E2DDD3; --card:#FFFFFF;
 
-    --itamar: #1F6F6B;
-    --itamar-bg: #E5F1F0;
-    --adi: #B85C6B;
-    --adi-bg: #F7E9EB;
-    --inbar: #5B4B8A;
-    --inbar-bg: #ECE8F5;
-  }
+  --kid1:#1F6F8B; --kid1-bg:#E8F1F5;   /* איתמר — כחול ים */
+  --kid2:#6B4E9B; --kid2-bg:#F0EBF7;   /* עדי — סגול */
+  --kid3:#C2467E; --kid3-bg:#FBEBF3;   /* ענבר — ורוד */
 
-  * { box-sizing: border-box; }
+  --alert:#B36B00; --alert-bg:#FDF3E0;
+  --break-bg:#F2F0EC;
 
-  html, body {
-    margin: 0; padding: 0; height: 100%;
-    overflow: hidden;                 /* no scrolling, anywhere */
-  }
+  --font-display:Arial,Helvetica,sans-serif;
+  --font-body:Arial,Helvetica,sans-serif;
+}
+html{font-size:calc(1vh * var(--k))}
+*{margin:0;padding:0;box-sizing:border-box}
+body{height:100vh;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:var(--font-body);-webkit-user-select:none;user-select:none}
+body.kiosk *{pointer-events:none!important}
+body.kiosk{cursor:none}
 
-  body {
-    background: #14170F;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+#app{min-height:100vh;display:flex;flex-direction:column;padding:1.8rem 2vw;gap:1.2rem}
 
-  /* ---- Wide screens: locked 16:9 stage ---- */
-  .stage {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'Heebo', sans-serif;
-    width: min(100vw, 177.78vh);
-    height: min(100vh, 56.25vw);
-    padding: 2.2vh 2.4vh;
-    display: flex;
-    flex-direction: column;
-    gap: 1.4vh;
-    overflow: hidden;
-  }
+/* א. תאריך */
+.datebar{display:flex;align-items:baseline;justify-content:space-between;
+  padding-bottom:.8rem;border-bottom:2px solid var(--line);flex-shrink:0}
+.dayname{font-family:var(--font-display);font-size:4.2rem;font-weight:900;line-height:1.15}
+.datecol{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.hebdate{font-family:var(--font-display);font-size:3.8rem;font-weight:700}
+.gregdate{font-size:2rem;color:var(--ink-soft);margin-top:.2rem}
+.clock{font-size:4.2rem;font-weight:900;font-family:var(--font-display);
+  color:var(--ink-soft);direction:ltr;letter-spacing:-.02em}
 
-  /* ============ HEADER ============ */
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 14px;
-    flex: 0 0 auto;
-  }
+/* ב. מזג אוויר + חולצה */
+.toprow{display:flex;gap:1vw;flex-shrink:0}
+.weather{display:flex;gap:.9vw;flex:1}
+.wcard{background:var(--card);border:1px solid var(--line);border-radius:1.1rem;
+  padding:1.1rem 1.2vw;flex:1;display:flex;flex-direction:column;justify-content:center;gap:.3rem}
+.wlabel{font-size:1.8rem;font-weight:700;color:var(--ink-soft)}
+.wmain{display:flex;align-items:center;gap:.8vw}
+.wicon{font-size:4rem;line-height:1}
+.wtemp{font-size:3.6rem;font-weight:700;font-family:var(--font-display)}
+.wrange{font-size:1.7rem;color:var(--ink-soft)}
+.wtip{font-size:1.9rem;font-weight:500;color:var(--alert);margin-top:.2rem}
 
-  .day-name {
-    font-family: 'Rubik', sans-serif;
-    font-weight: 900;
-    font-size: clamp(26px, 5.6vh, 62px);
-    line-height: 1.02;
-    margin: 0;
-    letter-spacing: -1px;
-  }
+.shirtbox{background:var(--alert-bg);border:.55rem solid var(--alert);border-radius:1.4rem;
+  padding:1rem 1.8vw;display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:.3rem;box-shadow:0 0 0 .25rem #fff, 0 0 0 .75rem var(--alert), 0 .4rem 1.6rem rgba(179,107,0,.35)}
+.shirtbox.on{display:flex}
+.shirtbox svg{height:9.5rem;width:auto;filter:drop-shadow(0 .15rem .4rem rgba(0,0,0,.18))}
+.shirtcap{font-size:2rem;font-weight:900;color:var(--alert);white-space:nowrap;letter-spacing:-.01em}
+.shirtreason{font-size:1.6rem;font-weight:700;color:var(--alert);opacity:.85;white-space:nowrap}
 
-  .when-badge {
-    display: inline-block;
-    background: var(--ink);
-    color: #fff;
-    font-family: 'Rubik', sans-serif;
-    font-weight: 700;
-    font-size: clamp(11px, 1.9vh, 19px);
-    border-radius: 999px;
-    padding: 0.35em 1em;
-    margin-inline-start: 0.5em;
-    vertical-align: middle;
-  }
+/* ג+ד. הערות */
+.notes{flex-shrink:0;display:flex;flex-direction:column;gap:.5rem}
+.note{font-size:2.1rem;font-weight:500;padding:.7rem 1.2vw;background:var(--card);
+  border:1px solid var(--line);border-inline-start:5px solid var(--ink-soft);border-radius:1.1rem}
+.note.hidden{display:none}
+.note.bold{border-inline-start-color:var(--alert);background:var(--alert-bg);
+  color:var(--alert);font-weight:900;font-size:2.6rem}
+.note-shirt{border-inline-start-color:var(--alert);background:var(--alert-bg);
+  color:var(--alert);font-weight:700}
 
-  .hebrew-date {
-    font-family: 'Rubik', sans-serif;
-    font-weight: 700;
-    font-size: clamp(17px, 3.4vh, 38px);
-    color: var(--ink);
-    margin-top: 0.15em;
-    line-height: 1.1;
-  }
+/* ה. מערכת שעות */
+.schedwrap{flex-shrink:0;display:flex;flex-direction:column;gap:.6rem}
+.schedtitle{font-family:var(--font-display);font-size:3rem;font-weight:900;line-height:1.2}
+.schedtitle .sub{font-family:var(--font-body);font-size:1.9rem;font-weight:400;
+  color:var(--ink-soft);margin-inline-start:.7vw}
+table.sched{width:100%;border-collapse:collapse;table-layout:fixed}
+table.sched th,table.sched td{border:1px solid var(--line);text-align:center;
+  vertical-align:middle;padding:.75rem .3vw;
+  overflow-wrap:anywhere;word-break:break-word;hyphens:auto}
+table.sched th.kid,table.sched td.kid{border-inline-width:3px}
+th.kid{font-size:2.6rem;font-weight:900;padding:.8rem 0;color:#fff}
+th.kid .grade{font-size:1.5rem;font-weight:400;opacity:.85;margin-inline-start:.4rem}
+th.pcol{width:8vw;background:var(--card)}
+td.pnum{background:var(--card);line-height:1.05}
+.pn{font-size:2.7rem;font-weight:700;font-family:var(--font-display);display:block}
+.pt{font-size:1.5rem;font-weight:400;color:var(--ink-faint);display:block}
+td.subj{font-size:2.5rem;font-weight:500}
+td.done{background:#F6F5F2;color:#C9C7C2;font-size:1.8rem}
+tr.foodrow td{border-top:3px solid var(--line);padding:.55rem .3vw;
+  font-size:1.9rem;font-weight:500}
+tr.foodrow td.pnum{background:var(--card);font-size:1.5rem;
+  font-weight:700;color:var(--ink-soft)}
+tr.foodrow td .fx{font-size:1.5rem;color:var(--ink-soft);display:block}
+td.ovcell{font-size:3.4rem;font-weight:900;font-family:var(--font-display);
+  color:var(--ink);letter-spacing:-.01em}
+tr.brk td{background:var(--break-bg);color:var(--ink-soft);padding:.3rem .3vw}
+tr.brk td.pnum .pn{font-size:1.8rem;font-weight:500;font-family:var(--font-body)}
+tr.brk td.pnum .pt{font-size:1.3rem}
 
-  .greg-date {
-    font-size: clamp(10px, 1.7vh, 17px);
-    color: var(--ink-soft);
-    margin-top: 0.1em;
-  }
+/* ו. חוגים */
+.chugim{flex-shrink:0;background:var(--card);border:1px solid var(--line);
+  border-radius:1.1rem;padding:.8rem 1.2vw}
+.chugim.hidden{display:none}
+.chtitle{font-size:1.9rem;font-weight:700;margin-bottom:.5rem;color:var(--ink-soft)}
+/* לוח חוגים שבועי — עמודה לכל יום */
+table.chweek{width:100%;border-collapse:collapse;table-layout:fixed}
+table.chweek th{font-size:1.6rem;font-weight:900;color:var(--ink-soft);
+  padding:.35rem .3vw;text-align:center;border-bottom:2px solid var(--line)}
+table.chweek td{padding:.4rem .3vw;vertical-align:top;text-align:center}
+/* קווי הפרדה בין הימים */
+table.chweek th+th,table.chweek td+td{border-inline-start:2px solid var(--line)}
+/* היום הנוכחי — מחצות עד חצות */
+table.chweek th.chnow{background:var(--ink);color:#fff;border-radius:.6rem .6rem 0 0}
+table.chweek td.chnow{background:#F2EFE9}
+.chent{font-size:1.65rem;line-height:1.25;margin-bottom:.4rem}
+.chent .t{font-weight:900;direction:ltr;display:inline-block;margin-inline-end:.3rem}
+.chent .k{font-weight:900}
+.chent .a{color:var(--ink-soft)}
+.chempty{font-size:1.4rem;color:#C9C7C2}
 
-  .weather-group { display: flex; gap: 1vh; flex: 0 0 auto; }
+/* ז. תמונות */
+.photos{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);gap:.7vw;height:13rem}
+.photos.hidden{display:none}
+.photos img{width:100%;height:100%;object-fit:cover;border-radius:1.1rem}
 
-  .weather {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 1.6vh;
-    padding: 1vh 1.6vh;
-    display: flex;
-    align-items: center;
-    gap: 1vh;
-  }
-  .weather .label {
-    font-family: 'Rubik', sans-serif; font-weight: 700;
-    font-size: clamp(9px, 1.5vh, 15px); color: var(--ink-soft);
-  }
-  .weather .icon { font-size: clamp(20px, 3.6vh, 40px); line-height: 1; }
-  .weather .temp {
-    font-family: 'Rubik', sans-serif; font-weight: 700;
-    font-size: clamp(14px, 2.6vh, 28px); line-height: 1.15;
-  }
-  .weather .desc { font-size: clamp(9px, 1.4vh, 14px); color: var(--ink-soft); }
+/* שבת וחג */
+body.shabbat{background:var(--bg-warm)}
+#holiday{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2rem}
+#holiday.on{display:flex}
+.greet{font-family:var(--font-display);font-size:10rem;font-weight:900}
+.holicon{font-size:14rem;line-height:1}
 
-  /* ============ ALERTS ============ */
-  .alerts { display: flex; flex-direction: column; gap: 0.8vh; flex: 0 0 auto; }
+#err{position:fixed;bottom:0;inset-inline:0;background:#8B2020;color:#fff;
+  font-size:1.8rem;padding:.8rem 2vw;display:none;z-index:50;text-align:center}
+#err.on{display:block}
 
-  .white-shirt {
-    display: none;
-    align-items: center;
-    gap: 1.6vh;
-    background: linear-gradient(135deg, #E9F2FC 0%, #D7E8FA 100%);
-    color: var(--shirt-ink);
-    border: 3px solid var(--shirt-accent);
-    border-radius: 1.6vh;
-    padding: 1vh 2vh;
-    font-family: 'Rubik', sans-serif;
-    font-weight: 800;
-    font-size: clamp(16px, 3.2vh, 36px);
-  }
-  .white-shirt.visible { display: flex; }
+/* כפתור מעבר לבקרה — מופיע רק בטלפון, לעולם לא על הצג בבית */
+#gotoControl{display:none;position:fixed;bottom:16px;inset-inline-end:16px;
+  background:var(--ink);color:#fff;border:none;border-radius:30px;
+  padding:13px 22px;font-size:15px;font-weight:700;font-family:var(--font-body);
+  box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:60;cursor:pointer;
+  text-decoration:none}
 
-  .shirt-art {
-    height: clamp(40px, 8vh, 92px);
-    width: auto;
-    flex: 0 0 auto;
-    transform-origin: 50% 15%;
-    animation: shirt-sway 2.6s ease-in-out infinite;
-  }
-  @keyframes shirt-sway {
-    0%, 100% { transform: rotate(-4deg); }
-    50%      { transform: rotate(4deg); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .shirt-art { animation: none; }
-  }
+/* טלפון / מסך צר */
+@media (max-aspect-ratio:1/1){
+  html{font-size:1vh}
+  body{overflow:auto;height:auto}
+  body.kiosk{cursor:auto}
+  body.kiosk #gotoControl{pointer-events:auto!important}
+  #app{padding:14px 4vw;gap:12px;min-height:auto;padding-bottom:80px}
 
-  /* variant switching: cheerful by default, quiet on memorial days */
-  .shirt-solemn { display: none; }
-  .white-shirt.solemn .shirt-cheer  { display: none; }
-  .white-shirt.solemn .shirt-solemn { display: block; }
-  .white-shirt.solemn {
-    background: #F4F6F8;
-    border-color: #7C8A99;
-    color: #2B3440;
-  }
-  .white-shirt.solemn .shirt-art { animation: none; }
+  .datebar{flex-direction:column;align-items:flex-start;gap:4px}
+  .dayname{font-size:26px}
+  .hebdate{font-size:22px}
+  .gregdate{font-size:14px}
 
-  .white-shirt .reason {
-    font-family: 'Heebo', sans-serif;
-    font-weight: 500;
-    font-size: 0.5em;
-    color: var(--ink-soft);
-    margin-inline-start: auto;
-  }
+  .toprow{flex-direction:column;gap:10px}
+  .wcard{padding:12px 14px}
+  .wlabel{font-size:13px}.wicon{font-size:30px}.wtemp{font-size:28px}
+  .wrange{font-size:13px}.wtip{font-size:14px}
+  .shirtbox{padding:14px;border-width:5px;box-shadow:0 0 0 3px #fff,0 0 0 7px var(--alert)}
+  .shirtbox svg{height:70px}
+  .shirtcap{font-size:18px}.shirtreason{font-size:15px}
 
-  .note {
-    display: none;
-    background: var(--note-bg);
-    color: var(--note-ink);
-    border-radius: 1.2vh;
-    padding: 1vh 1.6vh;
-    font-size: clamp(12px, 2vh, 21px);
-    font-weight: 500;
-  }
-  .note.visible { display: block; }
+  .note{font-size:15px;padding:10px 12px}
+  .schedtitle{font-size:20px}.schedtitle .sub{font-size:14px}
 
-  /* ============ SCHEDULE ============ */
-  .schedule {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 1.8vh;
-    padding: 1.4vh 1.8vh;
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  th.pcol{width:52px}
+  th.kid{font-size:15px;padding:8px 2px}
+  .pn{font-size:17px}.pt{font-size:11px}
+  td.subj{font-size:14px;padding:9px 2px}
+  td.done{font-size:11px}
+  tr.brk td{padding:4px 2px}
+  tr.brk td.pnum .pn{font-size:12px}
 
-  .panel-head {
-    display: flex;
-    align-items: baseline;
-    gap: 0.8em;
-    margin-bottom: 1vh;
-    flex: 0 0 auto;
-  }
-  .panel-head h2 {
-    font-family: 'Rubik', sans-serif;
-    font-size: clamp(13px, 2.2vh, 24px);
-    font-weight: 700;
-    margin: 0;
-    color: var(--ink-soft);
-  }
-  .panel-head .for-day {
-    font-family: 'Rubik', sans-serif;
-    font-weight: 800;
-    font-size: clamp(14px, 2.5vh, 27px);
-    color: var(--ink);
-  }
+  .chtitle{font-size:15px}
+  table.chtab th{font-size:12px}
+  table.chtab td{font-size:14px;padding:7px 3px}
 
-  .table-wrap { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+  .photos{grid-template-columns:repeat(2,1fr);height:auto}
+  .photos img{aspect-ratio:4/3;height:auto}
 
-  table.grid {
-    width: 100%; height: 100%;
-    border-collapse: separate; border-spacing: 0;
-    table-layout: fixed;
-  }
-  table.grid th, table.grid td {
-    padding: 0.5vh 0.5vh;
-    text-align: center; vertical-align: middle;
-    font-size: clamp(11px, 2.1vh, 23px);
-    overflow: hidden;
-  }
-  table.grid th.time-col, table.grid td.time-col {
-    width: 12%;
-    font-family: 'Rubik', sans-serif; font-weight: 700;
-    color: var(--ink-soft);
-    font-size: clamp(9px, 1.6vh, 16px);
-  }
-  table.grid thead th {
-    font-family: 'Rubik', sans-serif; font-weight: 700;
-    font-size: clamp(12px, 2.3vh, 26px);
-    padding-bottom: 0.8vh;
-    border-bottom: 3px solid var(--line);
-  }
-  table.grid td { border-bottom: 1px solid var(--line); }
-  table.grid tbody tr:last-child td { border-bottom: none; }
-
-  th.kid-col, td.kid-col { border-right: 2px solid var(--line); }
-  th.kid-col:last-child, td.kid-col:last-child { border-left: 2px solid var(--line); }
-
-  .kid-itamar { color: var(--itamar); }
-  .kid-adi    { color: var(--adi); }
-  .kid-inbar  { color: var(--inbar); }
-  td.kid-itamar-cell { background: var(--itamar-bg); }
-  td.kid-adi-cell    { background: var(--adi-bg); }
-  td.kid-inbar-cell  { background: var(--inbar-bg); }
-
-  .period-badge {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 2.2em; height: 2.2em; border-radius: 50%;
-    background: var(--ink); color: #fff;
-    font-family: 'Rubik', sans-serif; font-size: 0.85em; font-weight: 700;
-  }
-
-  .empty-state {
-    text-align: center; padding: 3vh 0;
-    color: var(--ink-soft); font-size: clamp(12px, 2vh, 19px);
-  }
-
-  /* ============ CHUGIM ============ */
-  .chugim {
-    display: none;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 1.8vh;
-    padding: 1.2vh 1.8vh;
-    flex: 0 0 auto;
-  }
-  .chugim.visible { display: block; }
-
-  table.chugim-grid { width: 100%; border-collapse: collapse; }
-  table.chugim-grid th, table.chugim-grid td {
-    text-align: right;
-    padding: 0.45vh 0.8vh;
-    font-size: clamp(11px, 1.9vh, 20px);
-    border-bottom: 1px solid var(--line);
-  }
-  table.chugim-grid tr:last-child td { border-bottom: none; }
-  table.chugim-grid th {
-    font-family: 'Rubik', sans-serif; font-weight: 700;
-    color: var(--ink-soft);
-    font-size: clamp(9px, 1.5vh, 15px);
-  }
-  table.chugim-grid td.chug-kid { font-weight: 700; width: 22%; }
-  table.chugim-grid td.chug-time {
-    font-family: 'Rubik', sans-serif; font-weight: 700;
-    width: 20%; color: var(--ink-soft);
-  }
-
-  /* ============ PHOTOS ============ */
-  .photos { display: none; flex: 0 1 auto; min-height: 0; }
-  .photos.visible { display: block; }
-  .gallery {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1vh;
-    height: 100%;
-  }
-  .gallery img {
-    width: 100%;
-    height: clamp(52px, 13vh, 165px);
-    object-fit: cover;
-    border-radius: 1.2vh;
-    border: 1px solid var(--line);
-    display: block;
-  }
-  /* tight vertical space -> drop to 2 photos */
-  @media (max-height: 620px) {
-    .gallery { grid-template-columns: repeat(2, 1fr); }
-    .gallery img:nth-child(n+3) { display: none; }
-  }
-
-  footer {
-    text-align: center;
-    font-size: clamp(8px, 1.2vh, 13px);
-    color: var(--ink-soft);
-    flex: 0 0 auto;
-  }
-
-  /* ================= PHONE / PORTRAIT ================= */
-  @media (max-aspect-ratio: 1/1) {
-    body { background: var(--bg); }
-    .stage {
-      width: 100vw;
-      height: 100vh;
-      height: 100dvh;
-      padding: 1.6vh 3.2vw;
-      gap: 1.1vh;
-    }
-    header { flex-direction: column; align-items: stretch; gap: 1vh; }
-    .weather-group { justify-content: space-between; }
-    .weather { flex: 1 1 0; justify-content: center; padding: 0.8vh 1vh; }
-    .day-name { font-size: clamp(28px, 5vh, 46px); }
-    .hebrew-date { font-size: clamp(19px, 3.2vh, 30px); }
-    .greg-date { font-size: clamp(11px, 1.6vh, 15px); }
-    .white-shirt { font-size: clamp(16px, 2.6vh, 26px); }
-    .white-shirt .reason { display: none; }
-    table.grid th, table.grid td { font-size: clamp(11px, 1.8vh, 18px); padding: 0.35vh 0.2vh; }
-    table.grid thead th { font-size: clamp(12px, 2vh, 20px); }
-    table.grid th.time-col, table.grid td.time-col { width: 15%; font-size: clamp(8px, 1.3vh, 13px); }
-    .gallery { grid-template-columns: repeat(2, 1fr); }
-    .gallery img { height: clamp(48px, 9vh, 110px); }
-    .gallery img:nth-child(n+3) { display: none; }
-  }
+  .greet{font-size:40px}.holicon{font-size:60px}
+  #gotoControl{display:block}
+}
 </style>
 </head>
-<body>
-<div class="stage">
-
-  <header>
-    <div class="date-block">
-      <h1 class="day-name"><span id="dayName">—</span><span class="when-badge" id="whenBadge">היום</span></h1>
-      <div class="hebrew-date" id="hebrewDate">&nbsp;</div>
-      <div class="greg-date" id="gregDate">&nbsp;</div>
+<body class="kiosk">
+<div id="app">
+  <div class="datebar">
+    <div style="display:flex;align-items:baseline;gap:1.6vw">
+      <div class="dayname" id="dayname">—</div>
+      <div class="clock" id="clock">--:--</div>
     </div>
-    <div class="weather-group">
-      <div class="weather">
-        <div class="icon" id="weatherIconToday">⛅</div>
-        <div>
-          <div class="label">היום</div>
-          <div class="temp" id="weatherTempToday">--°</div>
-          <div class="desc" id="weatherDescToday">עלי זהב</div>
-        </div>
+    <div class="datecol">
+      <span class="hebdate" id="hebdate">—</span>
+      <span class="gregdate" id="gregdate">—</span>
+    </div>
+  </div>
+
+  <div id="holiday">
+    <div class="holicon" id="holicon">🕯️</div>
+    <div class="greet" id="greet">שבת שלום</div>
+  </div>
+
+  <div class="toprow" id="toprow">
+    <div class="weather">
+      <div class="wcard">
+        <div class="wlabel">היום</div>
+        <div class="wmain"><span class="wicon" id="wicon0">—</span><span class="wtemp" id="wtemp0">—</span></div>
+        <div class="wrange" id="wrange0"></div>
       </div>
-      <div class="weather">
-        <div class="icon" id="weatherIconTomorrow">⛅</div>
-        <div>
-          <div class="label">מחר</div>
-          <div class="temp" id="weatherTempTomorrow">--°</div>
-          <div class="desc" id="weatherDescTomorrow">עלי זהב</div>
-        </div>
+      <div class="wcard">
+        <div class="wlabel">מחר</div>
+        <div class="wmain"><span class="wicon" id="wicon1">—</span><span class="wtemp" id="wtemp1">—</span></div>
+        <div class="wrange" id="wrange1"></div>
+        <div class="wtip" id="wtip"></div>
       </div>
     </div>
-  </header>
-
-  <div class="alerts">
-    <div class="white-shirt" id="whiteShirt">
-      <svg class="shirt-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="חולצה לבנה">
-        <!-- shirt body -->
-        <path d="M30,18 C38,31 62,31 70,18 L79,21 L91,41 L77,51 L73,45 L73,89 L27,89 L27,45 L23,51 L9,41 L21,21 Z"
-              fill="#FFFFFF" stroke="#2C6FB5" stroke-width="3.4"
-              stroke-linejoin="round" stroke-linecap="round"/>
-        <!-- collar -->
-        <path d="M30,18 C38,31 62,31 70,18" fill="none" stroke="#2C6FB5"
-              stroke-width="3.4" stroke-linecap="round"/>
-        <path d="M35,22 C41,31 59,31 65,22" fill="none" stroke="#9FC4E8"
-              stroke-width="2.2" stroke-linecap="round"/>
-        <!-- hem -->
-        <path d="M27,82 L73,82" fill="none" stroke="#DCEAF7" stroke-width="2.4"/>
-        <!-- cheerful variant -->
-        <g class="shirt-cheer">
-          <circle cx="34" cy="63" r="4.6" fill="#F7B8C4" opacity="0.75"/>
-          <circle cx="66" cy="63" r="4.6" fill="#F7B8C4" opacity="0.75"/>
-          <circle cx="42" cy="56" r="3.1" fill="#2B3440"/>
-          <circle cx="58" cy="56" r="3.1" fill="#2B3440"/>
-          <path d="M42,66 Q50,74 58,66" fill="none" stroke="#2B3440"
-                stroke-width="3" stroke-linecap="round"/>
-          <path d="M84,60 l2.4,5.2 l5.2,2.4 l-5.2,2.4 l-2.4,5.2 l-2.4,-5.2 l-5.2,-2.4 l5.2,-2.4 Z"
-                fill="#FFD65A"/>
-        </g>
-        <!-- solemn variant: memorial candle, no face -->
-        <g class="shirt-solemn">
-          <rect x="44" y="60" width="12" height="20" rx="2.5"
-                fill="#F2F4F6" stroke="#7C8A99" stroke-width="2"/>
-          <path d="M50,60 L50,55" stroke="#7C8A99" stroke-width="2" stroke-linecap="round"/>
-          <path d="M50,44 C55,50 54,55 50,55 C46,55 45,50 50,44 Z" fill="#FFC24D"/>
-        </g>
+    <div class="shirtbox" id="shirtbox">
+      <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
+                 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"
+              fill="#FFFFFF" stroke="#2A2A2E" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M34 6 C34 6 38 16 50 16 C62 16 66 6 66 6"
+              fill="none" stroke="#2A2A2E" stroke-width="3.5" stroke-linecap="round"/>
       </svg>
-      <span>חולצה לבנה</span>
-      <span class="reason" id="whiteShirtReason"></span>
-    </div>
-    <div class="note" id="parentNote"></div>
-  </div>
-
-  <div class="schedule">
-    <div class="panel-head">
-      <h2>מערכת שעות</h2>
-      <span class="for-day" id="scheduleForDay"></span>
-    </div>
-    <div class="table-wrap" id="scheduleContainer">
-      <div class="empty-state">טוען מערכת שעות...</div>
+      <div class="shirtcap">חולצה לבנה</div>
+      <div class="shirtreason" id="shirtreason"></div>
     </div>
   </div>
 
-  <div class="chugim" id="chugimPanel">
-    <div class="panel-head">
-      <h2>חוגים</h2>
-      <span class="for-day" id="chugimForDay"></span>
-    </div>
-    <div id="chugimContainer"></div>
+  <div class="notes">
+    <div class="note hidden" id="parentnote"></div>
   </div>
 
-  <div class="photos" id="photosPanel">
-    <div class="gallery" id="galleryContainer"></div>
+  <div class="schedwrap" id="schedwrap">
+    <div class="schedtitle" id="schedtitle">—</div>
+    <table class="sched"><tbody id="schedbody"></tbody></table>
   </div>
 
-  <footer id="lastUpdated"></footer>
+  <div class="chugim hidden" id="chugim">
+    <div class="chtitle" id="chtitle">חוגים — השבוע</div>
+    <table class="chweek"><tbody id="chlist"></tbody></table>
+  </div>
 
+  <div class="photos hidden" id="photos"></div>
 </div>
+<a id="gotoControl" href="daily.html">היום</a>
+<div id="err"></div>
 
-<script>
-  /* ================= CONFIGURATION ================= */
-  const SHEET_ID        = '14pc25RoS8YFjLAjo3s-9BdoFR2P1pf54OPyIwRmrLmo';
-  const GENERAL_SHEET   = 'כללי';
-  const CHUGIM_SHEET    = 'חוגים';
-  const SHIRT_SHEET     = 'חולצה לבנה';
-  const KIDS = [
-    { name: 'איתמר', cls: 'itamar' },
-    { name: 'עדי',   cls: 'adi' },
-    { name: 'ענבר',  cls: 'inbar' }
-  ];
-  const WEATHER_LAT     = 32.07167;
-  const WEATHER_LON     = 35.06417;
-  const REFRESH_MINUTES = 5;
+<script type="module">
+/* ============================================================
+   הגדרות — לשינוי כאן בלבד
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
+  SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
+  LAT:32.1056, LON:35.1739, TIMEZONE:'Asia/Jerusalem',
+  SWITCH_HOUR:12, SHABBAT_HOUR:19, REFRESH_MIN:5, PHOTO_COUNT:4,
+  BUCKET:'photos',
+};
 
-  const DRIVE_API_KEY     = 'AIzaSyDZ82Ry6p-UXpWP5fzkmTrUz3_xnJjjo8w';
-  const PHOTOS_FOLDER_ID  = '1vdIFM_X1TIWpi5EB5ij8GRP8E90i-RB3';
-  const PHOTOS_TO_SHOW    = 4;
+let KIDS=[];   // נטען מטבלת kids
+const CLOCK_FMT=new Intl.DateTimeFormat('he-IL',
+  {timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false});
+function tickClock(){ const e=$('clock'); if(e) e.textContent=CLOCK_FMT.format(new Date()); }
 
-  /* Sort the chugim table: 'kid' (current) or 'time' (flip this one word later) */
-  const CHUGIM_SORT = 'kid';
+const DAYS=['א','ב','ג','ד','ה','ו','ש'];
+const DAY_FULL={'א':'ראשון','ב':'שני','ג':'שלישי','ד':'רביעי','ה':'חמישי','ו':'שישי','ש':'שבת'};
+const $=id=>document.getElementById(id);
+function showErr(m){const e=$('err');e.textContent=m;e.classList.add('on');}
 
-  const HEBREW_DAY_FULL = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
+/* ---- הסרת ניקוד וטעמים (משאיר גרש/גרשיים) ---- */
+const stripNikud = s => s.replace(/[\u0591-\u05BD\u05BF-\u05C7]/g,'');
 
-  /* ================= CSV ================= */
-  function parseCSV(text) {
-    const rows = []; let row = [], field = '', inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i];
-      if (inQuotes) {
-        if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQuotes = false; }
-        else field += c;
-      } else {
-        if (c === '"') inQuotes = true;
-        else if (c === ',')  { row.push(field); field = ''; }
-        else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-        else if (c === '\r') { /* skip */ }
-        else field += c;
-      }
-    }
-    if (field.length || row.length) { row.push(field); rows.push(row); }
-    return rows.map(r => r.map(c => c.trim()));
+/* ============================================================
+   המרה לגימטריה — אותיות בלבד, בלי ספרות
+   ============================================================ */
+const GEM=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק'],[90,'צ'],[80,'פ'],[70,'ע'],
+           [60,'ס'],[50,'נ'],[40,'מ'],[30,'ל'],[20,'כ'],[10,'י'],
+           [9,'ט'],[8,'ח'],[7,'ז'],[6,'ו'],[5,'ה'],[4,'ד'],[3,'ג'],[2,'ב'],[1,'א']];
+
+function gematriya(n){
+  let out='';
+  let rest=n;
+  while(rest>0){
+    // 15 ו-16 נכתבים ט״ו וט״ז ולא בצירוף השם
+    if(rest===15){ out+='טו'; break; }
+    if(rest===16){ out+='טז'; break; }
+    const [val,ltr]=GEM.find(([v])=>v<=rest);
+    out+=ltr; rest-=val;
   }
+  // גרשיים לפני האות האחרונה, או גרש למילה בת אות אחת
+  if(out.length===1) return out+'׳';
+  return out.slice(0,-1)+'״'+out.slice(-1);
+}
 
-  async function fetchSheetCSV(sheetName) {
-    /* headers=0 is essential: without it gviz guesses how many leading rows are
-       "headers" and fuses them into a single row, which silently corrupts parsing. */
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
-              + `?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheetName)}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('sheet fetch failed: ' + sheetName);
-    return parseCSV(await res.text());
-  }
+/* שליפת יום/חודש/שנה עבריים מהדפדפן, והמרה לאותיות בעצמנו */
+const HEB_PARTS = new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn',
+  {day:'numeric',month:'long',year:'numeric'});
 
-  /* ================= DATES ================= */
-  /* The displayed day: today until noon, then tomorrow. Saturday rolls to Sunday. */
-  function getTargetDate(now) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (now.getHours() >= 12) d.setDate(d.getDate() + 1);
-    if (d.getDay() === 6) d.setDate(d.getDate() + 1);   // no school Saturday
-    return d;
-  }
+function hebDateString(d){
+  const parts=HEB_PARTS.formatToParts(d);
+  const get=t=>(parts.find(p=>p.type===t)||{}).value||'';
+  const day=parseInt(get('day'),10);
+  const month=stripNikud(get('month')).replace(/^ב/,'');   // "באב" → "אב"
+  let year=parseInt(get('year').replace(/\D/g,''),10);
+  if(year>1000) year=year%1000;                             // 5786 → 786
+  return `${gematriya(day)} ${month} ${gematriya(year)}`;
+}
 
-  function sameDay(a, b) {
-    return a.getFullYear() === b.getFullYear()
-        && a.getMonth()    === b.getMonth()
-        && a.getDate()     === b.getDate();
-  }
+/* ============================================================
+   חולצה לבנה — שלושה מקורות, לפי סדר עדיפות:
+   1. תאריך בודד שהוזן ידנית
+   2. כלל יום קבוע בשבוע
+   3. כלל ראש חודש
+   ============================================================ */
+function whiteShirtReason(date,singles,rules){
+  // 1. תאריך בודד — הכי ספציפי, גובר על הכל
+  const one=singles.find(s=>s.date===isoDate(date));
+  if(one) return one.reason;
 
-  /* Accepts 5/8/2026, 05.08.2026, 5-8-2026 (day first) -> Date, else null */
-  function parseSheetDate(str) {
-    if (!str) return null;
-    const m = String(str).trim().match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
-    if (!m) return null;
-    let [, d, mo, y] = m.map(Number);
-    if (y < 100) y += 2000;
-    return new Date(y, mo - 1, d);
-  }
+  const active=rules.filter(r=>r.active!==false);
 
-  /* Hebrew calendar straight from the browser - no library, no external service */
-  /* Number -> Hebrew letters (gematria). 15/16 use ט״ו / ט״ז, never the divine-name spelling. */
-  function gematria(n) {
-    const H = {400:'ת',300:'ש',200:'ר',100:'ק',90:'צ',80:'פ',70:'ע',60:'ס',50:'נ',40:'מ',
-               30:'ל',20:'כ',10:'י',9:'ט',8:'ח',7:'ז',6:'ו',5:'ה',4:'ד',3:'ג',2:'ב',1:'א'};
-    let r = n % 1000, tail = '';
-    if (r % 100 === 15) { tail = 'טו'; r -= 15; }
-    else if (r % 100 === 16) { tail = 'טז'; r -= 16; }
-    let head = '';
-    for (const k of Object.keys(H).map(Number).sort((a,b) => b-a)) {
-      while (r >= k) { head += H[k]; r -= k; }
-    }
-    const s = head + tail;
-    if (!s) return '';
-    if (s.length === 1) return s + '\u05F3';                       // geresh
-    return s.slice(0,-1) + '\u05F4' + s.slice(-1);                 // gershayim
-  }
+  // 2. יום קבוע בשבוע
+  const wd=active.find(r=>r.rule_type==='weekday' && r.weekday===date.getDay());
+  if(wd) return wd.reason;
 
-  function hebrewParts(date) {
-    try {
-      const en = new Intl.DateTimeFormat('en-u-ca-hebrew',
-        { day:'numeric', month:'long', year:'numeric' }).formatToParts(date);
-      const heMonth = new Intl.DateTimeFormat('he-u-ca-hebrew', { month:'long' }).format(date);
-      const get = t => (en.find(p => p.type === t) || {}).value;
-      return {
-        day: Number(get('day')),
-        year: Number(get('year')),
-        monthEn: get('month'),
-        monthHe: heMonth
-      };
-    } catch (e) { return null; }
-  }
+  // 3. ראש חודש
+  const rc=active.find(r=>r.rule_type==='rosh_chodesh');
+  if(rc && isRoshChodesh(date)) return rc.reason;
 
-  /* e.g. "כ׳ באב תשפ״ו" */
-  function hebrewDateString(date) {
-    const p = hebrewParts(date);
-    if (!p) return '';
-    return `${gematria(p.day)} ב${p.monthHe} ${gematria(p.year)}`;
-  }
+  return null;
+}
 
-  /* Fixed Hebrew-calendar dates that call for a white shirt.
-     solemn:true switches the illustration to its quiet variant. */
-  const WHITE_SHIRT_OCCASIONS = [
-    { month:'Nisan',   day:27, label:'יום הזיכרון לשואה ולגבורה',        solemn:true  },
-    { month:'Iyar',    day:4,  label:'יום הזיכרון לחללי מערכות ישראל',   solemn:true  },
-    { month:'Iyar',    day:5,  label:'יום העצמאות',                      solemn:false },
-    { month:'Iyar',    day:28, label:'יום ירושלים',                      solemn:false },
-    { month:'Heshvan', day:12, label:'יום הזיכרון ליצחק רבין',           solemn:true  },
-    { month:'Shevat',  day:15, label:'ט״ו בשבט',                         solemn:false }
-  ];
+/* ---- ראש חודש: יום 1 או 30 בחודש העברי ---- */
+const HEB_DAY = new Intl.DateTimeFormat('en-u-ca-hebrew-nu-latn',{day:'numeric'});
+function isRoshChodesh(d){
+  const n=parseInt(HEB_DAY.format(d),10);
+  return n===1||n===30;
+}
 
-  /* Returns { label, solemn } or null */
-  function hebrewOccasion(date) {
-    const p = hebrewParts(date);
-    if (!p) return null;
-    const hit = WHITE_SHIRT_OCCASIONS.find(o => o.month === p.monthEn && o.day === p.day);
-    if (hit) return { label: hit.label, solemn: hit.solemn };
-    if (p.day === 1 || p.day === 30) return { label: 'ראש חודש', solemn: false };
-    return null;
-  }
+function displayDate(){
+  const now=new Date(), d=new Date(now);
+  const isTomorrow=now.getHours()>=CONFIG.SWITCH_HOUR;
+  if(isTomorrow) d.setDate(d.getDate()+1);
+  return {date:d,isTomorrow};
+}
+const gregString=d=>d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'});
+const isoDate=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 
-  /* ================= PARSERS ================= */
-  /* New "כללי" layout: label in column A, value in column B.
-     Falls back to the old single-header-cell layout if the new one isn't there yet. */
-  function parseGeneral(rows) {
-    let note = '', whiteShirtRaw = '';
-    const periodTime = {};
-    let periodHeaderIdx = -1;
+/* ---- שבת: 19:00 בערב שבת עד 19:00 במוצאי ---- */
+function shabbatInfo(){
+  const now=new Date(),h=now.getHours(),dow=now.getDay();
+  if(dow===5&&h>=CONFIG.SHABBAT_HOUR) return {greet:'שבת שלום',icon:'🕯️'};
+  if(dow===6&&h< CONFIG.SHABBAT_HOUR) return {greet:'שבת שלום',icon:'🕯️'};
+  return null;
+}
 
-    for (let i = 0; i < rows.length; i++) {
-      const a = (rows[i][0] || ''), b = (rows[i][1] || '');
-      if (a.includes('הערת הורים') && !a.includes('טבלת המרה')) note = b;
-      if (a.includes('חולצה לבנה')) whiteShirtRaw = b;
-      if (a.trim() === 'מספר שיעור') { periodHeaderIdx = i; break; }
-    }
-
-    if (periodHeaderIdx !== -1) {
-      for (let i = periodHeaderIdx + 1; i < rows.length; i++) {
-        const p = rows[i][0], t = rows[i][1];
-        if (!p) continue;
-        periodTime[p] = t;
-      }
-    } else if (rows.length) {
-      /* legacy layout: everything crammed into row 0, periods from row 1 on */
-      const LABELS = ['הערת הורים:', 'הערת הורים', 'טבלת המרה:', 'חולצה לבנה בתאריכים',
-                      'חולצה לבנה', 'מספר שיעור', '→', 'שעה'];
-      let combined = (rows[0][0] || '') + ' ' + (rows[0][1] || '');
-      for (const l of LABELS) combined = combined.split(l).join(' ');
-      note = combined.replace(/\s+/g, ' ').trim();
-      for (let i = 1; i < rows.length; i++) {
-        const p = rows[i][0], t = rows[i][1];
-        if (!p) continue;
-        periodTime[p] = t;
-      }
-    }
-
-    /* Each entry is "5/8/2026" or "5/8/2026 = מסיבת סיום" */
-    const whiteShirtDates = String(whiteShirtRaw)
-      .split(/[,;]/)
-      .map(chunk => {
-        const [datePart, ...rest] = chunk.split('=');
-        const d = parseSheetDate(datePart);
-        if (!d) return null;
-        return { date: d, label: rest.join('=').trim() };
-      })
-      .filter(Boolean);
-
-    /* Also catch a תאריך/סיבה table typed inside this same tab (not its own tab) */
-    const embedded = parseShirtSheet(rows);
-    for (const e of embedded) whiteShirtDates.push(e);
-
-    return { note, periodTime, whiteShirtDates };
-  }
-
-  function parseKidSheet(rows) {
-    let headerRowIdx = -1;
-    for (let i = 0; i < rows.length; i++) {
-      if ((rows[i][0] || '').trim() === 'מספר שיעור') { headerRowIdx = i; break; }
-    }
-    const schedule = {};
-    if (headerRowIdx === -1) return schedule;
-    for (let i = headerRowIdx + 1; i < rows.length; i++) {
-      const r = rows[i], period = r[0];
-      if (!period) continue;
-      schedule[period] = [r[1]||'', r[2]||'', r[3]||'', r[4]||'', r[5]||'', r[6]||''];
-    }
-    return schedule;
-  }
-
-  /* "חולצה לבנה" tab: תאריך | סיבה  -> [{ date, label }] */
-  function parseShirtSheet(rows) {
-    let headerIdx = -1;
-    for (let i = 0; i < rows.length; i++) {
-      if ((rows[i][0] || '').includes('תאריך')) { headerIdx = i; break; }
-    }
-    if (headerIdx === -1) return [];
-    const out = [];
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const d = parseSheetDate(rows[i][0]);
-      if (!d) continue;
-      out.push({ date: d, label: (rows[i][1] || '').trim() });
-    }
-    return out;
-  }
-
-  /* חוגים tab: תאריך | ילד | שם החוג | שעה  -> only rows matching the target date */
-  function parseChugim(rows, targetDate) {
-    let headerIdx = -1;
-    for (let i = 0; i < rows.length; i++) {
-      if ((rows[i][0] || '').includes('תאריך')) { headerIdx = i; break; }
-    }
-    if (headerIdx === -1) return [];
-
-    const out = [];
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const r = rows[i];
-      const d = parseSheetDate(r[0]);
-      if (!d || !sameDay(d, targetDate)) continue;
-      const kid = (r[1]||'').trim(), activity = (r[2]||'').trim(), time = (r[3]||'').trim();
-      if (!kid && !activity) continue;
-      out.push({ kid, activity, time });
-    }
-
-    if (CHUGIM_SORT === 'time') {
-      out.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-    } else {
-      const order = KIDS.map(k => k.name);
-      out.sort((a, b) => {
-        const ai = order.indexOf(a.kid), bi = order.indexOf(b.kid);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
-    }
-    return out;
-  }
-
-  /* ================= WEATHER ================= */
-  function renderWeatherIcon(code) {
-    if (code === 0) return ['☀️','בהיר'];
-    if ([1,2].includes(code)) return ['🌤️','מעונן חלקית'];
-    if (code === 3) return ['☁️','מעונן'];
-    if ([45,48].includes(code)) return ['🌫️','ערפל'];
-    if ([51,53,55,56,57].includes(code)) return ['🌦️','טפטוף'];
-    if ([61,63,65,66,67,80,81,82].includes(code)) return ['🌧️','גשם'];
-    if ([71,73,75,77,85,86].includes(code)) return ['❄️','שלג'];
-    if ([95,96,99].includes(code)) return ['⛈️','סופת רעמים'];
-    return ['⛅',''];
-  }
-
-  async function loadWeather() {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LON}`
-                + `&current=temperature_2m,weather_code`
-                + `&daily=temperature_2m_max,temperature_2m_min,weather_code`
-                + `&forecast_days=2&timezone=Asia%2FJerusalem`;
-      const data = await (await fetch(url, { cache: 'no-store' })).json();
-
-      const [ti, td] = renderWeatherIcon(data.current.weather_code);
-      document.getElementById('weatherTempToday').textContent = Math.round(data.current.temperature_2m) + '°C';
-      document.getElementById('weatherIconToday').textContent = ti;
-      document.getElementById('weatherDescToday').textContent = td;
-
-      const [mi, md] = renderWeatherIcon(data.daily.weather_code[1]);
-      const mx = Math.round(data.daily.temperature_2m_max[1]);
-      const mn = Math.round(data.daily.temperature_2m_min[1]);
-      document.getElementById('weatherTempTomorrow').textContent = mn + '°-' + mx + '°C';
-      document.getElementById('weatherIconTomorrow').textContent = mi;
-      document.getElementById('weatherDescTomorrow').textContent = md;
-    } catch (e) {
-      document.getElementById('weatherDescToday').textContent = 'לא זמין';
-      document.getElementById('weatherDescTomorrow').textContent = 'לא זמין';
-    }
-  }
-
-  /* ================= PHOTOS ================= */
-  function shuffleAndTake(arr, n) {
-    const c = [...arr];
-    for (let i = c.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [c[i], c[j]] = [c[j], c[i]];
-    }
-    return c.slice(0, n);
-  }
-
-  async function loadPhotos() {
-    const panel   = document.getElementById('photosPanel');
-    const gallery = document.getElementById('galleryContainer');
-    if (!DRIVE_API_KEY || DRIVE_API_KEY.includes('PASTE_YOUR')) { panel.classList.remove('visible'); return; }
-    try {
-      const q = encodeURIComponent(`'${PHOTOS_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed=false`);
-      const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&key=${DRIVE_API_KEY}`;
-      const data = await (await fetch(url, { cache: 'no-store' })).json();
-      if (!data.files || !data.files.length) { panel.classList.remove('visible'); return; }
-      gallery.innerHTML = shuffleAndTake(data.files, PHOTOS_TO_SHOW)
-        .map(f => `<img src="https://drive.google.com/thumbnail?id=${f.id}&sz=w800" alt="" loading="lazy">`)
-        .join('');
-      panel.classList.add('visible');
-    } catch (e) {
-      panel.classList.remove('visible');
-      console.error('photo load failed', e);
-    }
-  }
-
-  /* ================= RENDER ================= */
-  function renderHeader(targetDate, showingTomorrow) {
-    const dayName = HEBREW_DAY_FULL[targetDate.getDay()];
-    document.getElementById('dayName').textContent   = dayName;
-    document.getElementById('whenBadge').textContent = showingTomorrow ? 'מחר' : 'היום';
-    document.getElementById('hebrewDate').textContent = hebrewDateString(targetDate);
-    document.getElementById('gregDate').textContent =
-      new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }).format(targetDate);
-    document.getElementById('scheduleForDay').textContent = dayName;
-    document.getElementById('chugimForDay').textContent   = dayName;
-  }
-
-  function renderWhiteShirt(targetDate, manualDates) {
-    const el     = document.getElementById('whiteShirt');
-    const reason = document.getElementById('whiteShirtReason');
-
-    const manual   = manualDates.find(m => sameDay(m.date, targetDate));
-    const occasion = hebrewOccasion(targetDate);
-
-    /* A reason typed in the Sheet wins over the automatic one */
-    let label = '', solemn = false;
-    if (manual && manual.label) { label = manual.label; solemn = false; }
-    else if (occasion)          { label = occasion.label; solemn = occasion.solemn; }
-    else if (manual)            { label = ''; solemn = false; }
-
-    if (manual || occasion) {
-      reason.textContent = label;
-      el.classList.toggle('solemn', solemn);
-      el.classList.add('visible');
-    } else {
-      el.classList.remove('visible');
-    }
-  }
-
-  function renderChugim(list) {
-    const panel = document.getElementById('chugimPanel');
-    if (!list.length) { panel.classList.remove('visible'); return; }
-    let html = '<table class="chugim-grid"><thead><tr>'
-             + '<th>ילד</th><th>שם החוג</th><th>שעה</th></tr></thead><tbody>';
-    for (const c of list) {
-      html += `<tr><td class="chug-kid">${c.kid}</td><td>${c.activity}</td>`
-            + `<td class="chug-time">${c.time}</td></tr>`;
-    }
-    html += '</tbody></table>';
-    document.getElementById('chugimContainer').innerHTML = html;
-    panel.classList.add('visible');
-  }
-
-  /* ================= MAIN ================= */
-  async function loadAll() {
-    try {
-      const now            = new Date();
-      const targetDate     = getTargetDate(now);
-      const showingTomorrow = !sameDay(targetDate, now);
-      const dayIdx         = targetDate.getDay();      // 0=Sun .. 5=Fri
-      renderHeader(targetDate, showingTomorrow);
-
-      const { note, periodTime, whiteShirtDates } = parseGeneral(await fetchSheetCSV(GENERAL_SHEET));
-
-      /* Dedicated "חולצה לבנה" tab is the main way in; the old cell still works if present */
-      let shirtDates = whiteShirtDates;
-      try {
-        const fromTab = parseShirtSheet(await fetchSheetCSV(SHIRT_SHEET));
-        if (fromTab.length) shirtDates = shirtDates.concat(fromTab);
-      } catch (e) { /* tab not created yet - fine */ }
-
-      renderWhiteShirt(targetDate, shirtDates);
-
-      const noteEl = document.getElementById('parentNote');
-      if (note) { noteEl.textContent = '📌 ' + note; noteEl.classList.add('visible'); }
-      else noteEl.classList.remove('visible');
-
-      const kidSchedules = {};
-      for (const kid of KIDS) kidSchedules[kid.name] = parseKidSheet(await fetchSheetCSV(kid.name));
-
-      const allPeriods = Object.keys(periodTime).sort((a,b) => Number(a) - Number(b));
-      let last = 0;
-      for (const p of allPeriods) {
-        if (KIDS.some(k => (kidSchedules[k.name][p] || [])[dayIdx])) last = Number(p);
-      }
-      const periods = last > 0 ? allPeriods.filter(p => Number(p) <= last) : allPeriods;
-
-      const container = document.getElementById('scheduleContainer');
-      if (!allPeriods.length) {
-        container.innerHTML = '<div class="empty-state">לא נמצאו נתוני מערכת שעות</div>';
-      } else {
-        let html = '<table class="grid"><thead><tr><th class="time-col">שעה</th>';
-        for (const kid of KIDS) html += `<th class="kid-col kid-${kid.cls}">${kid.name}</th>`;
-        html += '</tr></thead><tbody>';
-        for (const p of periods) {
-          html += `<tr><td class="time-col"><span class="period-badge">${p}</span><br>${periodTime[p]||''}</td>`;
-          for (const kid of KIDS) {
-            html += `<td class="kid-col kid-${kid.cls}-cell">${(kidSchedules[kid.name][p]||[])[dayIdx]||''}</td>`;
-          }
-          html += '</tr>';
+/* ---- חגים: ספרייה אופציונלית, לא חוסמת ---- */
+let hebcal=null;
+async function loadHebcal(){
+  try{ hebcal=await import('https://esm.sh/@hebcal/core@5'); }
+  catch(e){ console.warn('hebcal unavailable — Shabbat only'); }
+}
+function chagInfo(){
+  if(!hebcal) return null;
+  try{
+    const {HDate,HebrewCalendar,flags}=hebcal;
+    const now=new Date();
+    const test=d=>{
+      const hd=new HDate(d);
+      for(const e of HebrewCalendar.calendar({start:hd,end:hd,il:true})){
+        if(e.getFlags()&flags.CHAG){
+          const n=stripNikud(e.render('he'));
+          return {greet:greetFor(n),icon:iconFor(n)};
         }
-        container.innerHTML = html + '</tbody></table>';
       }
-
-      /* Chugim tab is optional - a missing tab just means no chugim section */
-      try {
-        renderChugim(parseChugim(await fetchSheetCSV(CHUGIM_SHEET), targetDate));
-      } catch (e) {
-        document.getElementById('chugimPanel').classList.remove('visible');
-      }
-
-      document.getElementById('lastUpdated').textContent =
-        'עודכן: ' + now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      document.getElementById('scheduleContainer').innerHTML =
-        '<div class="empty-state">שגיאה בטעינת הנתונים. ודא שהגיליון משותף כ"כל מי שיש לו את הקישור - צפייה".</div>';
-      console.error(e);
+      return null;
+    };
+    const t=test(now);
+    if(t&&now.getHours()<CONFIG.SHABBAT_HOUR) return t;
+    if(now.getHours()>=CONFIG.SHABBAT_HOUR){
+      const tm=new Date(now); tm.setDate(tm.getDate()+1);
+      return test(tm);
     }
+  }catch(e){ console.warn('chag check failed'); }
+  return null;
+}
+function greetFor(n){
+  if(n.includes('פסח'))return'חג פסח שמח';
+  if(n.includes('סוכות'))return'חג סוכות שמח';
+  if(n.includes('שבועות'))return'חג שבועות שמח';
+  if(n.includes('ראש השנה'))return'שנה טובה';
+  if(n.includes('כיפור'))return'גמר חתימה טובה';
+  return'חג שמח';
+}
+function iconFor(n){
+  if(n.includes('פסח'))return'🍷';
+  if(n.includes('סוכות'))return'🌿';
+  if(n.includes('ראש השנה'))return'🍎';
+  if(n.includes('כיפור'))return'🕊️';
+  return'🕯️';
+}
+
+/* ---- מזג אוויר ---- */
+const WCODE={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌦️',
+ 61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'🌨️',80:'🌧️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+function clothingTip(max,code){
+  if([51,53,55,61,63,65,80,81,82,95,96,99].includes(code))return'קחו מעיל, צפוי גשם';
+  if(max>=30)return'חם מאוד — קצרים וכובע';
+  if(max>=25)return'נעים — קצרים';
+  if(max>=18)return'מומלץ סווטשירט';
+  if(max>=12)return'קריר — סוודר';
+  return'קר — מעיל חם';
+}
+async function loadWeather(){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}`
+      +`&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&forecast_days=2`;
+    const j=await (await fetch(url)).json(), d=j.daily;
+    for(let i=0;i<2;i++){
+      $('wicon'+i).textContent=WCODE[d.weather_code[i]]||'🌡️';
+      $('wtemp'+i).textContent=Math.round(d.temperature_2m_max[i])+'°';
+      $('wrange'+i).textContent=`מקסימום ${Math.round(d.temperature_2m_max[i])}° · מינימום ${Math.round(d.temperature_2m_min[i])}°`;
+    }
+    $('wtip').textContent=clothingTip(d.temperature_2m_max[1],d.weather_code[1]);
+  }catch(e){ console.warn('weather failed'); }
+}
+
+/* ---- מערכת שעות ---- */
+function buildSchedule(periods,rows,overrides,meals){
+  const body=$('schedbody'); body.innerHTML='';
+  overrides = overrides || [];
+  const allOv = overrides.find(o=>!o.kid);          // כיסוי לכל הילדים
+  const kidOv = {};                                  // כיסוי לילד ספציפי
+  overrides.forEach(o=>{ if(o.kid) kidOv[o.kid]=o; });
+
+  const map={}; KIDS.forEach(k=>map[k.name]={});
+  rows.forEach(r=>{ if(map[r.kid]) map[r.kid][r.period]=r.subject; });
+
+  let last=0;
+  rows.forEach(r=>{ if(r.subject&&r.subject.trim()) last=Math.max(last,r.period); });
+
+  const head=document.createElement('tr');
+  head.innerHTML='<th class="pcol"></th>'+KIDS.map(k=>
+    `<th class="kid" style="background:${k.color}">${k.name}${
+      k.grade?`<span class="grade">(${k.grade})</span>`:''}</th>`).join('');
+  body.appendChild(head);
+
+  // כיסוי לכולם — שורה אחת גדולה במקום כל המערכת
+  if(allOv){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="ovcell" colspan="${KIDS.length+1}">${allOv.note||'חופש'}</td>`;
+    body.appendChild(tr);
+    return;
   }
 
-  loadAll(); loadWeather(); loadPhotos();
-  setInterval(loadAll,    REFRESH_MINUTES * 60 * 1000);
-  setInterval(loadPhotos, REFRESH_MINUTES * 60 * 1000);
-  setInterval(loadWeather, 30 * 60 * 1000);
+  const ordered=[...periods].sort((a,b)=>a.order_index-b.order_index)
+    .filter(p=>{ const b=p.label.trim()==='הפסקה';
+                 return b || parseInt(p.label,10)<=last; });
+  const rowCount=ordered.length;
+  const ovDone={};
+
+  ordered.forEach(p=>{
+    const isBreak=p.label.trim()==='הפסקה';
+    const num=isBreak?null:parseInt(p.label,10);
+    const tr=document.createElement('tr');
+    if(isBreak) tr.className='brk';
+    const time=p.start_time?p.start_time.slice(0,5):'';
+    let html=`<td class="pnum"><span class="pn">${isBreak?'הפסקה':num}</span><span class="pt">${time}</span></td>`;
+    KIDS.forEach((k,ki)=>{
+      const ov=kidOv[k.name];
+      if(ov){
+        // תא כיסוי אחד לכל העמודה — נוצר רק בשורה הראשונה
+        if(!ovDone[k.name]){
+          ovDone[k.name]=true;
+          html+=`<td class="kid ovcell" rowspan="${rowCount}"
+                     style="background:${k.bg}">${ov.note||'חופש'}</td>`;
+        }
+        return;
+      }
+      if(isBreak){ html+=`<td class="kid" style="background:var(--break-bg)"></td>`; }
+      else{
+        const s=map[k.name][num];
+        html+=(s&&s.trim())
+          ? `<td class="kid subj" style="background:${k.bg}">${s}</td>`
+          : `<td class="kid done">סיים</td>`;
+      }
+    });
+    tr.innerHTML=html;
+    body.appendChild(tr);
+  });
+
+  // שורת אוכל — רק לילדים שהתצוגה דלוקה אצלם
+  meals = meals || {};
+  const anyFood=KIDS.some(k=>k.show_food!==false && meals[k.name]);
+  if(anyFood){
+    const tr=document.createElement('tr');
+    tr.className='foodrow';
+    let html='<td class="pnum">אוכל</td>';
+    KIDS.forEach(k=>{
+      const m=(k.show_food!==false)?meals[k.name]:null;
+      html += m
+        ? `<td class="kid" style="background:${k.bg}">${m.text}${
+            m.note?`<span class="fx">${m.note}</span>`:''}</td>`
+        : `<td class="kid"></td>`;
+    });
+    tr.innerHTML=html;
+    body.appendChild(tr);
+  }
+}
+
+let ALL_KIDS=[];
+/* אוכל ליום המוצג: רשומה לתאריך גוברת על תבנית שבועית קבועה */
+function mealsForDay(all,date,dayLetter){
+  const iso=isoDate(date), out={};
+  const approved=all.filter(m=>m.status!=='pending'&&m.status!=='rejected');
+  const label=m=>(m.food_types&&m.food_types.name)||m.custom_text||'';
+
+  approved.filter(m=>m.is_recurring&&m.weekday===dayLetter)
+    .forEach(m=>{ const t=label(m); if(t) out[m.kid]={text:t,note:m.note}; });
+  approved.filter(m=>m.date===iso)
+    .forEach(m=>{ const t=label(m); if(t) out[m.kid]={text:t,note:m.note}; });
+  return out;
+}
+
+function buildChugim(list){
+  const box=$('chugim'),out=$('chlist');
+  if(!list.length){box.classList.add('hidden');return;}
+  const order=ALL_KIDS.map(k=>k.name);
+  today.sort((a,b)=>order.indexOf(a.kid)-order.indexOf(b.kid));
+  // היום הנוכחי כאן נמדד מחצות עד חצות — בשונה מכלל ה-12:00
+  const nowDay=DAYS[new Date().getDay()];
+  const WEEK=['א','ב','ג','ד','ה','ו'];
+
+  const head='<tr>'+WEEK.map(d=>
+    `<th class="${d===nowDay?'chnow':''}">${DAY_FULL[d]}</th>`).join('')+'</tr>';
+
+  const body='<tr>'+WEEK.map(d=>{
+    const items=list.filter(c=>c.day===d)
+      .sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
+    if(!items.length) return `<td class="${d===nowDay?'chnow':''}"><span class="chempty">—</span></td>`;
+    const inner=items.map(c=>{
+      const k=ALL_KIDS.find(x=>x.name===c.kid);
+      const col=k?k.color:'var(--ink-soft)';
+      return `<div class="chent">
+        ${c.time?`<span class="t">${c.time.slice(0,5)}</span>`:''}
+        <span class="k" style="color:${col}">${c.kid}</span>
+        <span class="a"> ${c.activity}</span>
+      </div>`;
+    }).join('');
+    return `<td class="${d===nowDay?'chnow':''}">${inner}</td>`;
+  }).join('')+'</tr>';
+
+  out.innerHTML=head+body;
+  box.classList.remove('hidden');
+}
+
+let PHOTO_URLS=[];
+let photoDay='';
+
+/* שליפת רשימת התמונות מהאחסון */
+async function loadPhotoList(){
+  if(!db) return;
+  try{
+    const {data,error}=await db.storage.from(CONFIG.BUCKET)
+      .list('',{limit:200});
+    if(error) throw error;
+    PHOTO_URLS=(data||[])
+      .filter(f=>f.name && !f.name.startsWith('.'))
+      .map(f=>db.storage.from(CONFIG.BUCKET).getPublicUrl(f.name).data.publicUrl);
+  }catch(e){ console.warn('photos unavailable',e); PHOTO_URLS=[]; }
+}
+
+/* בחירה אקראית יציבה ליום — מתחלפת בחצות */
+function buildPhotos(){
+  const box=$('photos');
+  if(!PHOTO_URLS.length){box.classList.add('hidden');return;}
+
+  const today=new Date().toDateString();
+  photoDay=today;
+  let h=0; for(const ch of today) h=(h*31+ch.charCodeAt(0))>>>0;
+
+  const pool=[...PHOTO_URLS],pick=[];
+  while(pick.length<Math.min(CONFIG.PHOTO_COUNT,pool.length)){
+    h=(h*1103515245+12345)>>>0;
+    pick.push(pool.splice(h%pool.length,1)[0]);
+  }
+  box.style.gridTemplateColumns=`repeat(${pick.length},1fr)`;
+  box.innerHTML=pick.map(u=>`<img src="${u}" alt="">`).join('');
+  box.classList.remove('hidden');
+  box.querySelectorAll('img').forEach(im=>{
+    im.onload=fitToScreen; im.onerror=()=>{ im.remove(); fitToScreen(); };
+  });
+}
+
+/* ============================================================
+   התאמה אוטומטית למסך — מבטיח שכלום לא נחתך
+   ============================================================ */
+function fitToScreen(){
+  if(window.innerWidth <= window.innerHeight) return;   // בטלפון מותרת גלילה
+
+  const root=document.documentElement, app=$('app');
+
+  // בדיקה: האם משהו חורג — בגובה, ברוחב, או תא שנחתך
+  const overflows=()=>{
+    if(app.scrollHeight > window.innerHeight+1) return true;
+    if(app.scrollWidth  > window.innerWidth +1) return true;
+    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason')){
+      if(el.scrollHeight > el.clientHeight+2) return true;   // טקסט נחתך לגובה
+      if(el.scrollWidth  > el.clientWidth +2) return true;   // טקסט נחתך לרוחב
+    }
+    return false;
+  };
+
+  // חיפוש בינארי על מקדם קנה המידה — מדויק ומהיר
+  let lo=0.30, hi=1.80, best=lo;
+  for(let i=0;i<18;i++){
+    const mid=(lo+hi)/2;
+    root.style.setProperty('--k',mid.toFixed(4));
+    app.offsetHeight;                    // מאלץ חישוב מחדש
+    if(overflows()){ hi=mid; } else { best=mid; lo=mid; }
+  }
+  root.style.setProperty('--k',best.toFixed(4));
+}
+
+/* מריצים שוב אחרי טעינת גופנים ותמונות — הם משנים מידות */
+function scheduleFit(){
+  requestAnimationFrame(()=>requestAnimationFrame(fitToScreen));
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitToScreen);
+  setTimeout(fitToScreen,400);
+  setTimeout(fitToScreen,1500);
+}
+
+/* ============================================================
+   ראשי
+   ============================================================ */
+let db=null;
+async function init(){
+  await loadHebcal();
+  try{
+    const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+    db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
+  }catch(e){ showErr('לא ניתן להתחבר למסד הנתונים'); console.error(e); }
+  await loadPhotoList();
+  await loadWeather();
+  await render();
+  setInterval(async()=>{
+    // רשימת התמונות נטענת מחדש רק כשמתחלף היום
+    if(photoDay && photoDay!==new Date().toDateString()) await loadPhotoList();
+    await loadWeather(); await render();
+  },CONFIG.REFRESH_MIN*60*1000);
+  tickClock(); setInterval(tickClock,10000);
+  window.addEventListener('resize',fitToScreen);
+}
+
+async function render(){
+  const {date,isTomorrow}=displayDate();
+  const dayLetter=DAYS[date.getDay()];
+
+  $('dayname').textContent=(isTomorrow?'מחר · יום ':'היום · יום ')+DAY_FULL[dayLetter];
+  $('hebdate').textContent=hebDateString(date);
+  $('gregdate').textContent=gregString(date);
+
+  const hol=shabbatInfo()||chagInfo();
+  if(hol){
+    document.body.classList.add('shabbat');
+    $('holiday').classList.add('on');
+    $('greet').textContent=hol.greet;
+    $('holicon').textContent=hol.icon;
+    $('schedwrap').style.display='none';
+    $('chugim').classList.add('hidden');
+    $('shirtbox').classList.remove('on');
+  }else{
+    document.body.classList.remove('shabbat');
+    $('holiday').classList.remove('on');
+    $('schedwrap').style.display='';
+  }
+
+  if(db){
+    try{
+      const [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=await Promise.all([
+        db.from('kids').select('*').order('order_index'),
+        db.from('periods').select('*'),
+        db.from('schedule').select('*').eq('day',dayLetter),
+        db.from('chugim').select('*'),
+        db.from('white_shirt').select('*'),
+        db.from('white_shirt_rules').select('*'),
+        db.from('schedule_overrides').select('*'),
+        db.from('meals').select('*, food_types(name)'),
+        db.from('settings').select('*'),
+      ]);
+
+      const allKids=(kidsRes.data||[]);
+      KIDS=allKids.filter(k=>k.show_schedule!==false)
+                  .map(k=>({name:k.name,color:k.color,bg:k.bg,grade:k.grade,show_food:k.show_food}));
+      const chugimKids=allKids.filter(k=>k.show_chugim!==false).map(k=>k.name);
+      ALL_KIDS=allKids;
+
+      const note=(settings.data||[]).find(s=>s.key==='parent_note');
+      if(note&&note.value&&note.value.trim()){
+        $('parentnote').textContent=note.value;
+        $('parentnote').classList.remove('hidden');
+      }else $('parentnote').classList.add('hidden');
+
+      if(!hol){
+        $('schedtitle').innerHTML=(isTomorrow?'מחר':'היום')+
+          ` <span class="sub">יום ${DAY_FULL[dayLetter]}</span>`;
+        buildSchedule(periods.data||[],sched.data||[],
+                      (overrides.data||[]).filter(o=>o.date===isoDate(date)),
+                      mealsForDay(mealsRes.data||[],date,dayLetter));
+        buildChugim((chug.data||[]).filter(c=>chugimKids.includes(c.kid)));
+
+        const reason=whiteShirtReason(date, shirts.data||[], rules.data||[]);
+        if(reason){
+          $('shirtbox').classList.add('on');
+          $('shirtreason').textContent=reason;
+        }else{
+          $('shirtbox').classList.remove('on');
+        }
+      }
+      buildPhotos();
+    }catch(e){ showErr('שגיאה בטעינת הנתונים'); console.error(e); }
+  }
+
+  // אחרי שכל התוכן במקום — מתאימים למסך
+  scheduleFit();
+}
+
+init();
+
+/* רישום כאפליקציה (PWA) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
