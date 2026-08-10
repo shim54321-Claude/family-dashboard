@@ -543,11 +543,9 @@ function buildChugim(list){
   const box=$('chugim'),out=$('chlist');
   if(!list.length){box.classList.add('hidden');return;}
   const order=ALL_KIDS.map(k=>k.name);
-  today.sort((a,b)=>order.indexOf(a.kid)-order.indexOf(b.kid));
   // היום הנוכחי כאן נמדד מחצות עד חצות — בשונה מכלל ה-12:00
   const nowDay=DAYS[new Date().getDay()];
   const WEEK=['א','ב','ג','ד','ה','ו'];
-
   const head='<tr>'+WEEK.map(d=>
     `<th class="${d===nowDay?'chnow':''}">${DAY_FULL[d]}</th>`).join('')+'</tr>';
 
