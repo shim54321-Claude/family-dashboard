@@ -216,53 +216,54 @@ function mealFor(kid,dateStr,weekday){
       || null;
 }
 
+/* מזהה מנה קיימת לפי הטקסט שהוקלד — תואם שם מדויק במאגר */
+function matchFood(text){
+  const t=(text||'').trim();
+  if(!t) return null;
+  return S.foods.find(f=>f.active!==false && f.name===t) || null;
+}
+
 function renderFood(){
   const dateStr=$('foodDate').value;
   if(!dateStr) return;
   const wd=DAYS[new Date(dateStr+'T12:00:00').getDay()];
   const kids=S.kids.filter(k=>k.show_food!==false);
 
-  $('foodRows').innerHTML = kids.length ? kids.map(k=>{
-    const cur=mealFor(k.name,dateStr,wd);
-    const sel=cur&&cur.food_type_id?cur.food_type_id:'';
-    const free=cur&&!cur.food_type_id?(cur.custom_text||''):'';
-    const rec=cur?cur.is_recurring:false;
+  // datalist משותף לכל שדות ההקלדה — רשימת המנות הפעילות
+  const dl='<datalist id="foodDL">'+
+    S.foods.filter(f=>f.active!==false).map(f=>`<option value="${f.name.replace(/"/g,'&quot;')}">`).join('')+
+    '</datalist>';
 
-    const opts='<option value="">— בחירה —</option>'+
-      S.foods.filter(f=>f.active!==false).map(f=>{
-        const flags=[!f.in_stock?'חסר':'',f.needs_approval?'אישור':'',f.less_healthy?'*':'']
-          .filter(Boolean).join(' ');
-        return `<option value="${f.id}" ${f.id==sel?'selected':''}>${f.name}${flags?' · '+flags:''}</option>`;
-      }).join('');
+  $('foodRows').innerHTML = dl + (kids.length ? kids.map(k=>{
+    const cur=mealFor(k.name,dateStr,wd);
+    const val = cur ? (cur.food_type_id ? (S.foods.find(f=>f.id===cur.food_type_id)||{}).name||'' : (cur.custom_text||'')) : '';
+    const rec = cur ? cur.is_recurring : false;
 
     return `<div data-kid="${k.name}">
       <div class="foodrow">
         <span class="kn" style="color:${k.color}">${k.name}</span>
-        <select data-f="sel">${opts}</select>
-      </div>
-      <div class="foodrow">
-        <span class="kn"></span>
-        <input class="free" data-f="free" placeholder="או משהו אחר" value="${free.replace(/"/g,'&quot;')}">
+        <input class="free" list="foodDL" data-f="pick" placeholder="הקלידו שם מנה…"
+               value="${val.replace(/"/g,'&quot;')}">
         <label class="recur"><input type="checkbox" data-f="rec" ${rec?'checked':''}> קבוע</label>
       </div>
       <div data-f="warn"></div>
     </div>`;
-  }).join('') : '<div class="datesub">אין ילדים עם תצוגת אוכל</div>';
+  }).join('') : '<div class="datesub">אין ילדים עם תצוגת אוכל</div>');
 
   $('foodRows').querySelectorAll('[data-kid]').forEach(row=>{
-    row.querySelector('[data-f="sel"]').onchange=()=>checkWarn(row);
+    const inp=row.querySelector('[data-f="pick"]');
+    inp.oninput=()=>checkWarn(row);
     checkWarn(row);
   });
 }
 
-/* אזהרות: אסור / חסר בבית / דורש אישור */
+/* אזהרות: אסור / חסר בבית / דורש אישור — לפי שם מנה מתאים במאגר */
 function checkWarn(row){
   const kid=row.dataset.kid;
-  const id=row.querySelector('[data-f="sel"]').value;
+  const text=row.querySelector('[data-f="pick"]').value;
   const box=row.querySelector('[data-f="warn"]');
   box.innerHTML='';
-  if(!id) return;
-  const f=S.foods.find(x=>x.id==id);
+  const f=matchFood(text);
   if(!f) return;
 
   const msgs=[];
@@ -286,14 +287,14 @@ $('foodSave').onclick=async()=>{
 
   for(const row of $('foodRows').querySelectorAll('[data-kid]')){
     const kid=row.dataset.kid;
-    const id=row.querySelector('[data-f="sel"]').value;
-    const free=row.querySelector('[data-f="free"]').value.trim();
+    const text=row.querySelector('[data-f="pick"]').value.trim();
     const rec=row.querySelector('[data-f="rec"]').checked;
-    if(!id && !free) continue;
+    if(!text) continue;
 
+    const matched=matchFood(text);
     const rec_data={
-      kid, food_type_id:id?parseInt(id,10):null,
-      custom_text:id?null:free,
+      kid, food_type_id: matched?matched.id:null,
+      custom_text: matched?null:text,
       is_recurring:rec,
       date: rec?null:dateStr,
       weekday: rec?wd:null,

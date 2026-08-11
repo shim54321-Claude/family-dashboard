@@ -129,6 +129,7 @@ table.chweek td.chnow{background:#F2EFE9}
 .chent .t{font-weight:900;direction:ltr;display:inline-block;margin-inline-end:.3rem}
 .chent .k{font-weight:900}
 .chent .a{color:var(--ink-soft)}
+.chent .loc{color:var(--ink-faint);font-size:.9em;margin-inline-start:.2em}
 .chempty{font-size:1.4rem;color:#C9C7C2}
 
 /* ז. תמונות */
@@ -542,10 +543,10 @@ function mealsForDay(all,date,dayLetter){
 function buildChugim(list){
   const box=$('chugim'),out=$('chlist');
   if(!list.length){box.classList.add('hidden');return;}
-  const order=ALL_KIDS.map(k=>k.name);
   // היום הנוכחי כאן נמדד מחצות עד חצות — בשונה מכלל ה-12:00
   const nowDay=DAYS[new Date().getDay()];
   const WEEK=['א','ב','ג','ד','ה','ו'];
+
   const head='<tr>'+WEEK.map(d=>
     `<th class="${d===nowDay?'chnow':''}">${DAY_FULL[d]}</th>`).join('')+'</tr>';
 
@@ -560,6 +561,7 @@ function buildChugim(list){
         ${c.time?`<span class="t">${c.time.slice(0,5)}</span>`:''}
         <span class="k" style="color:${col}">${c.kid}</span>
         <span class="a"> ${c.activity}</span>
+        ${c.location?`<span class="loc">· ${c.location}</span>`:''}
       </div>`;
     }).join('');
     return `<td class="${d===nowDay?'chnow':''}">${inner}</td>`;

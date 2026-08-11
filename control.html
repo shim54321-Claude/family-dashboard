@@ -101,6 +101,11 @@ td input:focus{outline:2px solid var(--kid1);outline-offset:-2px;background:#fff
 .perday b{min-width:90px;font-size:14px}
 .perday input{max-width:150px}
 .chugcard{border-radius:12px;padding:14px;margin-bottom:14px}
+.wkkid{margin-bottom:16px}
+.wkkidname{font-weight:900;font-size:16px;margin-bottom:8px}
+.wkrow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.wkrow b{min-width:70px;font-size:13px;color:var(--ink-soft);font-weight:700}
+.wkrow input{flex:1}
 .chughead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .chughead input[type="text"]{flex:1;min-width:130px}
 .chugdays{display:flex;flex-direction:column;gap:7px}
@@ -421,6 +426,12 @@ td input:focus{outline:2px solid var(--kid1);outline-offset:-2px;background:#fff
       </div>
       <div id="restList" style="margin-top:14px"></div>
     </div>
+
+    <div class="card">
+      <h2>לוז אוכל שבועי</h2>
+      <div class="hint">מנה קבועה לכל ילד בכל יום. הקלדה חופשית + חיפוש מתוך המאגר.</div>
+      <div id="foodWeekly"></div>
+    </div>
   </div>
 
   <!-- תמונות -->
@@ -472,7 +483,7 @@ const $=id=>document.getElementById(id);
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 
-let state={kids:[],locations:[],photos:[],wsRules:[],overrides:[],foods:[],restrictions:[],periods:[],schedule:[],chugim:[],shirts:[],vac:[],settings:{}};
+let state={kids:[],locations:[],photos:[],wsRules:[],overrides:[],foods:[],restrictions:[],weeklyMeals:[],periods:[],schedule:[],chugim:[],shirts:[],vac:[],settings:{}};
 let activeKid=null;
 
 function toast(msg,bad){
@@ -1518,6 +1529,72 @@ $('foodAdd').onclick=async()=>{
     $('nfName').value=''; $('nfTags').value=''; renderFoodTypes(); toast('נוסף'); }
 };
 
+/* ---- לוז אוכל שבועי: מנה קבועה לכל ילד × יום ---- */
+async function loadWeeklyMeals(){
+  const {data}=await db.from('meals').select('*, food_types(name)').eq('is_recurring',true);
+  state.weeklyMeals=data||[];
+}
+
+function renderFoodWeekly(){
+  const box=$('foodWeekly');
+  if(!box) return;
+  const kids=state.kids.filter(k=>k.show_food!==false);
+  const dl='<datalist id="wkFoodDL">'+
+    state.foods.filter(f=>f.active!==false).map(f=>`<option value="${(f.name||'').replace(/"/g,'&quot;')}">`).join('')+
+    '</datalist>';
+
+  box.innerHTML = dl + kids.map(k=>{
+    const rows=CONFIG.DAYS.map(d=>{
+      const m=state.weeklyMeals.find(x=>x.kid===k.name&&x.weekday===d);
+      const val=m?((m.food_types&&m.food_types.name)||m.custom_text||''):'';
+      return `<div class="wkrow" data-kid="${k.name}" data-day="${d}">
+        <b>יום ${CONFIG.DAY_FULL[d]}</b>
+        <input type="text" list="wkFoodDL" data-wk="pick" value="${val.replace(/"/g,'&quot;')}" placeholder="—">
+      </div>`;
+    }).join('');
+    return `<div class="wkkid">
+      <div class="wkkidname" style="color:${k.color}">${k.name}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('.wkrow').forEach(row=>{
+    row.querySelector('[data-wk="pick"]').onchange=()=>saveWeeklyMeal(row);
+  });
+}
+
+async function saveWeeklyMeal(row){
+  const kid=row.dataset.kid, day=row.dataset.day;
+  const text=row.querySelector('[data-wk="pick"]').value.trim();
+  const existing=state.weeklyMeals.find(m=>m.kid===kid&&m.weekday===day);
+
+  try{
+    if(!text){
+      if(existing){
+        await db.from('meals').delete().eq('id',existing.id);
+        state.weeklyMeals=state.weeklyMeals.filter(m=>m.id!==existing.id);
+        toast('נמחק');
+      }
+      return;
+    }
+    const match=state.foods.find(f=>f.active!==false && f.name===text);
+    const payload={
+      kid, weekday:day, is_recurring:true, date:null,
+      food_type_id: match?match.id:null,
+      custom_text: match?null:text,
+      requested_by:'parent', status:'approved'
+    };
+    if(existing){
+      await db.from('meals').update(payload).eq('id',existing.id);
+      Object.assign(existing,payload);
+    }else{
+      const {data}=await db.from('meals').insert(payload).select('*, food_types(name)').single();
+      if(data) state.weeklyMeals.push(data);
+    }
+    toast('נשמר');
+  }catch(e){ toast('השמירה נכשלה',true); console.error(e); }
+}
+
 function renderRestrictions(){
   $('nrKid').innerHTML=state.kids.map(k=>`<option>${k.name}</option>`).join('');
   $('restList').innerHTML = state.restrictions.length ? state.restrictions.map(r=>{
@@ -1611,7 +1688,8 @@ async function start(){
   await loadAll();
   fillSelects();
   renderKids(); renderKidTabs(); renderSchedule(); renderLastChanged(); renderPeriods();
-  renderFoodTypes(); renderRestrictions(); renderRules(); renderOvKids(); renderOverrides(); renderShirts(); renderChugim(); renderVac();
+  await loadWeeklyMeals();
+  renderFoodTypes(); renderRestrictions(); renderFoodWeekly(); renderRules(); renderOvKids(); renderOverrides(); renderShirts(); renderChugim(); renderVac();
   loadPhotos();
   $('noteText').value=state.settings.parent_note||'';
   const bu=state.settings.parent_note_bold_until;
