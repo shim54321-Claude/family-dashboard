@@ -406,9 +406,10 @@ async function buildShabbatWindows(){
     const end=new Date(); end.setDate(end.getDate()+45);
     const events=HebrewCalendar.calendar({start,end,location:loc,il:true,candlelighting:true});
 
-    // אוספים זוגות התחלה (הדלקת נרות) / סוף (הבדלה־צאת הכוכבים)
+    // שלב 1: זוגות התחלה/סוף — רק מהדלקת נרות/הבדלה, לא משתמשים בטקסט שלהם כשם
+    // (הטקסט של אירוע הדלקת נרות גנרי — "הדלקת נרות" — גם בשבת רגילה)
     const raw=[];
-    let openStart=null, openName=null;
+    let openStart=null;
     for(const ev of events){
       const f=ev.getFlags();
       const t=ev.eventTime;
@@ -417,26 +418,25 @@ async function buildShabbatWindows(){
                     || (flags.LIGHT_CANDLES_TZEIS && (f & flags.LIGHT_CANDLES_TZEIS));
       const endFlag=(flags.YOM_TOV_ENDS && (f & flags.YOM_TOV_ENDS));
       if(startFlag){
-        if(openStart===null){ openStart=t; openName=stripNikud(ev.render('he')||''); }
+        if(openStart===null) openStart=t;
       }else if(endFlag){
-        if(openStart!==null){
-          raw.push({start:openStart,end:t,name:openName});
-          openStart=null; openName=null;
-        }
+        if(openStart!==null){ raw.push({start:openStart,end:t}); openStart=null; }
       }
     }
 
-    // מיזוג שרשראות רצופות (למשל ערב חג שחל במוצאי שבת) — פער קטן מ-שעה = המשך
+    // שלב 2: שמות חג אמיתיים — רק אירועי-יום עם דגל CHAG (לא הדלקת נרות/הבדלה,
+    // ולא ראש חודש — לראש חודש אין דגל CHAG, נשאר רק כתגית נפרדת)
+    const chagEvents=events
+      .filter(ev=>!ev.eventTime && flags.CHAG && (ev.getFlags() & flags.CHAG))
+      .map(ev=>({date:ev.getDate().greg(), name:stripNikud(ev.render('he')||'')}));
+
+    // מיזוג שרשראות רצופות (פער קטן מ-שעה = המשך)
     raw.sort((a,b)=>a.start-b.start);
     const merged=[];
     for(const w of raw){
       const last=merged[merged.length-1];
-      if(last && (w.start-last.end)<60*60*1000){
-        last.end=w.end;
-        if(w.name && !last.names.includes(w.name)) last.names.push(w.name);
-      }else{
-        merged.push({start:w.start,end:w.end,names:w.name?[w.name]:[]});
-      }
+      if(last && (w.start-last.end)<60*60*1000){ last.end=w.end; }
+      else{ merged.push({start:w.start,end:w.end}); }
     }
 
     // חלון תצוגה בפועל: שעה לפני הדלקת נרות, אלא אם ≥17:00 → 16:00 קבוע.
@@ -447,7 +447,10 @@ async function buildShabbatWindows(){
       if(hourFrac>=17){ winStart.setHours(16,0,0,0); }
       else{ winStart.setTime(w.start.getTime()-60*60*1000); }
       const winEnd=new Date(w.end.getTime()+30*60*1000);
-      return {start:winStart,end:winEnd,names:w.names};
+      const names=chagEvents.filter(c=>c.date>=w.start && c.date<w.end)
+                             .map(c=>c.name)
+                             .filter((n,i,arr)=>n && arr.indexOf(n)===i);
+      return {start:winStart,end:winEnd,names};
     });
   }catch(e){
     console.warn('שגיאה בחישוב חלונות שבת/חג — נופל חזרה למצב ללא Hebcal',e);
