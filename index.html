@@ -143,6 +143,7 @@ body.shabbat{background:var(--bg-warm)}
 #holiday.on{display:flex}
 .greet{font-family:var(--font-display);font-size:10rem;font-weight:900}
 .holicon{font-size:14rem;line-height:1}
+.holitags{font-size:2.4rem;font-weight:700;color:var(--ink-soft)}
 
 #err{position:fixed;bottom:0;inset-inline:0;background:#8B2020;color:#fff;
   font-size:1.8rem;padding:.8rem 2vw;display:none;z-index:50;text-align:center}
@@ -194,7 +195,7 @@ body.shabbat{background:var(--bg-warm)}
   .photos{grid-template-columns:repeat(2,1fr);height:auto}
   .photos img{aspect-ratio:4/3;height:auto}
 
-  .greet{font-size:40px}.holicon{font-size:60px}
+  .greet{font-size:40px}.holicon{font-size:60px}.holitags{font-size:14px}
   #gotoControl{display:block}
 }
 </style>
@@ -215,6 +216,7 @@ body.shabbat{background:var(--bg-warm)}
   <div id="holiday">
     <div class="holicon" id="holicon">🕯️</div>
     <div class="greet" id="greet">שבת שלום</div>
+    <div class="holitags" id="holitags"></div>
   </div>
 
   <div class="toprow" id="toprow">
@@ -271,7 +273,7 @@ const CONFIG = {
   SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
   SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
   LAT:32.1056, LON:35.1739, TIMEZONE:'Asia/Jerusalem',
-  SWITCH_HOUR:12, SHABBAT_HOUR:19, REFRESH_MIN:5, PHOTO_COUNT:4,
+  SWITCH_HOUR:12, REFRESH_MIN:5, PHOTO_COUNT:4,
   BUCKET:'photos',
 };
 
@@ -364,43 +366,11 @@ function displayDate(){
 const gregString=d=>d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'});
 const isoDate=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 
-/* ---- שבת: 19:00 בערב שבת עד 19:00 במוצאי ---- */
-function shabbatInfo(){
-  const now=new Date(),h=now.getHours(),dow=now.getDay();
-  if(dow===5&&h>=CONFIG.SHABBAT_HOUR) return {greet:'שבת שלום',icon:'🕯️'};
-  if(dow===6&&h< CONFIG.SHABBAT_HOUR) return {greet:'שבת שלום',icon:'🕯️'};
-  return null;
-}
-
 /* ---- חגים: ספרייה אופציונלית, לא חוסמת ---- */
 let hebcal=null;
 async function loadHebcal(){
   try{ hebcal=await import('https://esm.sh/@hebcal/core@5'); }
   catch(e){ console.warn('hebcal unavailable — Shabbat only'); }
-}
-function chagInfo(){
-  if(!hebcal) return null;
-  try{
-    const {HDate,HebrewCalendar,flags}=hebcal;
-    const now=new Date();
-    const test=d=>{
-      const hd=new HDate(d);
-      for(const e of HebrewCalendar.calendar({start:hd,end:hd,il:true})){
-        if(e.getFlags()&flags.CHAG){
-          const n=stripNikud(e.render('he'));
-          return {greet:greetFor(n),icon:iconFor(n)};
-        }
-      }
-      return null;
-    };
-    const t=test(now);
-    if(t&&now.getHours()<CONFIG.SHABBAT_HOUR) return t;
-    if(now.getHours()>=CONFIG.SHABBAT_HOUR){
-      const tm=new Date(now); tm.setDate(tm.getDate()+1);
-      return test(tm);
-    }
-  }catch(e){ console.warn('chag check failed'); }
-  return null;
 }
 function greetFor(n){
   if(n.includes('פסח'))return'חג פסח שמח';
@@ -416,6 +386,99 @@ function iconFor(n){
   if(n.includes('ראש השנה'))return'🍎';
   if(n.includes('כיפור'))return'🕊️';
   return'🕯️';
+}
+
+/* ============================================================
+   חלונות שבת/חג — זמנים אמיתיים מ-Hebcal (כניסה/יציאה),
+   כולל מיזוג שרשראות רצופות וכלל "שבת מוקדמת" (≥17:00 → 16:00 קבוע)
+   מחושב פעם ביום קדימה ~45 יום, ונשמר בזיכרון כדי שהמסך ימשיך
+   לעבוד גם בלי אינטרנט בזמן השבת/חג עצמם.
+   ============================================================ */
+let SHABBAT_WINDOWS=[];      // [{start:Date, end:Date, names:[...]}]
+let windowsBuiltForDay=null;
+
+async function buildShabbatWindows(){
+  if(!hebcal){ SHABBAT_WINDOWS=[]; return; }
+  try{
+    const {HebrewCalendar,Location,flags}=hebcal;
+    const loc=new Location(CONFIG.LAT,CONFIG.LON,true,CONFIG.TIMEZONE,'Custom','IL');
+    const start=new Date(); start.setDate(start.getDate()-3);
+    const end=new Date(); end.setDate(end.getDate()+45);
+    const events=HebrewCalendar.calendar({start,end,location:loc,il:true,candlelighting:true});
+
+    // אוספים זוגות התחלה (הדלקת נרות) / סוף (הבדלה־צאת הכוכבים)
+    const raw=[];
+    let openStart=null, openName=null;
+    for(const ev of events){
+      const f=ev.getFlags();
+      const t=ev.eventTime;
+      if(!t) continue;
+      const startFlag=(flags.LIGHT_CANDLES && (f & flags.LIGHT_CANDLES))
+                    || (flags.LIGHT_CANDLES_TZEIS && (f & flags.LIGHT_CANDLES_TZEIS));
+      const endFlag=(flags.YOM_TOV_ENDS && (f & flags.YOM_TOV_ENDS));
+      if(startFlag){
+        if(openStart===null){ openStart=t; openName=stripNikud(ev.render('he')||''); }
+      }else if(endFlag){
+        if(openStart!==null){
+          raw.push({start:openStart,end:t,name:openName});
+          openStart=null; openName=null;
+        }
+      }
+    }
+
+    // מיזוג שרשראות רצופות (למשל ערב חג שחל במוצאי שבת) — פער קטן מ-שעה = המשך
+    raw.sort((a,b)=>a.start-b.start);
+    const merged=[];
+    for(const w of raw){
+      const last=merged[merged.length-1];
+      if(last && (w.start-last.end)<60*60*1000){
+        last.end=w.end;
+        if(w.name && !last.names.includes(w.name)) last.names.push(w.name);
+      }else{
+        merged.push({start:w.start,end:w.end,names:w.name?[w.name]:[]});
+      }
+    }
+
+    // חלון תצוגה בפועל: שעה לפני הדלקת נרות, אלא אם ≥17:00 → 16:00 קבוע.
+    // מסתיים 30 דק' אחרי סוף השרשרת (לא נוגעים בזה — נשאר כמו שהיה).
+    SHABBAT_WINDOWS=merged.map(w=>{
+      const hourFrac=w.start.getHours()+w.start.getMinutes()/60;
+      const winStart=new Date(w.start);
+      if(hourFrac>=17){ winStart.setHours(16,0,0,0); }
+      else{ winStart.setTime(w.start.getTime()-60*60*1000); }
+      const winEnd=new Date(w.end.getTime()+30*60*1000);
+      return {start:winStart,end:winEnd,names:w.names};
+    });
+  }catch(e){
+    console.warn('שגיאה בחישוב חלונות שבת/חג — נופל חזרה למצב ללא Hebcal',e);
+    SHABBAT_WINDOWS=[];
+  }
+}
+
+/* החלון הפעיל כרגע, אם יש */
+function activeShabbatWindow(){
+  const now=new Date();
+  return SHABBAT_WINDOWS.find(w=>now>=w.start && now<w.end)||null;
+}
+
+/* תגית תצוגה לחלון: "שבת קודש", שמות חג/ים, וראש חודש — כל מה שרלוונטי יחד */
+function windowTags(w){
+  const tags=[];
+  let hasShabbat=false;
+  for(let d=new Date(w.start);d<w.end;d.setDate(d.getDate()+1)){
+    if(d.getDay()===6) hasShabbat=true;
+    if(isRoshChodesh(d) && !tags.includes('ראש חודש')) tags.push('ראש חודש');
+  }
+  if(hasShabbat) tags.unshift('שבת קודש');
+  w.names.forEach(n=>{ if(n && !tags.includes(n)) tags.push(n); });
+  return tags.length?tags:['שבת קודש'];
+}
+function windowDisplay(w){
+  const tags=windowTags(w);
+  const chagName=w.names[0]||'';
+  const greet = chagName ? greetFor(chagName) : 'שבת שלום';
+  const icon  = chagName ? iconFor(chagName)  : '🕯️';
+  return {greet,icon,label:tags.join(' • ')};
 }
 
 /* ---- מזג אוויר ---- */
@@ -653,6 +716,8 @@ function scheduleFit(){
 let db=null;
 async function init(){
   await loadHebcal();
+  await buildShabbatWindows();
+  windowsBuiltForDay=new Date().toDateString();
   try{
     const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
     db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
@@ -661,8 +726,10 @@ async function init(){
   await loadWeather();
   await render();
   setInterval(async()=>{
-    // רשימת התמונות נטענת מחדש רק כשמתחלף היום
-    if(photoDay && photoDay!==new Date().toDateString()) await loadPhotoList();
+    // רשימת התמונות וחלונות השבת/חג נטענים מחדש רק כשמתחלף היום
+    const today=new Date().toDateString();
+    if(photoDay && photoDay!==today) await loadPhotoList();
+    if(windowsBuiltForDay!==today){ await buildShabbatWindows(); windowsBuiltForDay=today; }
     await loadWeather(); await render();
   },CONFIG.REFRESH_MIN*60*1000);
   tickClock(); setInterval(tickClock,10000);
@@ -677,12 +744,14 @@ async function render(){
   $('hebdate').textContent=hebDateString(date);
   $('gregdate').textContent=gregString(date);
 
-  const hol=shabbatInfo()||chagInfo();
+  const win=activeShabbatWindow();
+  const hol=win?windowDisplay(win):null;
   if(hol){
     document.body.classList.add('shabbat');
     $('holiday').classList.add('on');
     $('greet').textContent=hol.greet;
     $('holicon').textContent=hol.icon;
+    $('holitags').textContent=hol.label;
     $('schedwrap').style.display='none';
     $('chugim').classList.add('hidden');
     $('shirtbox').classList.remove('on');
