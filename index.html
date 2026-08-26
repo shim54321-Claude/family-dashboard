@@ -28,7 +28,7 @@
 :root{
   --k:1;
   --bg:#F2F4F2; --bg-warm:#F5F1E6;
-  --ink:#16211E; --ink-soft:#6B7A75; --ink-faint:#93A29C;
+  --ink:#16211E; --ink-soft:#606E69; --ink-faint:#5F6D67;
   --line:#E3E8E4; --card:#FFFFFF;
 
   /* צבעי הילדים מגיעים מטבלת kids בסופאבייס (עמודות color/bg) —
@@ -39,6 +39,7 @@
 
   --alert:#9C6B1F; --alert-bg:#F6EFE2;
   --break-bg:#EEF1EE;
+  --kid-ink:#1C2620;   /* טקסט על משטח בצבע הילד — הפוך במצב לילה */
 
   --font-display:'Rubik',Arial,Helvetica,sans-serif;
   --font-body:'Assistant',Arial,Helvetica,sans-serif;
@@ -46,7 +47,7 @@
 /* ---- מצב לילה: 22:30–05:45, מוגדר קבוע כרגע (ראו הערה בהוראות) ---- */
 body.night{
   --bg:#111A17; --bg-warm:#141E1A;
-  --ink:#E8EDEA; --ink-soft:#8DA09A; --ink-faint:#5E6E68;
+  --ink:#E8EDEA; --ink-soft:#8DA09A; --ink-faint:#8A9691;
   --line:#28332F; --card:#1A2420;
   --alert:#D8A857; --alert-bg:#2A2214;
   --break-bg:#1C2622;
@@ -54,6 +55,15 @@ body.night{
      no day/night variant yet), so the per-kid table cells are deliberately
      pinned below rather than following the --ink flip. */
 }
+body.night{--kid-ink:#E8EDEA}
+/* משטחי הילדים מגיעים מסופאבייס בגוון בהיר יחיד. במצב לילה מחליפים אותם
+   במשטח כהה שנגזר מאותו צבע ילד, כדי שכל הטקסט מעליהם יישאר קריא. */
+body.night .kidcard{background:color-mix(in srgb, var(--c) 16%, #111A17)}
+/* צבע ילד כטקסט על רקע כהה — תמיד מבהירים, אחרת הוא יורד מתחת ל-4.5:1 */
+body.night .kidname,body.night .chent .k{color:color-mix(in srgb, var(--c) 45%, #FFFFFF)}
+body.night .kidcard .mealchip{background:color-mix(in srgb, var(--c) 10%, #0C1512)}
+body.night .lesson.now{background:color-mix(in srgb, var(--c) 60%, #FFFFFF)}
+body.night .lesson.now .lsubj,body.night .lesson.now .ltime{color:#111A17}
 body.night .photobox img,body.night .photobg{filter:brightness(.7) saturate(.85)}
 body.night .photobg{filter:blur(1.6rem) saturate(.85) brightness(.6)}
 html{font-size:calc(1vh * var(--k))}
@@ -139,7 +149,7 @@ body.kiosk{cursor:none}
 .kidem{font-size:2rem;line-height:1}
 .lessons{display:flex;flex-direction:column;margin-bottom:.8rem}
 .lesson{display:flex;align-items:center;gap:.7vw;padding:.55rem 0;
-  border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);color:#1C2620}
+  border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);color:var(--kid-ink)}
 .lesson:last-child{border-bottom:0}
 .ltime{font-family:var(--font-display);font-size:1.6rem;font-weight:500;color:var(--ink-soft);
   font-variant-numeric:tabular-nums;min-width:4.2rem;direction:ltr;text-align:start}
@@ -157,9 +167,9 @@ body.kiosk{cursor:none}
 .mealchip{margin-top:auto;display:flex;align-items:baseline;gap:.7vw;background:var(--card);
   border-radius:1.1rem;padding:.55rem 1vw}
 .mealchip .ml{font-size:1.35rem;color:var(--ink-soft);font-weight:700;white-space:nowrap}
-.mealchip .mv{font-size:1.8rem;font-weight:600;color:#1C2620}
+.mealchip .mv{font-size:1.8rem;font-weight:600;color:var(--kid-ink)}
 .mealchip .fx{display:block;font-size:1.35rem;color:var(--ink-soft);font-weight:500}
-.dayoff{font-family:var(--font-display);font-size:3.4rem;font-weight:900;color:#1C2620;
+.dayoff{font-family:var(--font-display);font-size:3.4rem;font-weight:900;color:var(--ink);
   text-align:center;padding:2rem 0;background:var(--card);border-radius:1.6rem}
 .dayoff.small{font-size:2.2rem;padding:1.2rem 0;background:transparent}
 
@@ -182,15 +192,22 @@ table.chweek th.chnow span{background:var(--ink);color:var(--bg)}
 table.chweek td.chnow{background:var(--card);border-radius:0 0 1.1rem 1.1rem}
 .chent{font-size:1.65rem;line-height:1.25;margin-bottom:.4rem}
 .chent .t{font-weight:900;direction:ltr;display:inline-block;margin-inline-end:.3rem}
-.chent .k{font-weight:900}
+.chent .k{font-weight:900;color:var(--c,var(--ink))}
 .chent .a{color:var(--ink-soft)}
 .chent .loc{color:var(--ink-faint);font-size:.9em;margin-inline-start:.2em}
-.chempty{font-size:1.4rem;color:#C9C7C2}
+.chempty{font-size:1.4rem;color:var(--ink-faint)}
 
 /* ז. תמונות */
 .photobox{position:relative;flex:0 0 auto;width:16vw;border-radius:1.6rem;overflow:hidden;
   background:var(--card);box-shadow:0 1px 3px rgba(22,33,30,.06)}
 .photobox.hidden{display:none}
+/* התמונה בטלפון: ממוזערת בכותרת, לא בלוק ברוחב מלא */
+.datetext{display:contents}
+.photothumb{display:none}
+#photoview{position:fixed;inset:0;z-index:120;background:rgba(8,12,11,.94);
+  display:flex;align-items:center;justify-content:center;padding:14px}
+#photoview.hidden{display:none}
+#photoview img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
 .photobg{position:absolute;inset:-12%;background-size:cover;background-position:center;
   filter:blur(1.6rem) saturate(1.1);transform:scale(1.15)}
 .photobox img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
@@ -256,7 +273,14 @@ body.shabbat{background:var(--bg-warm)}
   body.kiosk #gotoControl{pointer-events:auto!important}
   #app{padding:14px 4vw;gap:12px;min-height:auto;padding-bottom:80px}
 
-  .datebar{flex-direction:column;align-items:flex-start;gap:4px}
+  .datebar{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .datetext{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+  /* התמונה הגדולה יורדת בטלפון וההצגה עוברת לממוזערת שבכותרת */
+  .photobox{display:none!important}
+  .photothumb{display:block;flex:0 0 auto;width:74px;height:74px;border-radius:12px;
+    overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer}
+  .photothumb.hidden{display:none}
+  .photothumb img{width:100%;height:100%;object-fit:cover;display:block}
   .dayname{font-size:26px}
   .hebdate{font-size:22px}
   .gregdate{font-size:14px}
@@ -306,14 +330,18 @@ body.shabbat{background:var(--bg-warm)}
 <body class="kiosk">
 <div id="app">
   <div class="datebar">
-    <div style="display:flex;align-items:baseline;gap:1.6vw">
-      <div class="dayname" id="dayname">—</div>
-      <div class="clock" id="clock">--:--</div>
+    <div class="datetext">
+      <div style="display:flex;align-items:baseline;gap:1.6vw">
+        <div class="dayname" id="dayname">—</div>
+        <div class="clock" id="clock">--:--</div>
+      </div>
+      <div class="datecol">
+        <span class="hebdate" id="hebdate">—</span>
+        <span class="gregdate" id="gregdate">—</span>
+      </div>
     </div>
-    <div class="datecol">
-      <span class="hebdate" id="hebdate">—</span>
-      <span class="gregdate" id="gregdate">—</span>
-    </div>
+    <!-- תמונה ממוזערת — מוצגת רק בטלפון, בפינה הנגדית לתאריך. לחיצה מגדילה. -->
+    <div class="photothumb hidden" id="photothumb"><img id="photothumbimg" alt=""></div>
   </div>
 
   <div id="holiday">
@@ -382,6 +410,7 @@ body.shabbat{background:var(--bg-warm)}
   <div class="lastsync" id="lastsync"></div>
 </div>
 <a id="gotoControl" href="daily.html">היום</a>
+<div id="photoview" class="hidden"><img id="photoviewimg" alt=""></div>
 <div id="err"></div>
 
 <script type="module">
@@ -403,16 +432,60 @@ const CLOCK_FMT=new Intl.DateTimeFormat('he-IL',
 function tickClock(){ const e=$('clock'); if(e) e.textContent=CLOCK_FMT.format(new Date()); }
 
 /* ============================================================
-   מצב לילה — קבוע כרגע 22:30–05:45 (Asia/Jerusalem).
-   הערה: זו ברירת מחדל קשיחה בקוד, לא הגדרה בפאנל ההורים —
-   ראו ההערה בהוראות המסירה על השלב הבא (טבלת settings + פאנל).
+   מצב לילה — ברירת מחדל 22:30–05:45 (Asia/Jerusalem), ניתן
+   לשינוי או לכיבוי מפאנל ההורים דרך טבלת settings:
+     night_mode_enabled = '1' / '0'   (חסר = דלוק)
+     night_start        = 'HH:MM'     (חסר = 22:30)
+     night_end          = 'HH:MM'     (חסר = 05:45)
    ============================================================ */
-const NIGHT_START_MIN = 22*60+30, NIGHT_END_MIN = 5*60+45;
+const NIGHT_DEFAULTS = {enabled:true, startMin:22*60+30, endMin:5*60+45};
+let NIGHT = {...NIGHT_DEFAULTS};
+
+/* 'HH:MM' -> דקות מחצות. כל קלט לא תקין מחזיר null כדי שנפול לברירת המחדל. */
+function hhmmToMin(v){
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());
+  if(!m) return null;
+  const h=+m[1], mi=+m[2];
+  if(h>23||mi>59) return null;
+  return h*60+mi;
+}
+function applyNightSettings(settingsRows){
+  const get=k=>{ const r=(settingsRows||[]).find(s=>s.key===k); return r?String(r.value??'').trim():''; };
+  const en=get('night_mode_enabled');
+  const st=hhmmToMin(get('night_start'));
+  const en2=hhmmToMin(get('night_end'));
+  NIGHT = {
+    enabled: en==='' ? NIGHT_DEFAULTS.enabled : !(en==='0'||en==='false'),
+    startMin: st===null ? NIGHT_DEFAULTS.startMin : st,
+    endMin:   en2===null ? NIGHT_DEFAULTS.endMin  : en2,
+  };
+  applyNightMode();
+}
 function isNightNow(){
+  if(!NIGHT.enabled) return false;
   const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
-  return mins>=NIGHT_START_MIN || mins<NIGHT_END_MIN;
+  /* חלון שחוצה חצות (22:30→05:45) מול חלון רגיל באותו יום (13:00→15:00) */
+  return NIGHT.startMin > NIGHT.endMin
+    ? (mins>=NIGHT.startMin || mins<NIGHT.endMin)
+    : (mins>=NIGHT.startMin && mins<NIGHT.endMin);
 }
 function applyNightMode(){ document.body.classList.toggle('night', isNightNow()); }
+
+/* תפוגת הערת ההורים.
+   תואם אחורה לשני הפורמטים:
+     'YYYY-MM-DD'            — פג בסוף אותו יום (התנהגות ישנה, נשמרת)
+     'YYYY-MM-DDTHH:MM'      — פג ברגע המדויק הזה בשעון ישראל
+   ריק = לא פג לעולם. */
+function noteHasExpired(untilStr){
+  const s=String(untilStr||'').trim();
+  if(!s) return false;
+  const n=israelNow();
+  const m=/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(s);
+  if(!m) return isoDate(n) > s;                 // תאריך בלבד
+  const today=isoDate(n);
+  if(today !== m[1]) return today > m[1];       // יום אחר — משווים תאריכים
+  return (n.getHours()*60+n.getMinutes()) >= (+m[2]*60 + +m[3]);
+}
 
 /* הבהוב עדין (מחזור 2 שניות) על כרטיס החולצה הלבנה, רק 05:45–08:00 —
    שעת ההכנות לבית הספר. מחוץ לחלון הזה הכרטיס סטטי. */
@@ -1003,7 +1076,7 @@ function buildSchedule(periods,rows,overrides,meals,isToday){
 
     const m=(k.show_food!==false)?meals[k.name]:null;
     const mealHtml = m
-      ? `<div class="mealchip"><span class="ml">ארוחת 10</span><span class="mv">${m.text}`+
+      ? `<div class="mealchip"><span class="ml">ארוחת עשר</span><span class="mv">${m.text}`+
         (m.note?`<span class="fx">${m.note}</span>`:'')+`</span></div>`
       : '';
 
@@ -1053,7 +1126,7 @@ function buildChugim(list){
       const col=k?k.color:'var(--ink-soft)';
       return `<div class="chent">
         ${c.time?`<span class="t">${c.time.slice(0,5)}</span>`:''}
-        <span class="k" style="color:${col}">${c.kid}</span>
+        <span class="k" style="--c:${col}">${c.kid}</span>
         <span class="a"> ${c.activity}</span>
         ${c.location?`<span class="loc">· ${c.location}</span>`:''}
       </div>`;
@@ -1085,7 +1158,8 @@ async function loadPhotoList(){
    מוצגת שלמה (contain) מעל רקע מטושטש של עצמה, בלי חיתוך ובלי פסים ריקים. */
 function buildPhotos(){
   const box=$('photobox'), img=$('photoimg'), bg=$('photobg');
-  if(!PHOTO_URLS.length){box.classList.add('hidden');return;}
+  const thumb=$('photothumb'), timg=$('photothumbimg');
+  if(!PHOTO_URLS.length){box.classList.add('hidden');thumb.classList.add('hidden');return;}
 
   const today=israelNow().toDateString();
   photoDay=today;
@@ -1098,6 +1172,13 @@ function buildPhotos(){
   box.classList.remove('hidden');
   img.onload=fitToScreen;
   img.onerror=()=>{ box.classList.add('hidden'); fitToScreen(); };
+
+  /* אותה תמונה בדיוק, בגרסה הממוזערת של הטלפון */
+  timg.src=url;
+  thumb.classList.remove('hidden');
+  timg.onerror=()=>thumb.classList.add('hidden');
+  thumb.onclick=()=>{ $('photoviewimg').src=url; $('photoview').classList.remove('hidden'); };
+  $('photoview').onclick=()=>$('photoview').classList.add('hidden');
 }
 
 /* ============================================================
@@ -1229,10 +1310,12 @@ async function render(){
 
       // הודעת הורים — נעלמת מעצמה אחרי תאריך התפוגה (parent_note_until).
       // בלי תאריך תפוגה ההודעה נשארת עד שמחליפים אותה.
+      applyNightSettings(settings.data||[]);
+
       const note=(settings.data||[]).find(s=>s.key==='parent_note');
       const noteUntil=(settings.data||[]).find(s=>s.key==='parent_note_until');
       const untilStr=noteUntil&&noteUntil.value?String(noteUntil.value).trim():'';
-      const noteExpired = !!untilStr && isoDate(israelNow()) > untilStr;
+      const noteExpired = !!untilStr && noteHasExpired(untilStr);
       if(note&&note.value&&note.value.trim()&&!noteExpired){
         $('parentnote').textContent=note.value;
         $('parentnote').classList.remove('hidden');

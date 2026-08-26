@@ -2,79 +2,160 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>היום — לוח המשפחה</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#FBF8F3">
+<meta name="theme-color" content="#F2F4F2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="היום">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
+/* ============================================================
+   טוקנים משותפים — זהים ללוח הבית (index.html).
+   כל שינוי כאן צריך לקרות גם שם ולהפך.
+   ============================================================ */
+@font-face{font-family:'Rubik';src:url('fonts/rubik-var.woff2') format('woff2-variations');
+  font-weight:300 900;font-display:swap}
+@font-face{font-family:'Assistant';src:url('fonts/assistant-var.woff2') format('woff2-variations');
+  font-weight:300 800;font-display:swap}
+
 :root{
-  --bg:#FBF8F3; --ink:#2A2A2E; --ink-soft:#6E6E76; --line:#E2DDD3; --card:#FFFFFF;
-  --alert:#B36B00; --alert-bg:#FDF3E0;
-  --ok:#2E7D52; --danger:#A33; --warn:#B36B00;
-  --font:Arial,Helvetica,sans-serif;
+  --bg:#F2F4F2; --bg-warm:#F5F1E6;
+  --ink:#16211E; --ink-soft:#606E69; --ink-faint:#5F6D67;
+  --line:#E3E8E4; --card:#FFFFFF;
+  --kid1:#2E6F8E; --kid2:#7A5FA8; --kid3:#2E8B72;
+  --alert:#9C6B1F; --alert-bg:#F6EFE2;
+  --ok:#2E7D52; --danger:#A33;
+  --kid-ink:#1C2620;
+  --font-display:'Rubik',Arial,Helvetica,sans-serif;
+  --font-body:'Assistant',Arial,Helvetica,sans-serif;
+  --tap:48px;                 /* יעד מגע מינימלי בכל הממשק */
 }
+body.night{
+  --bg:#111A17; --bg-warm:#141E1A;
+  --ink:#E8EDEA; --ink-soft:#8DA09A; --ink-faint:#8A9691;
+  --line:#28332F; --card:#1A2420;
+  --alert:#D8A857; --alert-bg:#2A2214;
+  --ok:#5AA87C; --danger:#E08585;
+  --kid-ink:#E8EDEA;
+}
+
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--font);
-  font-size:16px;line-height:1.5;padding-bottom:40px}
-.wrap{max-width:620px;margin:0 auto;padding:16px}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);
+  font-size:16px;line-height:1.5;padding-bottom:40px;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:620px;margin:0 auto;padding:14px}
 
-h1{font-size:26px;font-weight:900}
-.datesub{color:var(--ink-soft);font-size:15px;margin-bottom:18px}
+h1{font-family:var(--font-display);font-size:24px;font-weight:900;line-height:1.2}
+h2{font-family:var(--font-display);font-size:18px;font-weight:900}
+.datesub{color:var(--ink-soft);font-size:14px}
 
-input,select,textarea{width:100%;padding:12px 13px;border:1px solid var(--line);
-  border-radius:10px;font-family:var(--font);font-size:16px;background:#fff;color:var(--ink)}
-input[type="date"]{direction:ltr;text-align:center}
-button{font-family:var(--font);font-size:16px;font-weight:700;padding:12px 18px;
-  border:none;border-radius:10px;background:var(--ink);color:#fff;cursor:pointer}
-button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+input,select,textarea{width:100%;min-height:var(--tap);padding:12px 13px;
+  border:1px solid var(--line);border-radius:12px;font-family:var(--font-body);
+  font-size:16px;background:var(--card);color:var(--ink)}
+input[type="date"],input[type="datetime-local"]{direction:ltr;text-align:center}
+input:focus,textarea:focus{outline:2px solid var(--kid1);outline-offset:-1px}
 label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin:12px 0 5px}
 
-#login{max-width:360px;margin:14vh auto;background:var(--card);
-  border:1px solid var(--line);border-radius:14px;padding:26px}
+button{font-family:var(--font-body);font-size:16px;font-weight:700;
+  min-height:var(--tap);padding:12px 18px;border:none;border-radius:12px;
+  background:var(--ink);color:var(--bg);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+
+/* --- כניסה --- */
+#login{max-width:360px;margin:12vh auto;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:26px}
 #login h1{text-align:center;margin-bottom:18px}
 .msg{font-size:14px;margin-top:12px;text-align:center;min-height:20px}
 .msg.err{color:var(--danger)}
 
 #panel{display:none}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:18px;margin-bottom:14px}
-.card h2{font-size:18px;font-weight:900;margin-bottom:12px}
 
-/* חולצה לבנה */
-.shirt{display:flex;gap:10px;align-items:center;margin-bottom:12px}
-.shirt svg{height:52px;width:auto;flex-shrink:0}
-.shirtstate{font-size:17px;font-weight:900}
+/* --- ניווט דביק בראש הדף (סעיף 6א) --- */
+.navbar{position:sticky;top:0;z-index:40;background:var(--bg);
+  border-bottom:1px solid var(--line);padding:8px 0 10px;margin-bottom:14px}
+.navrow{display:flex;gap:8px;max-width:620px;margin:0 auto;padding:0 14px}
+.navrow a,.navrow button{flex:1;min-height:44px;padding:10px 8px;border-radius:12px;
+  font-size:15px;font-weight:700;text-align:center;text-decoration:none;
+  display:flex;align-items:center;justify-content:center}
+.navrow a{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.navrow a.here{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.navrow button.out{flex:0 0 auto;background:transparent;color:var(--ink-soft);
+  border:1px solid var(--line);font-size:14px;padding:10px 14px}
+
+.topbar{margin-bottom:14px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:16px;margin-bottom:12px}
+.card h2{margin-bottom:12px}
+
+/* --- חולצה לבנה: שני לחצנים ריבועיים (סעיף 6ב) --- */
+.shirthead{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.shirthead svg{height:46px;width:auto;flex-shrink:0}
+.shirtstate{font-size:16px;font-weight:900}
 .shirtstate.on{color:var(--alert)}
 .shirtstate.off{color:var(--ink-soft)}
-.bigbtn{width:100%;padding:18px;font-size:18px;font-weight:900;
-  background:var(--alert);color:#fff;border-radius:12px;margin-bottom:8px}
-.bigbtn.sec{background:var(--alert-bg);color:var(--alert);border:2px solid var(--alert)}
+.sqrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sqbtn{aspect-ratio:1/1;min-height:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;border-radius:16px;
+  background:transparent;color:var(--ink-soft);border:2px solid var(--line);
+  font-family:var(--font-display);font-size:20px;font-weight:900;padding:8px}
+.sqbtn .sub{font-family:var(--font-body);font-size:13px;font-weight:700}
+.sqbtn.on{background:var(--alert);border-color:var(--alert);color:#fff}
+body.night .sqbtn.on{color:#111A17}
 
-/* אוכל */
-.foodrow{display:flex;gap:9px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-.foodrow .kn{font-weight:900;min-width:66px;font-size:16px}
-.foodrow select{flex:1;min-width:130px}
-.foodrow input.free{flex:1;min-width:130px}
-.warn{font-size:13px;padding:8px 11px;border-radius:8px;margin:4px 0 10px;
-  background:var(--alert-bg);color:var(--warn);font-weight:700}
-.warn.block{background:#FBEAEA;color:var(--danger)}
-.recur{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink-soft);
-  white-space:nowrap;margin:0}
-.recur input{width:auto}
+/* --- אוכל --- */
+.foodrow{position:relative;margin-bottom:14px}
+.foodrow .kn{font-family:var(--font-display);font-weight:900;font-size:16px;
+  display:block;margin-bottom:5px}
+.foodinput{display:flex;gap:8px;align-items:center}
+.foodinput input{flex:1}
+.recur{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);
+  white-space:nowrap;margin:6px 0 0;font-weight:700}
+.recur input{width:auto;min-height:0}
+/* הצעות מהמאגר — נפתחות תוך כדי הקלדה, אף פעם לא חוסמות כתיבה חופשית */
+.sugg{position:absolute;inset-inline:0;top:100%;z-index:30;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;margin-top:4px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,.10)}
+.sugg.hidden{display:none}
+.sugg button{display:block;width:100%;text-align:start;background:transparent;
+  color:var(--ink);border:0;border-bottom:1px solid var(--line);border-radius:0;
+  font-weight:600;min-height:44px;padding:10px 13px}
+.sugg button:last-child{border-bottom:0}
+.warn{font-size:13px;padding:8px 11px;border-radius:9px;margin:6px 0 0;
+  background:var(--alert-bg);color:var(--alert);font-weight:700}
+.warn.block{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+
+/* --- הערה לילדים: 4 כפתורי תפוגה (סעיף 6ו) --- */
+.expwrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.expbtn{min-height:44px;padding:10px 8px;font-size:14px;border-radius:12px;
+  background:transparent;color:var(--ink-soft);border:2px solid var(--line);font-weight:700}
+.expbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.expcustom{margin-top:8px}
+.expcustom.hidden{display:none}
+.expnow{font-size:13px;color:var(--ink-soft);margin-top:8px}
+
+/* --- חלון אישור (סעיף 9) --- */
+#confirm{position:fixed;inset:0;z-index:100;background:rgba(10,16,14,.55);
+  display:flex;align-items:center;justify-content:center;padding:18px}
+#confirm.hidden{display:none}
+.cbox{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
+.cbox h3{font-family:var(--font-display);font-size:18px;font-weight:900;margin-bottom:8px}
+.cbox p{font-size:15px;color:var(--ink-soft);margin-bottom:16px;white-space:pre-line}
+.cbtns{display:flex;gap:10px}
+.cbtns button{flex:1}
+.cbtns .no{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.cbtns .yes.danger{background:var(--danger);color:#fff}
 
 #toast{position:fixed;bottom:18px;inset-inline-start:50%;transform:translateX(50%);
   background:var(--ok);color:#fff;padding:11px 22px;border-radius:30px;
-  font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+  font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:110}
 #toast.on{opacity:1}
 #toast.bad{background:var(--danger)}
 
-.links{display:flex;gap:8px;margin-top:18px}
-.links a{flex:1;text-align:center;padding:12px;border-radius:10px;
-  border:1px solid var(--line);color:var(--ink-soft);text-decoration:none;font-weight:700}
-.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+@media(max-width:400px){
+  .expwrap{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -87,54 +168,78 @@ label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin:
   <div class="msg" id="loginMsg"></div>
 </div>
 
-<div id="panel"><div class="wrap">
-  <div class="topbar">
-    <div>
+<div id="panel">
+  <div class="navbar">
+    <div class="navrow">
+      <a href="index.html">לוח משפחה</a>
+      <a href="daily.html" class="here">היום</a>
+      <a href="control.html">בקרה מלאה</a>
+      <button class="out" id="logoutBtn">יציאה</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="topbar">
       <h1 id="dayTitle">—</h1>
       <div class="datesub" id="dateSub">—</div>
     </div>
-    <button class="ghost" id="logoutBtn" style="padding:8px 13px;font-size:14px">יציאה</button>
-  </div>
 
-  <!-- חולצה לבנה -->
-  <div class="card">
-    <h2>חולצה לבנה</h2>
-    <div class="shirt">
-      <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
-                 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"
-              fill="#FFFFFF" stroke="#2A2A2E" stroke-width="3.5" stroke-linejoin="round"/>
-      </svg>
-      <div class="shirtstate" id="shirtState">—</div>
+    <!-- חולצה לבנה -->
+    <div class="card">
+      <h2>חולצה לבנה</h2>
+      <div class="shirthead">
+        <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
+                   C66 6 62 16 50 16 C38 16 34 6 34 6 Z"
+                fill="#FFFFFF" stroke="#2A2A2E" stroke-width="3.5" stroke-linejoin="round"/>
+        </svg>
+        <div class="shirtstate" id="shirtState">—</div>
+      </div>
+      <div class="sqrow">
+        <button class="sqbtn" id="sqToday">היום<span class="sub" id="sqTodaySub">—</span></button>
+        <button class="sqbtn" id="sqTomorrow">מחר<span class="sub" id="sqTomorrowSub">—</span></button>
+      </div>
     </div>
-    <button class="bigbtn" id="shirtTomorrow">חולצה לבנה מחר</button>
-    <button class="bigbtn sec" id="shirtToday">גם היום</button>
-  </div>
 
-  <!-- אוכל -->
-  <div class="card">
-    <h2>מה לוקחים לבית ספר</h2>
-    <label>לאיזה יום</label>
-    <input type="date" id="foodDate">
-    <div id="foodRows" style="margin-top:14px"></div>
-    <button style="margin-top:6px" id="foodSave">שמירה</button>
-  </div>
+    <!-- ארוחת עשר -->
+    <div class="card">
+      <h2>ארוחת עשר</h2>
+      <label>לאיזה יום</label>
+      <input type="date" id="foodDate">
+      <div id="foodRows" style="margin-top:14px"></div>
+      <button style="width:100%;margin-top:6px" id="foodSave">שמירה</button>
+    </div>
 
-  <!-- הערת הורים -->
-  <div class="card">
-    <h2>הערה לילדים</h2>
-    <textarea id="noteText" rows="2" placeholder="מוצגת בראש המסך בבית"></textarea>
-    <label class="recur" style="margin-top:12px">
-      <input type="checkbox" id="noteBold"> להדגיש עד 12:00 הבא
-    </label>
-    <button style="margin-top:12px" id="noteSave">שמירה</button>
+    <!-- הערה לילדים -->
+    <div class="card">
+      <h2>הערה לילדים</h2>
+      <textarea id="noteText" rows="2" placeholder="מוצגת בראש המסך בבית"></textarea>
+      <label>עד מתי מוצגת</label>
+      <div class="expwrap">
+        <button class="expbtn" data-exp="noon">עד 12:00</button>
+        <button class="expbtn" data-exp="eod">עד סוף היום</button>
+        <button class="expbtn" data-exp="custom">תאריך ושעה</button>
+        <button class="expbtn" data-exp="never">ללא הגבלה</button>
+      </div>
+      <div class="expcustom hidden" id="expCustom">
+        <input type="datetime-local" id="expAt">
+      </div>
+      <div class="expnow" id="expNow"></div>
+      <button style="width:100%;margin-top:12px" id="noteSave">שמירה</button>
+    </div>
   </div>
+</div>
 
-  <div class="links">
-    <a href="index.html">לוח הבית</a>
-    <a href="control.html">בקרה מלאה</a>
+<div id="confirm" class="hidden">
+  <div class="cbox">
+    <h3 id="cTitle">אישור</h3>
+    <p id="cBody"></p>
+    <div class="cbtns">
+      <button class="no" id="cNo">ביטול</button>
+      <button class="yes" id="cYes">אישור</button>
+    </div>
   </div>
-</div></div>
+</div>
 
 <div id="toast"></div>
 
@@ -150,9 +255,61 @@ const DAY_FULL={'א':'ראשון','ב':'שני','ג':'שלישי','ד':'רביע
 const $=id=>document.getElementById(id);
 const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const fmt=s=>{const[y,m,d]=s.split('-');return `${d}/${m}/${y}`};
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* שעון ישראל — הפאנל נפתח גם מחו״ל או ממכשיר עם אזור זמן שגוי */
+function israelNow(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',
+    month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})
+    .formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return new Date(+p.year,+p.month-1,+p.day,+(p.hour==='24'?'0':p.hour),+p.minute,+p.second);
+}
 
 function toast(m,bad){const t=$('toast');t.textContent=m;t.className='on'+(bad?' bad':'');
   clearTimeout(t._t);t._t=setTimeout(()=>t.className='',1800);}
+
+/* ---------- חלון אישור אחיד (סעיף 9) ---------- */
+function ask(title,body,{danger=true,yes='אישור'}={}){
+  return new Promise(res=>{
+    $('cTitle').textContent=title;
+    $('cBody').textContent=body||'';
+    const y=$('cYes'), n=$('cNo');
+    y.textContent=yes;
+    y.className='yes'+(danger?' danger':'');
+    $('confirm').classList.remove('hidden');
+    const done=v=>{ $('confirm').classList.add('hidden'); y.onclick=null; n.onclick=null; res(v); };
+    y.onclick=()=>done(true); n.onclick=()=>done(false);
+  });
+}
+
+/* ---------- מצב לילה — אותם כללים בדיוק כמו בלוח ---------- */
+const NIGHT_DEFAULTS={enabled:true,startMin:22*60+30,endMin:5*60+45};
+let NIGHT={...NIGHT_DEFAULTS};
+function hhmmToMin(v){
+  const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());
+  if(!m) return null;
+  const h=+m[1], mi=+m[2];
+  if(h>23||mi>59) return null;
+  return h*60+mi;
+}
+function applyNightSettings(st){
+  const g=k=>st[k]==null?'':String(st[k]).trim();
+  const en=g('night_mode_enabled'), a=hhmmToMin(g('night_start')), b=hhmmToMin(g('night_end'));
+  NIGHT={
+    enabled: en==='' ? NIGHT_DEFAULTS.enabled : !(en==='0'||en==='false'),
+    startMin: a===null?NIGHT_DEFAULTS.startMin:a,
+    endMin:   b===null?NIGHT_DEFAULTS.endMin:b,
+  };
+  applyNightMode();
+}
+function isNightNow(){
+  if(!NIGHT.enabled) return false;
+  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
+  return NIGHT.startMin>NIGHT.endMin
+    ? (mins>=NIGHT.startMin || mins<NIGHT.endMin)
+    : (mins>=NIGHT.startMin && mins<NIGHT.endMin);
+}
+function applyNightMode(){ document.body.classList.toggle('night', isNightNow()); }
 
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
@@ -172,7 +329,7 @@ $('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
 
 /* ---------- היום המוצג ---------- */
 function shown(){
-  const now=new Date(), d=new Date(now);
+  const now=israelNow(), d=new Date(now);
   const tm=now.getHours()>=CONFIG.SWITCH_HOUR;
   if(tm) d.setDate(d.getDate()+1);
   return {date:d,isTomorrow:tm};
@@ -192,35 +349,66 @@ function shirtReason(date){
   }
   return null;
 }
+/* הבחנה חשובה: סימון ידני ניתן לביטול, כלל קבוע לא — הוא נערך בבקרה המלאה */
+function manualShirt(date){ return S.shirts.find(s=>s.date===iso(date))||null; }
+
 function renderShirt(){
+  const t=israelNow(); const tm=new Date(t); tm.setDate(tm.getDate()+1);
+  [['sqToday',t],['sqTomorrow',tm]].forEach(([id,d])=>{
+    const btn=$(id), sub=$(id+'Sub');
+    const r=shirtReason(d), man=manualShirt(d);
+    btn.classList.toggle('on', !!r);
+    sub.textContent = r ? (man?r:r+' (כלל קבוע)') : 'לא נדרשת';
+  });
   const {date,isTomorrow}=shown();
   const r=shirtReason(date);
   const el=$('shirtState');
-  el.textContent = r ? `${isTomorrow?'מחר':'היום'} — ${r}` : 'לא נדרשת';
+  el.textContent = r ? `${isTomorrow?'מחר':'היום'} — ${r}` : `${isTomorrow?'מחר':'היום'} — לא נדרשת`;
   el.className='shirtstate '+(r?'on':'off');
 }
-async function addShirt(d){
-  const s=iso(d);
-  if(S.shirts.some(x=>x.date===s)){ toast('כבר מסומן',true); return; }
-  const {data}=await db.from('white_shirt').insert({date:s,reason:'חולצה לבנה'}).select().single();
-  if(data){ S.shirts.push(data); renderShirt(); toast('סומן'); }
-}
-$('shirtTomorrow').onclick=()=>{const d=new Date();d.setDate(d.getDate()+1);addShirt(d);};
-$('shirtToday').onclick=()=>addShirt(new Date());
 
-/* ---------- אוכל ---------- */
+async function toggleShirt(d,labelHe){
+  const s=iso(d);
+  const man=manualShirt(d);
+  if(man){
+    const ok=await ask('ביטול חולצה לבנה',
+      `לבטל את הסימון של ${labelHe} (${fmt(s)})?`,{yes:'ביטול הסימון'});
+    if(!ok) return;
+    try{
+      await db.from('white_shirt').delete().eq('id',man.id);
+      S.shirts=S.shirts.filter(x=>x.id!==man.id);
+      renderShirt(); toast('הסימון בוטל');
+    }catch(e){ toast('הפעולה נכשלה',true); }
+    return;
+  }
+  if(shirtReason(d)){ toast('נדרשת ממילא לפי כלל קבוע',true); return; }
+  try{
+    const {data}=await db.from('white_shirt').insert({date:s,reason:'חולצה לבנה'}).select().single();
+    if(data){ S.shirts.push(data); renderShirt(); toast('סומן'); }
+  }catch(e){ toast('הפעולה נכשלה',true); }
+}
+$('sqToday').onclick=()=>toggleShirt(israelNow(),'היום');
+$('sqTomorrow').onclick=()=>{const d=israelNow();d.setDate(d.getDate()+1);toggleShirt(d,'מחר');};
+
+/* ---------- ארוחת עשר ---------- */
 function mealFor(kid,dateStr,weekday){
   const ok=S.meals.filter(m=>m.status!=='rejected');
   return ok.find(m=>m.kid===kid&&m.date===dateStr)
       || ok.find(m=>m.kid===kid&&m.is_recurring&&m.weekday===weekday)
       || null;
 }
-
-/* מזהה מנה קיימת לפי הטקסט שהוקלד — תואם שם מדויק במאגר */
 function matchFood(text){
   const t=(text||'').trim();
   if(!t) return null;
   return S.foods.find(f=>f.active!==false && f.name===t) || null;
+}
+/* הצעות: התאמת תת-מחרוזת, עד 5, ורק כשיש מה להציע. הקלדה חופשית תמיד גוברת. */
+function suggestFor(text){
+  const t=(text||'').trim();
+  if(!t) return [];
+  const pool=S.foods.filter(f=>f.active!==false);
+  if(pool.some(f=>f.name===t)) return [];       // כבר בדיוק על מנה קיימת — אין מה להציע
+  return pool.filter(f=>f.name.includes(t)).slice(0,5);
 }
 
 function renderFood(){
@@ -229,35 +417,46 @@ function renderFood(){
   const wd=DAYS[new Date(dateStr+'T12:00:00').getDay()];
   const kids=S.kids.filter(k=>k.show_food!==false);
 
-  // datalist משותף לכל שדות ההקלדה — רשימת המנות הפעילות
-  const dl='<datalist id="foodDL">'+
-    S.foods.filter(f=>f.active!==false).map(f=>`<option value="${f.name.replace(/"/g,'&quot;')}">`).join('')+
-    '</datalist>';
-
-  $('foodRows').innerHTML = dl + (kids.length ? kids.map(k=>{
+  $('foodRows').innerHTML = kids.length ? kids.map(k=>{
     const cur=mealFor(k.name,dateStr,wd);
     const val = cur ? (cur.food_type_id ? (S.foods.find(f=>f.id===cur.food_type_id)||{}).name||'' : (cur.custom_text||'')) : '';
     const rec = cur ? cur.is_recurring : false;
-
-    return `<div data-kid="${k.name}">
-      <div class="foodrow">
-        <span class="kn" style="color:${k.color}">${k.name}</span>
-        <input class="free" list="foodDL" data-f="pick" placeholder="הקלידו שם מנה…"
-               value="${val.replace(/"/g,'&quot;')}">
-        <label class="recur"><input type="checkbox" data-f="rec" ${rec?'checked':''}> קבוע</label>
+    return `<div class="foodrow" data-kid="${esc(k.name)}">
+      <span class="kn" style="color:${esc(k.color||'')}">${esc(k.name)}</span>
+      <div class="foodinput">
+        <input data-f="pick" placeholder="הקלידו מה לוקחים…" autocomplete="off"
+               value="${esc(val)}">
       </div>
+      <div class="sugg hidden" data-f="sugg"></div>
+      <label class="recur"><input type="checkbox" data-f="rec" ${rec?'checked':''}> קבוע בכל יום ${DAY_FULL[wd]}</label>
       <div data-f="warn"></div>
     </div>`;
-  }).join('') : '<div class="datesub">אין ילדים עם תצוגת אוכל</div>');
+  }).join('') : '<div class="datesub">אין ילדים עם תצוגת אוכל</div>';
 
   $('foodRows').querySelectorAll('[data-kid]').forEach(row=>{
     const inp=row.querySelector('[data-f="pick"]');
-    inp.oninput=()=>checkWarn(row);
+    const box=row.querySelector('[data-f="sugg"]');
+    inp.oninput=()=>{ renderSugg(row); checkWarn(row); };
+    inp.onblur=()=>setTimeout(()=>box.classList.add('hidden'),150);
+    inp.onfocus=()=>renderSugg(row);
     checkWarn(row);
   });
 }
 
-/* אזהרות: אסור / חסר בבית / דורש אישור — לפי שם מנה מתאים במאגר */
+function renderSugg(row){
+  const inp=row.querySelector('[data-f="pick"]');
+  const box=row.querySelector('[data-f="sugg"]');
+  const list=suggestFor(inp.value);
+  if(!list.length){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  box.innerHTML=list.map(f=>`<button type="button" data-name="${esc(f.name)}">${esc(f.name)}</button>`).join('');
+  box.classList.remove('hidden');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    inp.value=b.dataset.name;
+    box.classList.add('hidden');
+    checkWarn(row);
+  });
+}
+
 function checkWarn(row){
   const kid=row.dataset.kid;
   const text=row.querySelector('[data-f="pick"]').value;
@@ -265,16 +464,14 @@ function checkWarn(row){
   box.innerHTML='';
   const f=matchFood(text);
   if(!f) return;
-
   const msgs=[];
-  const blocked=S.restrictions.filter(r=>r.kid===kid&&r.active!==false)
-    .filter(r=>(f.tags||[]).includes(r.tag));
-  blocked.forEach(r=>msgs.push({txt:`אסור ל${kid}: ${r.tag}${r.reason?' — '+r.reason:''}`,block:true}));
+  S.restrictions.filter(r=>r.kid===kid&&r.active!==false)
+    .filter(r=>(f.tags||[]).includes(r.tag))
+    .forEach(r=>msgs.push({txt:`אסור ל${kid}: ${r.tag}${r.reason?' — '+r.reason:''}`,block:true}));
   if(!f.in_stock)      msgs.push({txt:'חסר בבית',block:false});
   if(f.needs_approval) msgs.push({txt:'דורש אישור הורים',block:false});
   if(f.less_healthy)   msgs.push({txt:'פחות בריא',block:false});
-
-  box.innerHTML=msgs.map(m=>`<div class="warn ${m.block?'block':''}">${m.txt}</div>`).join('');
+  box.innerHTML=msgs.map(m=>`<div class="warn ${m.block?'block':''}">${esc(m.txt)}</div>`).join('');
 }
 
 $('foodDate').onchange=renderFood;
@@ -283,32 +480,47 @@ $('foodSave').onclick=async()=>{
   const dateStr=$('foodDate').value;
   if(!dateStr){ toast('בחרו תאריך',true); return; }
   const wd=DAYS[new Date(dateStr+'T12:00:00').getDay()];
-  let n=0;
 
+  /* שינוי שדורס רשומה קיימת = עריכה, ולכן מבקש אישור אחד מרוכז */
+  const pending=[];
   for(const row of $('foodRows').querySelectorAll('[data-kid]')){
     const kid=row.dataset.kid;
     const text=row.querySelector('[data-f="pick"]').value.trim();
     const rec=row.querySelector('[data-f="rec"]').checked;
     if(!text) continue;
-
-    const matched=matchFood(text);
-    const rec_data={
-      kid, food_type_id: matched?matched.id:null,
-      custom_text: matched?null:text,
-      is_recurring:rec,
-      date: rec?null:dateStr,
-      weekday: rec?wd:null,
-      requested_by:'parent', status:'approved'
-    };
-
     const existing = rec
       ? S.meals.find(m=>m.kid===kid&&m.is_recurring&&m.weekday===wd)
       : S.meals.find(m=>m.kid===kid&&m.date===dateStr);
+    const prev = existing
+      ? (existing.food_type_id ? (S.foods.find(f=>f.id===existing.food_type_id)||{}).name||'' : (existing.custom_text||''))
+      : '';
+    pending.push({kid,text,rec,existing,changed: !!existing && prev!==text, prev});
+  }
+  if(!pending.length){ toast('אין מה לשמור',true); return; }
 
+  const edits=pending.filter(p=>p.changed);
+  if(edits.length){
+    const ok=await ask('אישור עדכון',
+      edits.map(p=>`${p.kid}: ${p.prev||'—'} ← ${p.text}`).join('\n'),
+      {danger:false,yes:'עדכון'});
+    if(!ok) return;
+  }
+
+  let n=0;
+  for(const p of pending){
+    const matched=matchFood(p.text);
+    const rec_data={
+      kid:p.kid, food_type_id: matched?matched.id:null,
+      custom_text: matched?null:p.text,
+      is_recurring:p.rec,
+      date: p.rec?null:dateStr,
+      weekday: p.rec?wd:null,
+      requested_by:'parent', status:'approved'
+    };
     try{
-      if(existing){
-        await db.from('meals').update(rec_data).eq('id',existing.id);
-        Object.assign(existing,rec_data);
+      if(p.existing){
+        await db.from('meals').update(rec_data).eq('id',p.existing.id);
+        Object.assign(p.existing,rec_data);
       }else{
         const {data}=await db.from('meals').insert(rec_data).select().single();
         if(data) S.meals.push(data);
@@ -316,22 +528,62 @@ $('foodSave').onclick=async()=>{
       n++;
     }catch(e){ console.error(e); }
   }
-  toast(n?`נשמרו ${n}`:'אין מה לשמור', !n);
+  toast(n?`נשמרו ${n}`:'השמירה נכשלה', !n);
   renderFood();
 };
 
-/* ---------- הערה ---------- */
+/* ---------- הערה לילדים ---------- */
+let expMode='never';
+function pad(n){ return String(n).padStart(2,'0'); }
+function localStamp(d){ return iso(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+function expiryValue(){
+  const n=israelNow();
+  if(expMode==='never')  return '';
+  if(expMode==='noon'){
+    const u=new Date(n); u.setHours(12,0,0,0);
+    if(n.getHours()>=12) u.setDate(u.getDate()+1);   // 12:00 הבא, לא זה שחלף
+    return localStamp(u);
+  }
+  if(expMode==='eod'){
+    const u=new Date(n); u.setHours(23,59,0,0);
+    return localStamp(u);
+  }
+  return $('expAt').value || '';                      // custom
+}
+function describeExpiry(v){
+  if(!v) return 'ההערה תישאר עד שתוחלף';
+  const m=/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(v);
+  return m ? `תיעלם ב-${fmt(m[1])} בשעה ${m[2]}:${m[3]}` : `תיעלם אחרי ${fmt(v)}`;
+}
+function setExpMode(mode,{silent=false}={}){
+  expMode=mode;
+  document.querySelectorAll('.expbtn').forEach(b=>b.classList.toggle('on',b.dataset.exp===mode));
+  $('expCustom').classList.toggle('hidden',mode!=='custom');
+  if(!silent) $('expNow').textContent=describeExpiry(expiryValue());
+}
+document.querySelectorAll('.expbtn').forEach(b=>b.onclick=()=>setExpMode(b.dataset.exp));
+$('expAt').onchange=()=>$('expNow').textContent=describeExpiry(expiryValue());
+
 $('noteSave').onclick=async()=>{
   const v=$('noteText').value.trim();
-  await db.from('settings').upsert({key:'parent_note',value:v});
-  let until='';
-  if($('noteBold').checked){
-    const n=new Date(),u=new Date(n); u.setHours(12,0,0,0);
-    if(n.getHours()>=12) u.setDate(u.getDate()+1);
-    until=u.toISOString();
+  const until=expiryValue();
+  if(expMode==='custom' && !until){ toast('בחרו תאריך ושעה',true); return; }
+
+  const had=(S.settings.parent_note||'').trim();
+  if(had && had!==v){
+    const ok=await ask('אישור עדכון',
+      v ? `ההערה הקיימת תוחלף:\n${had}\n←\n${v}` : `ההערה "${had}" תימחק`,
+      {danger:!v, yes:v?'עדכון':'מחיקה'});
+    if(!ok) return;
   }
-  await db.from('settings').upsert({key:'parent_note_bold_until',value:until});
-  toast('נשמר');
+  try{
+    await db.from('settings').upsert({key:'parent_note',value:v});
+    await db.from('settings').upsert({key:'parent_note_until',value:until});
+    S.settings.parent_note=v; S.settings.parent_note_until=until;
+    $('expNow').textContent=describeExpiry(until);
+    toast(v?'נשמר':'ההערה נמחקה');
+  }catch(e){ toast('השמירה נכשלה',true); }
 };
 
 /* ---------- הפעלה ---------- */
@@ -352,14 +604,19 @@ async function start(){
   S.meals=m.data||[]; S.shirts=w.data||[]; S.rules=ru.data||[];
   S.settings={}; (st.data||[]).forEach(x=>S.settings[x.key]=x.value);
 
+  applyNightSettings(S.settings);
+  setInterval(applyNightMode,10000);
+
   const {date,isTomorrow}=shown();
   $('dayTitle').textContent=(isTomorrow?'מחר · יום ':'היום · יום ')+DAY_FULL[DAYS[date.getDay()]];
   $('dateSub').textContent=fmt(iso(date));
   $('foodDate').value=iso(date);
 
   $('noteText').value=S.settings.parent_note||'';
-  const bu=S.settings.parent_note_bold_until;
-  $('noteBold').checked=!!(bu&&new Date(bu)>new Date());
+  const until=String(S.settings.parent_note_until||'').trim();
+  if(!until) setExpMode('never');
+  else { setExpMode('custom',{silent:true}); $('expAt').value=until.slice(0,16); }
+  $('expNow').textContent=describeExpiry(until);
 
   renderShirt();
   renderFood();
