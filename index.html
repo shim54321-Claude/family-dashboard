@@ -271,6 +271,10 @@ body.shabbat{background:var(--bg-warm)}
   body{overflow:auto;height:auto}
   body.kiosk{cursor:auto}
   body.kiosk #gotoControl{pointer-events:auto!important}
+  /* הלוח הוא קיוסק ולכן pointer-events מכובה על הכל. בטלפון מחזירים אותו
+     לממוזערת ולתצוגה המוגדלת בלבד — אחרת הלחיצה פשוט לא מגיעה אליהן. */
+  body.kiosk #photothumb,body.kiosk #photothumb *,
+  body.kiosk #photoview,body.kiosk #photoview *{pointer-events:auto!important}
   #app{padding:14px 4vw;gap:12px;min-height:auto;padding-bottom:80px}
 
   .datebar{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}

@@ -30,6 +30,7 @@
   --font-display:'Rubik',Arial,Helvetica,sans-serif;
   --font-body:'Assistant',Arial,Helvetica,sans-serif;
   --tap:48px;                 /* יעד מגע מינימלי בכל הממשק */
+  --soft:#F1F4F1;
 }
 body.night{
   --bg:#111A17; --bg-warm:#141E1A;
@@ -38,6 +39,7 @@ body.night{
   --alert:#D8A857; --alert-bg:#2A2214;
   --ok:#5AA87C; --danger:#E08585;
   --kid-ink:#E8EDEA;
+  --soft:#1C2622;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -53,7 +55,11 @@ h2{font-family:var(--font-display);font-size:18px;font-weight:900}
 input,select,textarea{width:100%;min-height:var(--tap);padding:12px 13px;
   border:1px solid var(--line);border-radius:12px;font-family:var(--font-body);
   font-size:16px;background:var(--card);color:var(--ink)}
-input[type="date"],input[type="datetime-local"]{direction:ltr;text-align:center}
+/* קלטי תאריך: מרנדרים נייטיב ומוגבלים לקופסה. כפיית direction/מרכוז
+   גרמה להם לחרוג מהמסגרת ולהיראות לא מיושרים מול שאר השדות. */
+input[type="date"],input[type="time"],input[type="datetime-local"]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;max-width:100%;min-width:0;box-sizing:border-box;text-align:start}
 input:focus,textarea:focus{outline:2px solid var(--kid1);outline-offset:-1px}
 label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin:12px 0 5px}
 
@@ -97,19 +103,30 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
 .shirtstate.off{color:var(--ink-soft)}
 .sqrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sqbtn{aspect-ratio:1/1;min-height:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:6px;border-radius:16px;
+  align-items:center;justify-content:center;gap:4px;border-radius:16px;
   background:transparent;color:var(--ink-soft);border:2px solid var(--line);
-  font-family:var(--font-display);font-size:20px;font-weight:900;padding:8px}
-.sqbtn .sub{font-family:var(--font-body);font-size:13px;font-weight:700}
-.sqbtn.on{background:var(--alert);border-color:var(--alert);color:#fff}
-body.night .sqbtn.on{color:#111A17}
+  font-family:var(--font-display);font-size:19px;font-weight:900;padding:8px}
+.sqbtn .sub{font-family:var(--font-body);font-size:12.5px;font-weight:700;
+  line-height:1.25;text-align:center}
+.sqbtn svg{height:30px;width:auto}
+.sqbtn svg path{fill:none;stroke:currentColor;stroke-width:6;stroke-linejoin:round}
+/* מצב נבחר זהה בכל הממשק — מילוי דיו מלא, בדיוק כמו כפתורי התפוגה */
+.sqbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.sqbtn.on svg path{fill:var(--bg);stroke:var(--bg)}
 
 /* --- אוכל --- */
 .foodrow{position:relative;margin-bottom:14px}
 .foodrow .kn{font-family:var(--font-display);font-weight:900;font-size:16px;
   display:block;margin-bottom:5px}
 .foodinput{display:flex;gap:8px;align-items:center}
-.foodinput input{flex:1}
+.foodinput input{flex:1;min-width:0}
+/* פותח את כל המאגר — כשאין רעיון ורוצים לראות רשימה, לא רק להשלים */
+.foodinput .openlist{flex:0 0 auto;width:var(--tap);min-height:var(--tap);padding:0;
+  background:transparent;color:var(--ink-soft);border:1px solid var(--line);
+  border-radius:12px;font-size:15px;font-weight:900;line-height:1}
+.foodinput .openlist.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.sugg{max-height:230px;overflow-y:auto}
+.sugg .sh{font-size:12px;font-weight:700;color:var(--ink-soft);padding:8px 13px 4px}
 .recur{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);
   white-space:nowrap;margin:6px 0 0;font-weight:700}
 .recur input{width:auto;min-height:0}
@@ -127,13 +144,26 @@ body.night .sqbtn.on{color:#111A17}
 .warn.block{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
 
 /* --- הערה לילדים: 4 כפתורי תפוגה (סעיף 6ו) --- */
-.expwrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.expwrap{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .expbtn{min-height:44px;padding:10px 8px;font-size:14px;border-radius:12px;
   background:transparent;color:var(--ink-soft);border:2px solid var(--line);font-weight:700}
 .expbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .expcustom{margin-top:8px}
 .expcustom.hidden{display:none}
 .expnow{font-size:13px;color:var(--ink-soft);margin-top:8px}
+
+/* --- הערה מכסה: אותם פקדים כמו בבקרה המלאה --- */
+.checkrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:5px}
+.chk{display:inline-flex;align-items:center;gap:7px;padding:11px 14px;min-height:44px;
+  border:1px solid var(--line);border-radius:12px;background:var(--card);
+  font-weight:700;font-size:14px;cursor:pointer;margin:0}
+.chk.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chk input{width:auto;min-height:0;margin:0}
+.dateitem{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;
+  margin-bottom:8px;background:var(--soft);font-size:14px}
+.dateitem .sp{flex:1;color:var(--ink-soft);min-width:0}
+.dateitem button{min-height:40px;padding:8px 13px;font-size:14px;
+  background:var(--danger);color:#fff}
 
 /* --- חלון אישור (סעיף 9) --- */
 #confirm{position:fixed;inset:0;z-index:100;background:rgba(10,16,14,.55);
@@ -153,8 +183,8 @@ body.night .sqbtn.on{color:#111A17}
 #toast.on{opacity:1}
 #toast.bad{background:var(--danger)}
 
-@media(max-width:400px){
-  .expwrap{grid-template-columns:1fr}
+@media(max-width:700px){
+  .expwrap{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -196,8 +226,12 @@ body.night .sqbtn.on{color:#111A17}
         <div class="shirtstate" id="shirtState">—</div>
       </div>
       <div class="sqrow">
-        <button class="sqbtn" id="sqToday">היום<span class="sub" id="sqTodaySub">—</span></button>
-        <button class="sqbtn" id="sqTomorrow">מחר<span class="sub" id="sqTomorrowSub">—</span></button>
+        <button class="sqbtn" id="sqToday">
+          <svg viewBox="0 0 100 92" aria-hidden="true"><path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"/></svg>
+          היום<span class="sub" id="sqTodaySub">—</span></button>
+        <button class="sqbtn" id="sqTomorrow">
+          <svg viewBox="0 0 100 92" aria-hidden="true"><path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"/></svg>
+          מחר<span class="sub" id="sqTomorrowSub">—</span></button>
       </div>
     </div>
 
@@ -226,6 +260,24 @@ body.night .sqbtn.on{color:#111A17}
       </div>
       <div class="expnow" id="expNow"></div>
       <button style="width:100%;margin-top:12px" id="noteSave">שמירה</button>
+    </div>
+
+    <!-- הערה שמכסה את מערכת השעות -->
+    <div class="card">
+      <h2>הערה שמכסה את מערכת השעות</h2>
+      <div class="datesub" style="margin-bottom:10px">מסתירה את השיעורים ומציגה טקסט במקומם. אם לא כותבים כלום — יופיע "חופש".</div>
+
+      <label>תאריך</label>
+      <input type="date" id="ovDate">
+
+      <label>למי</label>
+      <div class="checkrow" id="ovKids"></div>
+
+      <label>הטקסט שיוצג</label>
+      <input type="text" id="ovNote" placeholder="חופש">
+
+      <button style="width:100%;margin-top:14px" id="ovAdd">הוספה</button>
+      <div id="ovList" style="margin-top:16px"></div>
     </div>
   </div>
 </div>
@@ -314,7 +366,7 @@ function applyNightMode(){ document.body.classList.toggle('night', isNightNow())
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 
-let S={kids:[],foods:[],restrictions:[],meals:[],shirts:[],rules:[],settings:{}};
+let S={kids:[],foods:[],restrictions:[],meals:[],shirts:[],rules:[],overrides:[],settings:{}};
 
 /* ---------- כניסה ---------- */
 $('loginBtn').onclick=async()=>{
@@ -381,7 +433,13 @@ async function toggleShirt(d,labelHe){
     }catch(e){ toast('הפעולה נכשלה',true); }
     return;
   }
-  if(shirtReason(d)){ toast('נדרשת ממילא לפי כלל קבוע',true); return; }
+  if(shirtReason(d)){
+    await ask('כלל קבוע',
+      `${labelHe} נדרשת חולצה לבנה לפי כלל קבוע (${shirtReason(d)}), ולא לפי סימון ידני.\n`+
+      'אפשר לשנות או לבטל את הכלל בבקרה המלאה, בטאב "חולצה לבנה".',
+      {danger:false,yes:'הבנתי'});
+    return;
+  }
   try{
     const {data}=await db.from('white_shirt').insert({date:s,reason:'חולצה לבנה'}).select().single();
     if(data){ S.shirts.push(data); renderShirt(); toast('סומן'); }
@@ -424,8 +482,10 @@ function renderFood(){
     return `<div class="foodrow" data-kid="${esc(k.name)}">
       <span class="kn" style="color:${esc(k.color||'')}">${esc(k.name)}</span>
       <div class="foodinput">
-        <input data-f="pick" placeholder="הקלידו מה לוקחים…" autocomplete="off"
+        <input data-f="pick" placeholder="הקלידו או פתחו את הרשימה…" autocomplete="off"
                value="${esc(val)}">
+        <button type="button" class="openlist" data-f="open"
+                aria-label="פתיחת רשימת המאכלים">▾</button>
       </div>
       <div class="sugg hidden" data-f="sugg"></div>
       <label class="recur"><input type="checkbox" data-f="rec" ${rec?'checked':''}> קבוע בכל יום ${DAY_FULL[wd]}</label>
@@ -436,24 +496,39 @@ function renderFood(){
   $('foodRows').querySelectorAll('[data-kid]').forEach(row=>{
     const inp=row.querySelector('[data-f="pick"]');
     const box=row.querySelector('[data-f="sugg"]');
-    inp.oninput=()=>{ renderSugg(row); checkWarn(row); };
-    inp.onblur=()=>setTimeout(()=>box.classList.add('hidden'),150);
-    inp.onfocus=()=>renderSugg(row);
+    const opn=row.querySelector('[data-f="open"]');
+    inp.oninput=()=>{ row._all=false; renderSugg(row); checkWarn(row); };
+    inp.onblur=()=>setTimeout(()=>closeSugg(row),160);
+    inp.onfocus=()=>{ row._all=false; renderSugg(row); };
+    opn.onclick=()=>{
+      if(!box.classList.contains('hidden') && row._all){ closeSugg(row); return; }
+      row._all=true; renderSugg(row);           /* כל המאגר, בלי קשר למה שהוקלד */
+    };
     checkWarn(row);
   });
+}
+
+function closeSugg(row){
+  row._all=false;
+  row.querySelector('[data-f="sugg"]').classList.add('hidden');
+  row.querySelector('[data-f="open"]').classList.remove('on');
 }
 
 function renderSugg(row){
   const inp=row.querySelector('[data-f="pick"]');
   const box=row.querySelector('[data-f="sugg"]');
-  const list=suggestFor(inp.value);
+  const opn=row.querySelector('[data-f="open"]');
+  /* שני מצבים: רשימה מלאה (לחיצה על ▾) או הצעות לפי מה שהוקלד */
+  const full=!!row._all;
+  const list=full ? S.foods.filter(f=>f.active!==false) : suggestFor(inp.value);
+  opn.classList.toggle('on',full);
   if(!list.length){ box.classList.add('hidden'); box.innerHTML=''; return; }
-  box.innerHTML=list.map(f=>`<button type="button" data-name="${esc(f.name)}">${esc(f.name)}</button>`).join('');
+  box.innerHTML=(full?'<div class="sh">כל המאכלים במאגר</div>':'')+
+    list.map(f=>`<button type="button" data-name="${esc(f.name)}">${esc(f.name)}</button>`).join('');
   box.classList.remove('hidden');
-  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{
-    inp.value=b.dataset.name;
-    box.classList.add('hidden');
-    checkWarn(row);
+  box.querySelectorAll('button[data-name]').forEach(b=>{
+    b.onmousedown=e=>e.preventDefault();   /* שלא יסגור דרך blur לפני הקליק */
+    b.onclick=()=>{ inp.value=b.dataset.name; closeSugg(row); checkWarn(row); };
   });
 }
 
@@ -586,12 +661,90 @@ $('noteSave').onclick=async()=>{
   }catch(e){ toast('השמירה נכשלה',true); }
 };
 
+/* ---------- הערה שמכסה את מערכת השעות ---------- */
+function renderOvKids(){
+  $('ovKids').innerHTML =
+    `<label class="chk"><input type="checkbox" data-ovall> כל הילדים</label>` +
+    S.kids.filter(k=>k.show_schedule!==false).map(k=>
+      `<label class="chk"><input type="checkbox" data-ovkid value="${esc(k.name)}">
+        <span style="color:${esc(k.color||'')}">${esc(k.name)}</span></label>`).join('');
+
+  const all=$('ovKids').querySelector('[data-ovall]');
+  $('ovKids').querySelectorAll('input').forEach(i=>{
+    i.onchange=()=>{
+      i.closest('.chk').classList.toggle('on',i.checked);
+      if(i===all && i.checked){
+        /* "כל הילדים" ובחירה נקודתית סותרות — מנקים את הנקודתיות */
+        $('ovKids').querySelectorAll('[data-ovkid]').forEach(x=>{
+          x.checked=false; x.closest('.chk').classList.remove('on'); });
+      }
+      if(i!==all && i.checked && all.checked){
+        all.checked=false; all.closest('.chk').classList.remove('on');
+      }
+    };
+  });
+}
+
+function renderOverrides(){
+  const today=iso(israelNow());
+  const list=S.overrides.filter(o=>o.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  $('ovList').innerHTML = list.length ? list.map(o=>{
+    const k=o.kid?S.kids.find(x=>x.name===o.kid):null;
+    const who=o.kid?`<b style="color:${esc(k?k.color:'')}">${esc(o.kid)}</b>`:'<b>כל הילדים</b>';
+    return `<div class="dateitem">
+      <b>${fmt(o.date)}</b>
+      <span class="sp">${who} · ${esc(o.note||'חופש')}</span>
+      <button data-del="${o.id}">מחיקה</button></div>`;
+  }).join('') : '<div class="datesub">אין הערות מכסות</div>';
+
+  $('ovList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const rec=S.overrides.find(x=>x.id==b.dataset.del);
+    const ok=await ask('מחיקת הערה מכסה',
+      `למחוק את ההערה של ${rec?fmt(rec.date):''}${rec&&rec.note?' — '+rec.note:''}?`,{yes:'מחיקה'});
+    if(!ok) return;
+    try{
+      await db.from('schedule_overrides').delete().eq('id',b.dataset.del);
+      S.overrides=S.overrides.filter(o=>o.id!=b.dataset.del);
+      renderOverrides(); toast('נמחק');
+    }catch(e){ toast('המחיקה נכשלה',true); }
+  });
+}
+
+$('ovAdd').onclick=async()=>{
+  const date=$('ovDate').value;
+  if(!date){ toast('בחרו תאריך',true); return; }
+  const note=$('ovNote').value.trim()||null;
+  const all=$('ovKids').querySelector('[data-ovall]').checked;
+  const picked=[...$('ovKids').querySelectorAll('[data-ovkid]:checked')].map(i=>i.value);
+  if(!all && !picked.length){ toast('בחרו למי ההערה',true); return; }
+
+  const rows = all ? [{date,kid:null,note}] : picked.map(k=>({date,kid:k,note}));
+
+  /* הערה קיימת לאותו תאריך ואותו ילד תידרס — זו עריכה, ולכן שואלים */
+  const clash=S.overrides.filter(o=>o.date===date &&
+    (all ? o.kid===null : picked.includes(o.kid)));
+  if(clash.length){
+    const ok=await ask('כבר קיימת הערה',
+      `לתאריך ${fmt(date)} כבר קיימת הערה: ${clash.map(c=>(c.kid||'כל הילדים')+' — '+(c.note||'חופש')).join('\n')}\nלהוסיף בנוסף?`,
+      {danger:false,yes:'הוספה'});
+    if(!ok) return;
+  }
+
+  try{
+    const {data}=await db.from('schedule_overrides').insert(rows).select();
+    if(data){ S.overrides.push(...data); renderOverrides(); toast('נוסף'); }
+    $('ovNote').value='';
+    $('ovKids').querySelectorAll('input').forEach(i=>{
+      i.checked=false; i.closest('.chk').classList.remove('on'); });
+  }catch(e){ toast('ההוספה נכשלה',true); }
+};
+
 /* ---------- הפעלה ---------- */
 async function start(){
   $('login').style.display='none';
   $('panel').style.display='block';
 
-  const [k,f,r,m,w,ru,st]=await Promise.all([
+  const [k,f,r,m,w,ru,st,ov]=await Promise.all([
     db.from('kids').select('*').order('order_index'),
     db.from('food_types').select('*').order('name'),
     db.from('kid_restrictions').select('*'),
@@ -599,9 +752,10 @@ async function start(){
     db.from('white_shirt').select('*'),
     db.from('white_shirt_rules').select('*'),
     db.from('settings').select('*'),
+    db.from('schedule_overrides').select('*'),
   ]);
   S.kids=k.data||[]; S.foods=f.data||[]; S.restrictions=r.data||[];
-  S.meals=m.data||[]; S.shirts=w.data||[]; S.rules=ru.data||[];
+  S.meals=m.data||[]; S.shirts=w.data||[]; S.rules=ru.data||[]; S.overrides=ov.data||[];
   S.settings={}; (st.data||[]).forEach(x=>S.settings[x.key]=x.value);
 
   applyNightSettings(S.settings);
@@ -618,8 +772,11 @@ async function start(){
   else { setExpMode('custom',{silent:true}); $('expAt').value=until.slice(0,16); }
   $('expNow').textContent=describeExpiry(until);
 
+  $('ovDate').value=iso(date);
   renderShirt();
   renderFood();
+  renderOvKids();
+  renderOverrides();
 }
 
 const {data:{session}}=await db.auth.getSession();

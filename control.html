@@ -53,6 +53,11 @@ h1{font-family:var(--font-display);font-size:28px;font-weight:900;margin-bottom:
 #login h1{text-align:center;margin-bottom:20px}
 input,select,textarea{width:100%;padding:11px 13px;border:1px solid var(--line);
   border-radius:9px;font-family:var(--font-body);font-size:16px;background:var(--card);color:var(--ink)}
+/* קלטי תאריך/שעה: רינדור נייטיב ומוגבל לקופסה, אחרת הם חורגים מהמסגרת */
+input[type="date"],input[type="time"],input[type="datetime-local"]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;max-width:100%;min-width:0;box-sizing:border-box;text-align:start}
+.rowline > *{min-width:0}
 /* שדות שעה ותאריך תמיד משמאל לימין — אחרת המספרים מתהפכים */
 input[type="time"],input[type="date"]{direction:ltr;text-align:center}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--kid1);outline-offset:-1px}
@@ -88,7 +93,7 @@ button.wide{width:100%;margin-top:18px}
   background:var(--card);font-family:var(--font-display);font-weight:900;font-size:17px;
   cursor:pointer;color:var(--ink-soft)}
 .kidtab.on.k1{background:var(--kid1);border-color:var(--kid1);color:#fff}
-body.night .bigbtn.sec{color:var(--alert)}
+
 .kidtab.on.k2{background:var(--kid2);border-color:var(--kid2);color:#fff}
 .kidtab.on.k3{background:var(--kid3);border-color:var(--kid3);color:#fff}
 
@@ -155,9 +160,14 @@ td input:focus{outline:2px solid var(--kid1);outline-offset:-2px;background:var(
   font-size:12px;background:rgba(170,50,50,.92);color:#fff;border-radius:7px}
 
 /* --- חולצה לבנה --- */
-.bigbtn{width:100%;padding:22px;font-size:20px;font-weight:900;
-  background:var(--alert);color:#fff;border-radius:14px;margin-bottom:8px}
-body.night .bigbtn{color:#111A17}
+.bigbtn{width:100%;padding:20px;font-size:19px;font-weight:900;
+  background:var(--ink);color:var(--bg);border-radius:14px;margin-bottom:8px;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.bigbtn svg{height:26px;width:auto}
+.bigbtn svg path{fill:var(--bg);stroke:var(--bg);stroke-width:6;stroke-linejoin:round}
+/* משני = אותה צורה, ללא מילוי — בדיוק כמו מצב "לא נבחר" במסך "היום" */
+.bigbtn.sec{background:transparent;color:var(--ink-soft);border:2px solid var(--line)}
+.bigbtn.sec svg path{fill:none;stroke:currentColor}
 .bigbtn.sec{background:var(--alert-bg);color:var(--alert);border:2px solid var(--alert)}
 .datelist{margin-top:16px}
 .rulesbox{background:var(--alert-bg);border:2px solid var(--alert);
@@ -385,8 +395,8 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
   <!-- חולצה לבנה -->
   <div class="page on" id="p-shirt">
     <div class="card">
-      <button class="bigbtn" id="shirtTomorrow">חולצה לבנה מחר</button>
-      <button class="bigbtn sec" id="shirtToday">גם היום</button>
+      <button class="bigbtn" id="shirtTomorrow"><svg viewBox="0 0 100 92" aria-hidden="true"><path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"/></svg>חולצה לבנה מחר</button>
+      <button class="bigbtn sec" id="shirtToday"><svg viewBox="0 0 100 92" aria-hidden="true"><path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"/></svg>גם היום</button>
     </div>
 
     <div class="card">
