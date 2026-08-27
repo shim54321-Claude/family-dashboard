@@ -169,6 +169,21 @@ body.kiosk{cursor:none}
 .mealchip .ml{font-size:1.35rem;color:var(--ink-soft);font-weight:700;white-space:nowrap}
 .mealchip .mv{font-size:1.8rem;font-weight:600;color:var(--kid-ink)}
 .mealchip .fx{display:block;font-size:1.35rem;color:var(--ink-soft);font-weight:500}
+/* כיסוי מלא — תופס את מקום כל תוכן הלוח, כמו מסך שבת/חג.
+   תמונה וטקסט שניהם רשות: אפשר רק אחד מהם. */
+#fullcover{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2vh;min-height:0;padding:2vh 2vw}
+#fullcover.hidden{display:none}
+#fullcover img{max-width:100%;max-height:62vh;object-fit:contain;
+  border-radius:1.6rem;box-shadow:0 .6rem 2rem rgba(0,0,0,.14)}
+#fullcover img[src=""],#fullcover img:not([src]){display:none}
+.covertext{font-family:var(--font-display);font-size:3.4rem;font-weight:900;
+  color:var(--ink);text-align:center;line-height:1.25;max-width:90%}
+.covertext:empty{display:none}
+@media (max-width:860px){
+  #fullcover img{max-height:44vh}
+  .covertext{font-size:26px}
+}
 .dayoff{font-family:var(--font-display);font-size:3.4rem;font-weight:900;color:var(--ink);
   text-align:center;padding:2rem 0;background:var(--card);border-radius:1.6rem}
 .dayoff.small{font-size:2.2rem;padding:1.2rem 0;background:transparent}
@@ -346,6 +361,12 @@ body.shabbat{background:var(--bg-warm)}
     </div>
     <!-- תמונה ממוזערת — מוצגת רק בטלפון, בפינה הנגדית לתאריך. לחיצה מגדילה. -->
     <div class="photothumb hidden" id="photothumb"><img id="photothumbimg" alt=""></div>
+  </div>
+
+  <!-- כיסוי מלא של הלוח: תמונה ו/או טקסט, בדומה למסך שבת/חג -->
+  <div id="fullcover" class="hidden">
+    <img id="coverimg" alt="">
+    <div class="covertext" id="covertext"></div>
   </div>
 
   <div id="holiday">
@@ -613,8 +634,11 @@ function nextSchoolDate(start,scheduleRows,overrides){
     const d=new Date(start); d.setDate(d.getDate()+i);
     const letter=DAYS[d.getDay()];
     const hasLessons=scheduleRows.some(r=>r.day===letter && r.subject && r.subject.trim());
-    const allOff=(overrides||[]).some(o=>!o.kid && o.date===isoDate(d));
-    if(hasLessons && !allOff) return d;
+    /* יום שיש עליו הערה מכסה הוא יעד תקין — ההערה היא מה שצריך להופיע.
+       הגרסה הקודמת דילגה עליו, ולכן הערות מכסות לכל הילדים לא הופיעו לעולם. */
+    const covered=(overrides||[]).some(o=>!o.kid && o.date===isoDate(d));
+    if(covered) return d;
+    if(hasLessons) return d;
   }
   return start;
 }
@@ -1325,9 +1349,28 @@ async function render(){
         $('parentnote').classList.remove('hidden');
       }else $('parentnote').classList.add('hidden');
 
-      if(!hol){
+      /* כיסוי מלא של הלוח — נבדק על היום האמיתי, לא על "יום הלימודים הבא",
+         כי הוא מחליף את כל התוכן ולא רק את מערכת השעות. */
+      const fullOv=(overrides.data||[]).find(o=>
+        o.scope==='full' && !o.kid && o.date===isoDate(israelNow()));
+      const covering=!hol && !!fullOv;
+      if(covering){
+        $('fullcover').classList.remove('hidden');
+        const img=$('coverimg');
+        if(fullOv.image_url){ img.src=fullOv.image_url; img.style.display=''; }
+        else { img.removeAttribute('src'); img.style.display='none'; }
+        $('covertext').textContent=fullOv.note||'';
+        $('schedwrap').style.display='none';
+        $('chugim').classList.add('hidden');
+        $('shirtbox').classList.remove('on');
+      }else{
+        $('fullcover').classList.add('hidden');
+      }
+
+      if(!hol && !covering){
         // היום המוצג נקבע כאן, אחרי שיש נתונים: יום הלימודים הבא, לא סתם מחר
-        const target=nextSchoolDate(date, sched.data||[], overrides.data||[]);
+        const target=nextSchoolDate(date, sched.data||[],
+          (overrides.data||[]).filter(o=>(o.scope||'schedule')==='schedule'));
         const targetLetter=DAYS[target.getDay()];
 
         $('schedtitle').innerHTML=`<span class="sublabel">${scheduleLabel(target,isTomorrow)}</span>`+
@@ -1337,7 +1380,8 @@ async function render(){
         $('schednote').classList.toggle('hidden', !note2);
         const isToday = isoDate(target)===isoDate(israelNow());
         buildSchedule(periods.data||[],(sched.data||[]).filter(r=>r.day===targetLetter),
-                      (overrides.data||[]).filter(o=>o.date===isoDate(target)),
+                      (overrides.data||[]).filter(o=>o.date===isoDate(target)
+                        && (o.scope||'schedule')==='schedule'),
                       mealsForDay(mealsRes.data||[],target,targetLetter), isToday);
         buildChugim((chug.data||[]).filter(c=>chugimKids.includes(c.kid)));
 
