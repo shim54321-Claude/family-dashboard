@@ -188,9 +188,9 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
 .selsummary{background:var(--soft);border-radius:12px;padding:12px 14px;
   font-family:var(--font-display);font-weight:800;font-size:14.5px;
   text-align:center;margin-bottom:16px}
-/* תאריכים הם מספרים — בלי כיוון מפורש, RTL הופך את הטווח ונראה כאילו
-   תאריך הסיום ראשון. direction:ltr + isolate שומר על "מ- עד" נכון. */
-#ovSelMain,.ovitem .range{direction:ltr;unicode-bidi:isolate;display:inline-block}
+/* רק המספר עצמו מבודד ל-LTR כדי ש-25/8 לא יתהפך ל-8/25.
+   הטקסט סביבו ("מ- ... עד ...") נשאר עברית רגילה, וכך ברור מה ההתחלה. */
+.dnum{direction:ltr;unicode-bidi:isolate;display:inline-block}
 .selsummary .sub{font-family:var(--font-body);font-weight:600;font-size:12.5px;
   color:var(--ink-soft);margin-top:2px}
 .scopelabel{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
@@ -879,12 +879,13 @@ function ovRenderSummary(){
     sub.innerHTML='&nbsp;';
     btn.disabled=true;
   }else if(!ovEnd){
-    main.textContent=ovDMY(ovStart)+' — יום בודד';
+    main.innerHTML='<span class="dnum">'+ovDMY(ovStart)+'</span> — יום בודד';
     sub.textContent='אפשר ללחוץ עוד יום כדי לפתוח טווח';
     btn.disabled=false;
   }else{
     const lo=ovStart<=ovEnd?ovStart:ovEnd, hi=ovStart<=ovEnd?ovEnd:ovStart;
-    main.textContent=ovDM(lo)+' – '+ovDMY(hi);
+    /* "מ- ... עד ..." — המילים קובעות מה ההתחלה ומה הסוף, בלי תלות בכיוון הכתיבה */
+    main.innerHTML='מ-<span class="dnum">'+ovDMY(lo)+'</span> עד <span class="dnum">'+ovDMY(hi)+'</span>';
     sub.textContent=(ovDaysBetween(lo,hi)+1)+' ימים';
     btn.disabled=false;
   }
@@ -962,7 +963,9 @@ function ovRenderList(){
     return;
   }
   box.innerHTML=groups.map(g=>{
-    const range = g.from===g.to ? ovDM(g.from) : ovDM(g.from)+'–'+ovDM(g.to);
+    const range = g.from===g.to
+      ? '<span class="dnum">'+ovDM(g.from)+'</span>'
+      : 'מ-<span class="dnum">'+ovDM(g.from)+'</span> עד <span class="dnum">'+ovDM(g.to)+'</span>';
     const badge = g.scope==='full'
       ? '<span class="ovbadge full">כל הלוח</span>'
       : '<span class="ovbadge sched">מערכת שעות</span>';
@@ -1015,7 +1018,7 @@ function ovStartEdit(gid){
 
 async function ovDelete(gid){
   const g=ovGroups().find(x=>x.group_id===gid); if(!g) return;
-  const range = g.from===g.to ? ovDM(g.from) : ovDM(g.from)+'–'+ovDM(g.to);
+  const range = g.from===g.to ? ovDM(g.from) : 'מ-'+ovDM(g.from)+' עד '+ovDM(g.to);
   const ok=await ask('מחיקת הערה',
     'למחוק את ההערה של '+range+(g.note?' — '+g.note:'')+'?',{yes:'מחיקה'});
   if(!ok) return;

@@ -169,14 +169,12 @@ body.kiosk{cursor:none}
 .mealchip .ml{font-size:1.35rem;color:var(--ink-soft);font-weight:700;white-space:nowrap}
 .mealchip .mv{font-size:1.8rem;font-weight:600;color:var(--kid-ink)}
 .mealchip .fx{display:block;font-size:1.35rem;color:var(--ink-soft);font-weight:500}
-/* כיסוי מלא — תופס את מקום כל תוכן הלוח, כמו מסך שבת/חג.
-   תמונה וטקסט שניהם רשות: אפשר רק אחד מהם. */
+/* כיסוי מלא — תופס את מקום מערכת השעות, מתחת להערת ההורים. */
 #fullcover{flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:2vh;min-height:0;padding:2vh 2vw}
 #fullcover.hidden{display:none}
 #fullcover img{max-width:100%;max-height:62vh;object-fit:contain;
   border-radius:1.6rem;box-shadow:0 .6rem 2rem rgba(0,0,0,.14)}
-#fullcover img[src=""],#fullcover img:not([src]){display:none}
 .covertext{font-family:var(--font-display);font-size:3.4rem;font-weight:900;
   color:var(--ink);text-align:center;line-height:1.25;max-width:90%;
   white-space:pre-line}   /* שורות חדשות נשמרות, הגופן לא משתנה */
