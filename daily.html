@@ -188,6 +188,9 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
 .selsummary{background:var(--soft);border-radius:12px;padding:12px 14px;
   font-family:var(--font-display);font-weight:800;font-size:14.5px;
   text-align:center;margin-bottom:16px}
+/* תאריכים הם מספרים — בלי כיוון מפורש, RTL הופך את הטווח ונראה כאילו
+   תאריך הסיום ראשון. direction:ltr + isolate שומר על "מ- עד" נכון. */
+#ovSelMain,.ovitem .range{direction:ltr;unicode-bidi:isolate;display:inline-block}
 .selsummary .sub{font-family:var(--font-body);font-weight:600;font-size:12.5px;
   color:var(--ink-soft);margin-top:2px}
 .scopelabel{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
@@ -197,6 +200,8 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
   font-family:var(--font-display);font-weight:800;font-size:13.5px;
   color:var(--ink-soft);padding:0}
 .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.fullfields textarea{width:100%;min-height:84px;resize:vertical;line-height:1.4;
+  font-family:var(--font-body);font-size:15px}
 .fullfields{display:none;border-top:1px dashed var(--line);padding-top:14px}
 .fullfields.on{display:block}
 .imgpick{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--line);
@@ -219,6 +224,8 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
   border:1px solid var(--line);background:var(--card);display:flex;
   align-items:center;justify-content:center;flex-shrink:0;font-size:15px;padding:0}
 .iconbtn.del{color:var(--danger);border-color:transparent;background:transparent}
+/* הפריט שנמצא כרגע בעריכה מסומן, כדי שיהיה ברור מה נטען לטופס */
+.ovitem.editing{outline:2px solid var(--ink);background:var(--card)}
 .editrow{background:var(--card);border:1.5px dashed var(--line);border-radius:12px;
   padding:12px;margin:-4px 0 8px}
 .editactions{display:flex;gap:8px;margin-top:8px}
@@ -362,10 +369,11 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
         </div>
         <input type="file" accept="image/*" id="ovImgFile" style="display:none">
         <label>טקסט (רשות)</label>
-        <input type="text" id="ovFullNote" placeholder="אנחנו בטיול, חוזרים ביום ראשון!">
+        <textarea id="ovFullNote" rows="3" placeholder="אנחנו בטיול,&#10;חוזרים ביום ראשון!"></textarea>
       </div>
 
       <button style="width:100%;margin-top:14px" id="ovAdd">הוספה</button>
+      <button style="width:100%;margin-top:8px;display:none" class="ghost" id="ovCancel">ביטול העריכה</button>
       <div id="ovList" style="margin-top:18px"></div>
 
     </div>
@@ -917,6 +925,8 @@ function ovResetForm(){
   if(kidsBox) kidsBox.querySelectorAll('input').forEach(i=>{
     i.checked=false; i.closest('.chk').classList.remove('on'); });
   $(P+'Add').textContent='הוספה';
+  const cancel=$(P+'Cancel'); if(cancel) cancel.style.display='none';
+  document.querySelectorAll('.ovitem.editing').forEach(e=>e.classList.remove('editing'));
   ovRenderCal();
 }
 
@@ -963,11 +973,13 @@ function ovRenderList(){
     return '<div class="ovitem" data-g="'+esc(g.group_id)+'">'+badge+
       '<div class="range">'+range+'</div>'+
       '<div class="txt">'+who+pic+txt+'</div>'+
-      '<button type="button" class="iconbtn" data-edit="'+esc(g.group_id)+'">&#9998;</button>'+
+      '<button type="button" class="iconbtn" title="עריכה" aria-label="עריכה" data-edit="'+esc(g.group_id)+'">&#9998;</button>'+
       '<button type="button" class="iconbtn del" data-del="'+esc(g.group_id)+'">&#128465;</button>'+
       '</div>';
   }).join('');
 
+  if(ovEditGroup) box.querySelectorAll('.ovitem').forEach(e=>
+    e.classList.toggle('editing', e.dataset.g===ovEditGroup));
   box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>ovStartEdit(b.dataset.edit));
   box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>ovDelete(b.dataset.del));
 }
@@ -994,6 +1006,9 @@ function ovStartEdit(gid){
     });
   }
   $(P+'Add').textContent='שמירת השינויים';
+  const cancel=$(P+'Cancel'); if(cancel) cancel.style.display='block';
+  document.querySelectorAll('.ovitem').forEach(e=>
+    e.classList.toggle('editing', e.dataset.g===gid));
   ovRenderCal();
   $(P+'MonLabel').scrollIntoView({behavior:'smooth',block:'center'});
 }
@@ -1084,6 +1099,8 @@ function ovWire(){
   $(P+'ImgPick').onclick=()=>$(P+'ImgFile').click();
   $(P+'ImgFile').onchange=e=>ovUploadImage(e.target.files[0]);
   $(P+'Add').onclick=ovSubmit;
+  /* יציאה מעריכה בלי לשמור — הטופס חוזר להוספה רגילה */
+  if($(P+'Cancel')) $(P+'Cancel').onclick=()=>{ ovResetForm(); ovRenderList(); };
   ovSetScope('schedule');
   ovRenderCal();
 }

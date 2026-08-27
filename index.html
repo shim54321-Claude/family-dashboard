@@ -178,7 +178,8 @@ body.kiosk{cursor:none}
   border-radius:1.6rem;box-shadow:0 .6rem 2rem rgba(0,0,0,.14)}
 #fullcover img[src=""],#fullcover img:not([src]){display:none}
 .covertext{font-family:var(--font-display);font-size:3.4rem;font-weight:900;
-  color:var(--ink);text-align:center;line-height:1.25;max-width:90%}
+  color:var(--ink);text-align:center;line-height:1.25;max-width:90%;
+  white-space:pre-line}   /* שורות חדשות נשמרות, הגופן לא משתנה */
 .covertext:empty{display:none}
 @media (max-width:860px){
   #fullcover img{max-height:44vh}
@@ -363,12 +364,6 @@ body.shabbat{background:var(--bg-warm)}
     <div class="photothumb hidden" id="photothumb"><img id="photothumbimg" alt=""></div>
   </div>
 
-  <!-- כיסוי מלא של הלוח: תמונה ו/או טקסט, בדומה למסך שבת/חג -->
-  <div id="fullcover" class="hidden">
-    <img id="coverimg" alt="">
-    <div class="covertext" id="covertext"></div>
-  </div>
-
   <div id="holiday">
     <div class="holicon" id="holicon">🕯️</div>
     <div class="greet" id="greet">שבת שלום</div>
@@ -417,6 +412,12 @@ body.shabbat{background:var(--bg-warm)}
 
   <div class="notes">
     <div class="note hidden" id="parentnote"></div>
+  </div>
+
+  <!-- כיסוי מלא של הלוח: יושב מתחת להערת ההורים, במקום מערכת השעות -->
+  <div id="fullcover" class="hidden">
+    <img id="coverimg" alt="">
+    <div class="covertext" id="covertext"></div>
   </div>
 
   <div class="schedwrap" id="schedwrap">
