@@ -152,6 +152,20 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
 .expcustom.hidden{display:none}
 .expnow{font-size:13px;color:var(--ink-soft);margin-top:8px}
 .hint{font-size:13px;color:var(--ink-soft)}
+/* --- תצוגה מקדימה של הודעת הכיסוי (זהה ב-daily ו-control) --- */
+.cvprev{margin-top:10px;border:1px solid var(--line);border-radius:14px;
+  background:var(--soft);padding:14px 16px;text-align:center}
+.cvprev.hidden{display:none}
+.cvprev .pvlabel{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:9px}
+.cvprev .covertitle{font-family:var(--font-display);font-size:17px;font-weight:800;
+  line-height:1.3;margin-bottom:8px;color:var(--ink)}
+.cvprev .covermsg{font-family:var(--font-display);font-size:16px;font-weight:700;
+  line-height:1.45;white-space:pre-line;color:var(--ink)}
+.cvprev .coverlist{list-style:none;margin:0;padding:0;text-align:right;display:inline-block}
+.cvprev .coverlist li{font-size:14px;font-weight:600;line-height:1.8;color:var(--ink);
+  padding-inline-start:15px;position:relative}
+.cvprev .coverlist li::before{content:"\2022";position:absolute;inset-inline-start:0;
+  color:var(--ink-soft);font-weight:900}
 
 /* --- הערה מכסה: אותם פקדים כמו בבקרה המלאה --- */
 .checkrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:5px}
@@ -374,7 +388,12 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
         </div>
         <input type="file" accept="image/*" id="ovImgFile" style="display:none">
         <label>טקסט (רשות)</label>
-        <textarea id="ovFullNote" rows="3" placeholder="אנחנו בטיול,&#10;חוזרים ביום ראשון!"></textarea>
+        <textarea id="ovFullNote" rows="4" placeholder="מה להביא ליום הראשון:&#10;חולצת תלבושת&#10;קלמר מאובזר&#10;ארוחת עשר ובקבוק מים"></textarea>
+        <div class="hint" style="margin-top:6px">שורה שנגמרת בנקודתיים תוצג ככותרת, וכל שורה אחריה כפריט ברשימה. בלי נקודתיים — הודעה גדולה רגילה. אין צורך להקליד תבליטים.</div>
+        <div class="cvprev hidden" id="ovFullPreview">
+          <div class="pvlabel">כך זה ייראה על הלוח</div>
+          <div id="ovFullPreviewBody"></div>
+        </div>
       </div>
 
       <button style="width:100%;margin-top:14px" id="ovAdd">הוספה</button>
@@ -927,6 +946,7 @@ function ovResetForm(){
   ovSetImage(null);
   if($(P+'Note')) $(P+'Note').value='';
   if($(P+'FullNote')) $(P+'FullNote').value='';
+  if(typeof renderCoverPreview==='function') renderCoverPreview();
   const kidsBox=$(P+'Kids');
   if(kidsBox) kidsBox.querySelectorAll('input').forEach(i=>{
     i.checked=false; i.closest('.chk').classList.remove('on'); });
@@ -1003,6 +1023,7 @@ function ovStartEdit(gid){
   ovSetScope(g.scope);
   if(g.scope==='full'){
     $(P+'FullNote').value=g.note||'';
+    if(typeof renderCoverPreview==='function') renderCoverPreview();
     ovSetImage(g.image_url,'תמונה קיימת');
   }else{
     $(P+'Note').value=g.note||'';
@@ -1155,6 +1176,47 @@ async function start(){
 
 const {data:{session}}=await db.auth.getSession();
 if(session) start();
+
+/* ---- תצוגה מקדימה של הודעת הכיסוי ----
+   אותו כלל פירוק בדיוק כמו בלוח (index.html) — כל שינוי כאן חייב לקרות גם שם. */
+function parseCoverNote(raw){
+  const text=String(raw==null?'':raw).replace(/\r/g,'').trim();
+  if(!text) return {kind:'empty'};
+  const lines=text.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(lines.length>1 && /:$/.test(lines[0])){
+    const items=lines.slice(1).map(s=>s.replace(/^[-\u2013\u2022*]\s*/,'')).filter(Boolean);
+    if(items.length) return {kind:'list',title:lines[0],items:items};
+  }
+  return {kind:'text',text:lines.join('\n')};
+}
+
+function renderCoverPreview(){
+  const box=$('ovFullPreview'), body=$('ovFullPreviewBody'), ta=$('ovFullNote');
+  if(!box||!body||!ta) return;
+  const p=parseCoverNote(ta.value);
+  body.textContent='';
+  if(p.kind==='empty'){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  if(p.kind==='text'){
+    const d=document.createElement('div');
+    d.className='covermsg'; d.textContent=p.text;
+    body.appendChild(d);
+    return;
+  }
+  const h=document.createElement('div');
+  h.className='covertitle'; h.textContent=p.title;
+  body.appendChild(h);
+  const ul=document.createElement('ul');
+  ul.className='coverlist';
+  p.items.forEach(function(t){
+    const li=document.createElement('li');
+    li.textContent=t;
+    ul.appendChild(li);
+  });
+  body.appendChild(ul);
+}
+if($('ovFullNote')) $('ovFullNote').addEventListener('input',renderCoverPreview);
+
 </script>
 </body>
 </html>
