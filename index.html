@@ -249,43 +249,100 @@ table.chweek td.chnow{background:var(--card);border-radius:0 0 1.1rem 1.1rem}
   opacity:.65;letter-spacing:.02em;margin-top:.15rem;line-height:1.2}
 
 
-/* שבת וחג */
-body.shabbat{background:var(--bg-warm)}
-#holiday{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2rem}
-#holiday.on{display:flex}
-.greet{font-family:var(--font-display);font-size:10rem;font-weight:900}
-.holicon{font-size:14rem;line-height:1}
-.holitags{font-size:2.4rem;font-weight:700;color:var(--ink-soft)}
-.parasha{font-size:2.6rem;font-weight:700;color:var(--ink)}
-.zmanim{display:flex;align-items:center;justify-content:center;gap:1.1vw;
-  background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:999px;
-  padding:.45rem 1.6vw;margin-top:-.4rem}
+/* ============================================================
+   שבת וחג — סבב עיצוב אוגוסט 2026 ("מרווה")
+   כותרת אופקית למעלה, לוח התפילות במרכז, איור שקט בתחתית.
+   הגוון נגזר כאן ולא ב-:root — מסך שבת הוא הסביבה היחידה שמשתמשת בו.
+   ============================================================ */
+body.shabbat{
+  --bg:#EEF1EC; --bg-warm:#EEF1EC; --card:#FFFFFF;
+  --ink:#18211C; --ink-soft:#66716A; --ink-faint:#949E96;
+  --line:#E0E5DF;
+  background:var(--bg);
+}
+body.shabbat.night{
+  --bg:#141B18; --bg-warm:#141B18; --card:#1C2420;
+  --ink:#E9EDE9; --ink-soft:#93A099; --ink-faint:#6E7A74;
+  --line:#293330;
+}
+
+/* --- הכותרת: פרשה מתחת לתאריך, זמנים ומזג אוויר בקצה הנגדי ---
+   ביום חול .datetext הוא display:contents, כך שהיום והתאריך מתפרסים
+   לשני קצות הסרגל. במצב שבת הם נאספים לעמודה אחת בצד ההתחלה,
+   כדי לפנות את הקצה הנגדי לזמנים ולמזג האוויר. */
+body.shabbat .datetext{display:flex;flex-direction:column;align-items:flex-start;
+  gap:.15rem;min-width:0}
+body.shabbat .datecol{flex-direction:row;align-items:baseline;gap:.5vw}
+body.shabbat .hebdate{font-size:2rem;font-weight:600;color:var(--ink-soft)}
+body.shabbat .hebdate::after{content:'·';color:var(--ink-faint);margin-inline-start:.5vw}
+body.shabbat .gregdate{font-size:2rem;margin-top:0}
+.parasha{display:none;font-size:2.1rem;font-weight:600;color:var(--ink-soft);margin-top:.15rem}
+body.shabbat .parasha{display:block}
+.sbend{display:none;flex-direction:column;align-items:flex-end;gap:.75rem;flex:0 0 auto}
+body.shabbat .sbend{display:flex}
+body.shabbat .datebar{border-bottom:0;padding-bottom:0;align-items:flex-start}
+body.shabbat .photothumb{display:none}
+
+.zmanim{display:flex;gap:1.1vw}
 .zmanim.hidden{display:none}
-.zitem{display:flex;align-items:baseline;gap:.5vw}
-.zlbl{font-size:1.5rem;font-weight:400;color:var(--ink-soft);opacity:.9}
-.zval{font-size:1.8rem;font-weight:700;color:var(--ink-soft);direction:ltr;
-  font-family:var(--font-display);letter-spacing:-.01em}
-.zsep{color:var(--ink-faint);font-size:1.4rem}
-.prayers{display:flex;gap:1.4vw;align-items:flex-start;justify-content:center;
-  max-width:94vw;flex-wrap:wrap}
+.zc{background:var(--card);border-radius:1.4rem;padding:.75rem 1.5vw;text-align:center;
+  box-shadow:0 1px 3px rgba(22,33,30,.07)}
+.zc .zlbl{font-size:1.4rem;color:var(--ink-soft);font-weight:600}
+.zc .zval{font-family:var(--font-display);font-weight:800;font-size:4rem;line-height:1.1;
+  direction:ltr;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* מזג אוויר על מסך שבת — שורה אחת, בלי כרטיס ובלי צבע.
+   אין המלצות לבוש: הן שייכות ליום לימודים. */
+.sbwx{display:flex;align-items:baseline;gap:1.4vw;font-size:1.6rem;color:var(--ink-soft)}
+.sbwx.hidden{display:none}
+.sbwx .wxi{display:flex;align-items:baseline;gap:.45vw}
+.sbwx .wxe{font-size:1.9rem;line-height:1}
+.sbwx .wxd{font-weight:600}
+.sbwx .wxt{font-family:var(--font-display);font-weight:700;color:var(--ink);
+  direction:ltr;font-variant-numeric:tabular-nums}
+.sbwx .wxsep{color:var(--ink-faint)}
+.sbwx .wxwarn{color:var(--alert);font-weight:700}
+
+/* --- לוח התפילות --- */
+#holiday{display:none;flex:1;flex-direction:column;min-height:0}
+#holiday.on{display:flex}
+
+.prayers{display:grid;gap:0 4.2vw;flex:0 0 auto;margin-top:1.4rem}
 .prayers.hidden{display:none}
-.pday{display:flex;flex-direction:column;gap:.5rem;min-width:26vw;flex:1 1 0}
-.prayers.one .pday{min-width:44vw;max-width:70vw;flex:0 1 auto}
-.pdayhead{font-size:2.1rem;font-weight:900;color:var(--ink);text-align:center;
-  padding-bottom:.35rem;border-bottom:2px solid var(--line);margin-bottom:.15rem}
-.ptitle{font-size:2rem;font-weight:700;color:var(--ink-soft);
-  letter-spacing:.04em;text-align:center;margin-bottom:.2rem}
-.prow{display:flex;justify-content:space-between;align-items:baseline;gap:2vw;
-  background:var(--card);border:1px solid var(--line);border-radius:1.2rem;
-  padding:.75rem 1.6vw;box-shadow:0 1px 3px rgba(22,33,30,.06)}
-.prow.pnext{background:var(--ink);border-color:var(--ink);border-width:1px}
-.prow.pnext .pname,.prow.pnext .ptime{color:var(--bg);font-weight:900}
-.prow .pname{font-size:2.6rem;font-weight:700}
-.prow .ptime{font-size:2.6rem;font-weight:900;direction:ltr;
-  font-family:var(--font-display);letter-spacing:-.02em}
-.cnote{font-size:1.9rem;color:var(--ink-soft);background:var(--bg-warm);
-  border:1px solid var(--line);border-radius:.9rem;padding:.7rem 1.6vw;
-  text-align:center;max-width:70vw}
+.prayers[data-cols="1"]{grid-template-columns:minmax(0,44vw);justify-content:center}
+.prayers[data-cols="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.prayers[data-cols="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.prayers[data-cols="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pday{display:flex;flex-direction:column;min-width:0}
+.pdayhead{display:flex;align-items:baseline;justify-content:space-between;gap:1vw;
+  margin-bottom:.6rem}
+.pdayhead .pdh{font-family:var(--font-display);font-weight:800;font-size:2.6rem;line-height:1.15}
+.ptitle{font-family:var(--font-display);font-weight:800;font-size:2.6rem;margin-bottom:.6rem}
+
+.prow{display:flex;align-items:center;gap:1.5vw;padding:.85rem 0;
+  border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:0}
+.prow .ptime{font-family:var(--font-display);font-weight:700;font-size:2.4rem;
+  min-width:8.4rem;direction:ltr;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.prow .pname{font-size:2.3rem;font-weight:600;flex:1;min-width:0}
+.prow .ploc{display:block;font-size:1.4rem;color:var(--ink-soft);font-weight:500;
+  margin-top:.1em}
+/* גלולת דיו אחת = "זה הבא" — אותה שפה בדיוק כמו בלוח היום-יום */
+.prow.pnext{background:var(--ink);color:var(--bg);border-radius:999px;
+  padding:.85rem 1.8vw;margin:0 -1.8vw;border-bottom:0}
+.prow.pnext .ploc{color:var(--bg);opacity:.72}
+.prow.ppast{opacity:.4}
+
+/* --- איור קווי + פוטר --- */
+.sbart{flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:.6rem}
+.sbart svg{width:48%;max-height:100%;stroke:var(--ink);fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round;opacity:.14}
+body.shabbat.night .sbart svg{opacity:.2}
+.sbfoot{flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;
+  gap:2vw;font-size:1.6rem;color:var(--ink-soft)}
+.sbfoot .greet{font-weight:700;color:var(--ink)}
+.cnote{font-size:1.6rem;color:var(--ink-soft);text-align:center;flex:1;min-width:0}
 .cnote.hidden{display:none}
 
 #err{position:fixed;bottom:0;inset-inline:0;background:#8B2020;color:#fff;
@@ -349,18 +406,28 @@ body.shabbat{background:var(--bg-warm)}
 
   .lastsync{font-size:9px}
 
-  .greet{font-size:40px}.holicon{font-size:60px}.holitags{font-size:14px}
-  .parasha{font-size:16px}
-  .zmanim{gap:8px;padding:4px 10px}
-  .zlbl{font-size:11px}.zval{font-size:12px}.zsep{font-size:10px}
-  .prayers{max-width:96vw;gap:8px}
-  .pday{min-width:0;gap:5px}
-  .prayers.one .pday{min-width:0;max-width:96vw}
-  .pdayhead{font-size:14px}
-  .ptitle{font-size:13px}
-  .prow{padding:8px 10px}
-  .prow .pname{font-size:16px}.prow .ptime{font-size:16px}
-  .cnote{font-size:13px;padding:8px 10px;max-width:92vw}
+  .parasha{font-size:15px}
+  body.shabbat .hebdate{font-size:15px}
+  body.shabbat .gregdate{font-size:15px}
+  body.shabbat .datebar{flex-direction:column;align-items:flex-start;gap:10px}
+  .sbend{align-items:flex-start;gap:8px}
+  .zmanim{gap:8px}
+  .zc{padding:8px 12px;border-radius:12px}
+  .zc .zlbl{font-size:11px}.zc .zval{font-size:24px}
+  .sbwx{font-size:13px;gap:12px}.sbwx .wxe{font-size:15px}
+  .prayers{gap:0 14px;margin-top:12px}
+  .prayers[data-cols="1"],.prayers[data-cols="2"],
+  .prayers[data-cols="3"],.prayers[data-cols="4"]{grid-template-columns:1fr}
+  /* בעמודה אחת הימים נערמים זה מתחת לזה — צריך אוויר ביניהם */
+  .pday+.pday{margin-top:14px}
+  .pdayhead .pdh,.ptitle{font-size:17px}
+  .prow{padding:8px 0;gap:10px}
+  .prow .ptime{font-size:16px;min-width:52px}
+  .prow .pname{font-size:16px}.prow .ploc{font-size:12px}
+  .prow.pnext{padding:8px 12px;margin:0 -12px}
+  .sbart svg{width:70%}
+  .sbfoot{font-size:12px}
+  .cnote{font-size:12px}
   #gotoControl{display:block}
 }
 </style>
@@ -377,23 +444,38 @@ body.shabbat{background:var(--bg-warm)}
         <span class="hebdate" id="hebdate">—</span>
         <span class="gregdate" id="gregdate">—</span>
       </div>
+      <div class="parasha" id="parasha"></div>
+    </div>
+    <!-- קצה הכותרת — רק במצב שבת/חג: זמני כניסה ויציאה, ומתחתם מזג אוויר שקט -->
+    <div class="sbend" id="sbend">
+      <div class="zmanim hidden" id="zmanim">
+        <div class="zc"><div class="zlbl" id="zlbl0">הדלקת נרות</div><div class="zval" id="zval0">—</div></div>
+        <div class="zc"><div class="zlbl" id="zlbl1">צאת השבת</div><div class="zval" id="zval1">—</div></div>
+      </div>
+      <div class="sbwx hidden" id="sbwx"></div>
     </div>
     <!-- תמונה ממוזערת — מוצגת רק בטלפון, בפינה הנגדית לתאריך. לחיצה מגדילה. -->
     <div class="photothumb hidden" id="photothumb"><img id="photothumbimg" alt=""></div>
   </div>
 
   <div id="holiday">
-    <div class="holicon" id="holicon">🕯️</div>
-    <div class="greet" id="greet">שבת שלום</div>
-    <div class="holitags" id="holitags"></div>
-    <div class="parasha" id="parasha"></div>
-    <div class="zmanim hidden" id="zmanim">
-      <div class="zitem"><span class="zlbl" id="zlbl0">הדלקת נרות</span><span class="zval" id="zval0">—</span></div>
-      <div class="zsep">·</div>
-      <div class="zitem"><span class="zlbl" id="zlbl1">צאת השבת</span><span class="zval" id="zval1">—</span></div>
-    </div>
     <div class="prayers hidden" id="prayers"></div>
-    <div class="cnote hidden" id="cnote"></div>
+    <div class="sbart" id="sbart">
+      <svg viewBox="0 0 720 150" aria-hidden="true">
+        <path d="M250 135 h70 M266 135 V78 h13 v57 M292 135 V78 h13 v57"/>
+        <path d="M272 78 c0-13 -10-16 0-29 c10 13 0 16 0 29 Z"/>
+        <path d="M298 78 c0-13 -10-16 0-29 c10 13 0 16 0 29 Z"/>
+        <path d="M352 135 h68 M386 135 V108"/>
+        <path d="M358 55 h56 l-8 34 a20 20 0 0 1 -40 0 Z"/>
+        <path d="M448 124 c0-28 26-44 64-44 s64 16 64 44 c0 10 -23 15 -64 15 s-64 -5 -64 -15 Z"/>
+        <path d="M471 96 c10 -13 18 -13 28 0 M505 91 c10 -13 18 -13 28 0 M536 96 c8 -10 13 -10 21 0"/>
+      </svg>
+    </div>
+    <div class="sbfoot">
+      <div class="greet" id="greet">שבת שלום</div>
+      <div class="cnote hidden" id="cnote"></div>
+      <div class="holitags" id="holitags"></div>
+    </div>
   </div>
 
   <div class="toprow" id="toprow">
@@ -622,6 +704,12 @@ function isRoshChodesh(d){
    הקיוסק רץ על TV Stick — אם המכשיר יאותחל לאזור זמן שגוי,
    מעבר ה-12:00, מצב הלילה והתמונה היומית עדיין יהיו נכונים.
    ============================================================ */
+/* תאריך ISO מתוך אובייקט Date שכבר מייצג שעון ישראל */
+function isoOf(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+    +`-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function israelNow(){
   const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
     year:'numeric',month:'2-digit',day:'2-digit',
@@ -932,6 +1020,14 @@ function nextPrayerId(rows){
   return best?best.id:null;
 }
 
+/* מועד שורת תפילה — בדיוק אותו חישוב כמו nextPrayerId, כדי ש"עבר" ו"הבא"
+   לעולם לא יסתרו זה את זה. שעון קיר ישראלי, לא שעון המכשיר. */
+function prayerInstant(r){
+  if(!r||!r.date||!r.time) return null;
+  const t=new Date(r.date+'T'+String(r.time||'00:00:00').slice(0,8)).getTime();
+  return isNaN(t)?null:t;
+}
+
 /* ---- ציור: מקובץ לפי יום, עמודה ליום, הדגשה לפריט הקרוב ---- */
 function renderPrayerRows(box,rows,w){
   const sorted=[...rows].sort((a,b)=>
@@ -945,22 +1041,53 @@ function renderPrayerRows(box,rows,w){
   }
   const nextId=nextPrayerId(sorted);
 
-  box.classList.toggle('one', byDay.size===1);
+  // מספר העמודות נגזר ממספר הימים בפועל, כדי שחג ארוך לא יישבר
+  box.dataset.cols=String(Math.min(byDay.size,4));
   box.innerHTML='';
+
+  const nowT=israelNow().getTime();
+  // מעמעמים שורות שעברו רק כל עוד יש עוד משהו לפנינו. אחרי הפריט האחרון
+  // אין "הבא", וללא התנאי הזה כל הלוח היה נצבע חיוור ונראה שבור.
+  const dimPast=(nextId!==null);
 
   for(const [iso,list] of byDay){
     const col=document.createElement('div');
     col.className='pday';
-    const head=document.createElement('div');
-    head.className = byDay.size===1 ? 'ptitle' : 'pdayhead';
-    head.textContent = byDay.size===1 ? 'זמני תפילות' : dayHeading(iso,w);
-    col.appendChild(head);
+
+    if(byDay.size===1){
+      const head=document.createElement('div');
+      head.className='ptitle';
+      head.textContent='זמני תפילות';
+      col.appendChild(head);
+    }else{
+      const head=document.createElement('div');
+      head.className='pdayhead';
+      const h=document.createElement('div');
+      h.className='pdh'; h.textContent=dayHeading(iso,w);
+      head.appendChild(h);
+      col.appendChild(head);
+    }
+
     for(const r of list){
       const row=document.createElement('div');
-      row.className='prow'+((nextId!==null&&r.id===nextId)?' pnext':'');
-      const nm=document.createElement('span'); nm.className='pname'; nm.textContent=r.title||'';
-      const tm=document.createElement('span'); tm.className='ptime'; tm.textContent=hhmm(r.time);
-      row.appendChild(nm); row.appendChild(tm);
+      const isNext=(nextId!==null&&r.id===nextId);
+      // שורה שכבר עברה מעומעמת — בשבת אחה"צ חצי הלוח כבר לא רלוונטי
+      const t=prayerInstant(r);
+      const isPast=(dimPast && !isNext && t!==null && t<nowT);
+      row.className='prow'+(isNext?' pnext':'')+(isPast?' ppast':'');
+
+      const tm=document.createElement('span');
+      tm.className='ptime'; tm.textContent=hhmm(r.time);
+
+      const nm=document.createElement('span');
+      nm.className='pname'; nm.textContent=r.title||'';
+      if(r.location){
+        const lc=document.createElement('span');
+        lc.className='ploc'; lc.textContent=r.location;
+        nm.appendChild(lc);
+      }
+
+      row.appendChild(tm); row.appendChild(nm);
       col.appendChild(row);
     }
     box.appendChild(col);
@@ -1037,11 +1164,19 @@ function markActiveWeather(){
   }
 }
 
+/* תחזית לפי תאריך — מסך שבת צריך ימים שאינם בהכרח "היום/מחר" */
+let WX_BY_DATE={};
+
 async function loadWeather(){
   try{
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}`
-      +`&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&forecast_days=2`;
+      +`&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&forecast_days=4`;
     const j=await (await fetch(url)).json(), d=j.daily;
+    WX_BY_DATE={};
+    for(let i=0;i<(d.time||[]).length;i++){
+      WX_BY_DATE[d.time[i]]={code:d.weather_code[i],
+        max:d.temperature_2m_max[i],min:d.temperature_2m_min[i]};
+    }
     for(let i=0;i<2;i++){
       $('wicon'+i).textContent=WCODE[d.weather_code[i]]||'🌡️';
       $('wtemp'+i).textContent=Math.round(d.temperature_2m_max[i])+'°';
@@ -1052,7 +1187,41 @@ async function loadWeather(){
         +' '+clothingTip(d.temperature_2m_max[i],d.weather_code[i]);
     }
     markActiveWeather();
+    if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
   }catch(e){ console.warn('weather failed'); }
+}
+
+/* ---- מזג אוויר על מסך שבת: שורה אחת, יום אחד לכל יום בחלון ---- */
+const SEVERE=[65,75,82,95,96,99];
+let LAST_WIN=null;
+
+function renderShabbatWeather(w){
+  const box=$('sbwx');
+  if(!box) return;
+  const dates=w?windowDates(w):[];
+  const parts=[];
+  for(const iso of dates.slice(0,3)){
+    const wx=WX_BY_DATE[iso];
+    if(!wx) continue;
+    const label=shortDayLabel(iso,w);
+    const warn=SEVERE.includes(wx.code)?' wxwarn':'';
+    parts.push(`<span class="wxi${warn}"><span class="wxe">${WCODE[wx.code]||'🌡️'}</span>`
+      +`<span class="wxd">${label}</span>`
+      +`<span class="wxt">${Math.round(wx.max)}°</span></span>`);
+  }
+  if(!parts.length){ box.innerHTML=''; box.classList.add('hidden'); return; }
+  box.innerHTML=parts.join('<span class="wxsep">·</span>');
+  box.classList.remove('hidden');
+}
+
+/* תווית קצרה ליום בתוך רצועת מזג האוויר — "היום" כשזה באמת היום */
+function shortDayLabel(iso,w){
+  const today=israelNow();
+  const todayIso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`
+    +`-${String(today.getDate()).padStart(2,'0')}`;
+  if(iso===todayIso) return 'היום';
+  const d=new Date(iso+'T12:00:00');
+  return d.getDay()===6 ? 'שבת' : 'יום '+DAY_FULL_LIST[d.getDay()];
 }
 
 /* ---- מערכת שעות — כרטיס לכל ילד ---- */
@@ -1354,16 +1523,20 @@ async function render(){
   $('gregdate').textContent=gregString(today);
 
   const win=activeShabbatWindow();
+  LAST_WIN=win||null;
   const hol=win?windowDisplay(win):null;
   if(hol){
     document.body.classList.add('shabbat');
     $('holiday').classList.add('on');
+    // הכותרת נשארת נעולה על היום האמיתי — רק שמו נאמר בשפת שבת/חג
+    $('dayname').textContent=dayHeading(isoOf(today),win);
     $('greet').textContent=hol.greet;
-    $('holicon').textContent=hol.icon;
     $('holitags').textContent=hol.label;
     $('parasha').textContent=parashaFor(win);
     renderZmanim(win);
+    renderShabbatWeather(win);
     await renderPrayers(win);
+    $('toprow').style.display='none';
     $('schedwrap').style.display='none';
     $('chugim').classList.add('hidden');
     $('shirtbox').classList.remove('on');
@@ -1373,7 +1546,9 @@ async function render(){
     $('prayers').classList.add('hidden');
     $('cnote').classList.add('hidden');
     $('zmanim').classList.add('hidden');
+    $('sbwx').classList.add('hidden');
     $('parasha').textContent='';
+    $('toprow').style.display='';
     $('schedwrap').style.display='';
   }
 
