@@ -165,6 +165,11 @@ body.kiosk{cursor:none}
 .lesson.first{border:1px solid color-mix(in srgb, var(--c) 55%, transparent);
   border-radius:999px;padding:.5rem 1.1vw;margin:.15rem -1.1vw}
 .ltag{font-size:1.3rem;color:var(--ink-soft);font-weight:600;margin-inline-start:auto}
+.brk-a{display:flex;align-items:center;gap:.6vw;padding:.25rem 0}
+.brk-a::before,.brk-a::after{content:"";flex:1;height:1px;
+  background:color-mix(in srgb, var(--c) 20%, transparent)}
+.brk-a span{font-size:1.15rem;font-weight:600;color:var(--ink-faint);
+  letter-spacing:.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nosched{font-size:1.7rem;color:var(--ink-faint);padding:.6rem 0}
 .mealchip{margin-top:auto;display:flex;align-items:baseline;gap:.7vw;background:var(--card);
   border-radius:1.1rem;padding:.55rem 1vw}
@@ -1245,10 +1250,8 @@ function buildSchedule(periods,rows,overrides,meals,isToday){
   const map={}; KIDS.forEach(k=>map[k.name]={});
   rows.forEach(r=>{ if(map[r.kid]) map[r.kid][r.period]=r.subject; });
 
-  // שיעורים אמיתיים בלבד, לפי סדר, בלי הפסקות ובלי תאי "סיים"
-  const ordered=[...periods]
-    .filter(p=>p.label.trim()!=='הפסקה')
-    .sort((a,b)=>a.order_index-b.order_index);
+  // כל השורות (שיעורים+הפסקות) לפי סדר, בלי תאי "סיים"
+  const allOrdered=[...periods].sort((a,b)=>a.order_index-b.order_index);
 
   const nowMin=(()=>{ const n=israelNow(); return n.getHours()*60+n.getMinutes(); })();
   // "עכשיו" מסומן רק אם היום המוצג הוא באמת היום — לא רק לפי השעה
@@ -1262,31 +1265,42 @@ function buildSchedule(periods,rows,overrides,meals,isToday){
     if(ov){
       inner=`<div class="dayoff small">${ov.note||'חופש'}</div>`;
     }else{
-      const list=ordered
-        .map(p=>({p, num:parseInt(p.label,10), subj:map[k.name][parseInt(p.label,10)]}))
-        .filter(x=>x.subj && x.subj.trim());
+      // בונים רשימת פריטים (שיעור/הפסקה) לפי הסדר האמיתי, כולל הפסקות בין שיעורים שקיימים בפועל
+      let items=allOrdered.map(p=>{
+        if(p.label.trim()==='הפסקה'){
+          return {type:'break', t:p.start_time?p.start_time.slice(0,5):''};
+        }
+        const num=parseInt(p.label,10);
+        const subj=map[k.name][num];
+        if(subj && subj.trim()) return {type:'lesson', t:p.start_time?p.start_time.slice(0,5):'', subj, num};
+        return null;
+      }).filter(Boolean);
+      // הפסקה לא תיפתח/תיסגר את הכרטיס, ולא תופיע כפולה
+      while(items.length && items[0].type==='break') items.shift();
+      while(items.length && items[items.length-1].type==='break') items.pop();
+      items=items.filter((it,i)=> !(it.type==='break' && items[i-1] && items[i-1].type==='break'));
 
-      // "עכשיו" רק כשמוצג היום; אחרת השיעור הראשון מסומן כ"מתחילים"
+      // "עכשיו"/"עבר" מחושבים רק על פריטי שיעור
       let nowIdx=-1;
       if(showingToday){
-        list.forEach((x,i)=>{
-          const t=x.p.start_time?x.p.start_time.slice(0,5):'';
-          if(!t) return;
-          const [hh,mm]=t.split(':').map(Number);
+        items.forEach((x,i)=>{
+          if(x.type!=='lesson' || !x.t) return;
+          const [hh,mm]=x.t.split(':').map(Number);
           if(hh*60+mm<=nowMin) nowIdx=i;
         });
       }
+      const firstLessonIdx=items.findIndex(x=>x.type==='lesson');
 
-      inner=list.map((x,i)=>{
-        const t=x.p.start_time?x.p.start_time.slice(0,5):'';
+      inner=items.map((x,i)=>{
+        if(x.type==='break') return `<div class="brk-a"><span>הפסקה · ${x.t}</span></div>`;
         let cls='lesson';
         let tag='';
         if(showingToday){
           if(i===nowIdx) cls+=' now';
           else if(i<nowIdx) cls+=' past';
-        }else if(i===0){ cls+=' first'; tag='<span class="ltag">מתחילים</span>'; }
+        }else if(i===firstLessonIdx){ cls+=' first'; tag='<span class="ltag">מתחילים</span>'; }
         const shoe=(x.subj && SPORT_RE.test(x.subj))?'<span class="lem">👟</span>':'';
-        return `<div class="${cls}"><span class="ltime">${t}</span>`+
+        return `<div class="${cls}"><span class="ltime">${x.t}</span>`+
                `<span class="lsubj">${x.subj}</span>${shoe}${tag}</div>`;
       }).join('');
       if(!inner) inner='<div class="nosched">אין מערכת מעודכנת</div>';
