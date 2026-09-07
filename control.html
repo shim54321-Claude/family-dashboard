@@ -659,7 +659,9 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
           <option value="4" selected>ל-4 שעות</option>
           <option value="8">ל-8 שעות</option>
           <option value="24">ליממה</option>
+          <option value="custom">עד שעה מסוימת</option>
         </select>
+        <input type="datetime-local" id="fcCustom" style="display:none">
         <button id="fcOn">הצג מסך שבת/חג עכשיו</button>
         <button class="ghost" id="fcOff">כיבוי</button>
       </div>
@@ -709,6 +711,11 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
         <button id="psAdd">הוספה</button>
       </div>
       <div id="psList" style="margin-top:14px"></div>
+      <div class="hint" style="margin-top:14px">תבנית שבת רגילה: בחרו תאריך יום שישי, וכל שורות התבנית הבסיסית יתווספו אוטומטית (יום שישי + שבת שאחריו). כל שורה ניתנת למחיקה בנפרד אחרי הטעינה.</div>
+      <div class="rowline">
+        <input type="date" id="shTplFriday">
+        <button class="ghost" id="shTplLoad">טעינת תבנית שבת רגילה</button>
+      </div>
     </div>
 
     <div class="card">
@@ -2440,9 +2447,22 @@ function renderForce(){
     : 'כרגע פועל החישוב האוטומטי בלבד';
   $('fcOff').style.display = f ? '' : 'none';
 }
+$('fcHours').onchange=()=>{
+  $('fcCustom').style.display = $('fcHours').value==='custom' ? '' : 'none';
+};
 $('fcOn').onclick=async()=>{
-  const hrs=+$('fcHours').value||4;
-  const start=new Date(), end=new Date(Date.now()+hrs*3600*1000);
+  const sel=$('fcHours').value;
+  const start=new Date();
+  let end;
+  if(sel==='custom'){
+    const v=$('fcCustom').value;
+    if(!v){ toast('בחרו שעה',true); return; }
+    end=new Date(v);
+    if(end.getTime()<=start.getTime()){ toast('השעה שנבחרה כבר עברה',true); return; }
+  } else {
+    const hrs=+sel||4;
+    end=new Date(Date.now()+hrs*3600*1000);
+  }
   /* טריגר קודם שעדיין פעיל מוחלף, כדי שלא יצטברו כמה במקביל */
   const old=activeForce();
   if(old){
@@ -2582,6 +2602,55 @@ $('psAdd').onclick=async()=>{
   state.prayers.push(data);
   $('psTitle').value=''; $('psTime').value=''; $('psLoc').value='';
   renderPrayerList(); toast('נוסף');
+};
+
+/* ---------- תבנית שבת רגילה (לוח זמנים לאירוע) ---------- */
+const DEFAULT_SHABBAT_TEMPLATE=[
+  {title:'שיר השירים',time:'18:20',day:'fri'},
+  {title:'מנחה',time:'18:40',day:'fri'},
+  {title:'שחרית',time:'08:15',day:'sat'},
+  {title:'שיעור גמרא',time:'16:30',day:'sat'},
+  {title:'מנחה',time:'17:30',day:'sat'},
+  {title:'ערבית מוצ"ש',time:'19:30',day:'sat'},
+];
+function getShabbatTemplate(){
+  const raw=state.settings.shabbat_template;
+  if(raw){ try{ const parsed=JSON.parse(raw); if(Array.isArray(parsed)&&parsed.length) return parsed; }catch(e){} }
+  return DEFAULT_SHABBAT_TEMPLATE;
+}
+async function seedShabbatTemplateIfMissing(){
+  if(state.settings.shabbat_template) return;
+  const json=JSON.stringify(DEFAULT_SHABBAT_TEMPLATE);
+  await db.from('settings').upsert({key:'shabbat_template', value:json});
+  state.settings.shabbat_template=json;
+}
+$('shTplLoad').onclick=async()=>{
+  const friday=$('shTplFriday').value;
+  if(!friday){ toast('בחרו תאריך יום שישי',true); return; }
+  /* חישוב תאריך שבת ע"י Date.UTC בלבד, בלי המרת אזור-זמן, כדי לא לגלוש ליום הלא נכון */
+  const [fy,fm,fd]=friday.split('-').map(Number);
+  const satStr=new Date(Date.UTC(fy,fm-1,fd+1)).toISOString().slice(0,10);
+  const tpl=getShabbatTemplate();
+  const type='regular_shabbat';
+  const inserted=[];
+  for(const t of tpl){
+    const date = t.day==='sat' ? satStr : friday;
+    const dup = state.prayers.some(p=>p.schedule_type===type && p.date===date && p.title===t.title && String(p.time||'').slice(0,5)===t.time)
+      || inserted.some(p=>p.date===date && p.title===t.title);
+    if(dup) continue;
+    const same = state.prayers.filter(p=>p.schedule_type===type&&p.date===date).length
+      + inserted.filter(p=>p.date===date).length;
+    const {data,error}=await db.from('prayer_schedule').insert({
+      schedule_type:type, date, title:t.title, time:t.time, location:null, display_order:same+1
+    }).select().single();
+    if(!error&&data) inserted.push(data);
+  }
+  if(!inserted.length){ toast('כל השורות כבר קיימות לתאריך הזה'); return; }
+  state.prayers.push(...inserted);
+  $('psType').value=type;
+  $('shTplFriday').value='';
+  renderPrayerList();
+  toast(`נוספו ${inserted.length} שורות לשבת`);
 };
 
 /* ---------- לוח חופשות שנה"ל ---------- */
@@ -3075,10 +3144,21 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 /* ============================================================
    הפעלה
    ============================================================ */
+async function cleanupOldPrayers(){
+  /* מוחק אוטומטית שורות לוח זמנים לאירוע שעברו יותר משבועיים */
+  const cutoff=new Date(Date.now()-14*24*3600*1000).toISOString().slice(0,10);
+  const stale=state.prayers.filter(r=>r.date && r.date<cutoff);
+  if(!stale.length) return;
+  const ids=stale.map(r=>r.id);
+  await db.from('prayer_schedule').delete().in('id',ids);
+  state.prayers=state.prayers.filter(r=>!ids.includes(r.id));
+}
 async function start(){
   $('login').style.display='none';
   $('panel').style.display='block';
   await loadAll();
+  await cleanupOldPrayers();
+  await seedShabbatTemplateIfMissing();
   syncKidVars();
   applyNightSettings();
   renderNightPanel();
