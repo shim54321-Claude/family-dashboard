@@ -621,7 +621,8 @@ function renderFood(){
     const box=row.querySelector('[data-f="sugg"]');
     const opn=row.querySelector('[data-f="open"]');
     inp.oninput=()=>{ row._all=false; renderSugg(row); checkWarn(row); };
-    inp.onblur=()=>setTimeout(()=>closeSugg(row),160);
+    /* לא נסגר ב-blur: במגע, האצבע שנוחתת על הרשימה כדי לגלול מוציאה פוקוס
+       מהשדה — וסגירה כאן הרגה את הגלילה. הסגירה עברה ללחיצה מחוץ לשורה. */
     inp.onfocus=()=>{ row._all=false; renderSugg(row); };
     opn.onclick=()=>{
       if(!box.classList.contains('hidden') && row._all){ closeSugg(row); return; }
@@ -636,6 +637,13 @@ function closeSugg(row){
   row.querySelector('[data-f="sugg"]').classList.add('hidden');
   row.querySelector('[data-f="open"]').classList.remove('on');
 }
+
+/* סגירה בלחיצה מחוץ לשורה — נרשם פעם אחת, שורד רינדור מחדש של השורות */
+document.addEventListener('pointerdown',e=>{
+  document.querySelectorAll('.foodrow').forEach(row=>{
+    if(!row.contains(e.target)) closeSugg(row);
+  });
+},true);
 
 function renderSugg(row){
   const inp=row.querySelector('[data-f="pick"]');
