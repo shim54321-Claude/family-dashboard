@@ -127,14 +127,13 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
   background:transparent;color:var(--ink-soft);border:1px solid var(--line);
   border-radius:12px;font-size:15px;font-weight:900;line-height:1}
 .foodinput .openlist.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-.sugg{max-height:230px;overflow-y:auto}
 .sugg .sh{font-size:12px;font-weight:700;color:var(--ink-soft);padding:8px 13px 4px}
 .recur{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);
   white-space:nowrap;margin:6px 0 0;font-weight:700}
 .recur input{width:auto;min-height:0}
 /* הצעות מהמאגר — נפתחות תוך כדי הקלדה, אף פעם לא חוסמות כתיבה חופשית */
 .sugg{position:absolute;inset-inline:0;top:100%;z-index:30;background:var(--card);
-  border:1px solid var(--line);border-radius:12px;margin-top:4px;overflow:hidden;
+  border:1px solid var(--line);border-radius:12px;margin-top:4px;max-height:230px;overflow-y:auto;
   box-shadow:0 6px 18px rgba(0,0,0,.10)}
 .sugg.hidden{display:none}
 .sugg button{display:block;width:100%;text-align:start;background:transparent;
