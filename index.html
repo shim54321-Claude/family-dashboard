@@ -98,6 +98,7 @@ body.kiosk{cursor:none}
 .wtemp{font-size:2.8rem;font-weight:800;font-family:var(--font-display);font-variant-numeric:tabular-nums}
 .wrange{font-size:1.3rem;color:var(--ink-soft)}
 .wtip{font-size:1.4rem;font-weight:500;color:var(--alert);margin-top:.1rem}
+.wtip.wrain{font-weight:700}
 
 /* חולצה לבנה, מזג אוויר פעיל, ופריט "הבא" בשבת — כולם משתמשים באותה
    שפת הדגשה אחת: גלולת דיו. אין צבע accent שני על הלוח (מלבד --alert,
@@ -152,6 +153,13 @@ body.kiosk{cursor:none}
   width:2.4rem;height:2.4rem;border-radius:999px;flex:none;
   border:1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
   background:color-mix(in srgb, var(--c) 12%, transparent)}
+/* שעת סיום היום — שקטה בפינת הכרטיס, לא מתחרה בשם הילד */
+.endchip{margin-inline-start:auto;display:flex;align-items:baseline;gap:.35rem;
+  font-size:1.3rem;line-height:1;white-space:nowrap}
+.endchip .el{color:var(--ink-soft);font-weight:600}
+.endchip .ev{font-family:var(--font-display);font-weight:700;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;direction:ltr}
+.endchip.early .el,.endchip.early .ev{color:var(--alert)}
 .lessons{display:flex;flex-direction:column;margin-bottom:.8rem}
 .lesson{display:flex;align-items:center;gap:.7vw;padding:.55rem 0;
   border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);color:var(--kid-ink)}
@@ -556,9 +564,10 @@ body.shabbat.night .sbart svg{opacity:.2}
 const CONFIG = {
   SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
   SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
-  LAT:32.1056, LON:35.1739, TIMEZONE:'Asia/Jerusalem',
+  LAT:32.0702, LON:35.0542, TIMEZONE:'Asia/Jerusalem',
   SWITCH_HOUR:12, REFRESH_MIN:1, PHOTO_COUNT:4,
   SHABBAT_START_HOUR:12,        // מסך שבת/חג נכנס ב-12:00 בערב שבת/חג
+  RAIN_ALERT_PCT:30,            // אחוז סיכוי לגשם שמעליו מוצגת התראה
   BUCKET:'photos',
 };
 
@@ -747,14 +756,17 @@ function daysBetween(a,b){
 /* יום הלימודים הבא: מדלג על ימים בלי מערכת (שבת, ולפי הנתונים גם שישי)
    ועל תאריכים שסומנו כחופש לכל הילדים ב-schedule_overrides. */
 function nextSchoolDate(start,scheduleRows,overrides){
-  for(let i=0;i<14;i++){
+  for(let i=0;i<21;i++){
     const d=new Date(start); d.setDate(d.getDate()+i);
+    const iso=isoDate(d);
     const letter=DAYS[d.getDay()];
     const hasLessons=scheduleRows.some(r=>r.day===letter && r.subject && r.subject.trim());
     /* יום שיש עליו הערה מכסה הוא יעד תקין — ההערה היא מה שצריך להופיע.
        הגרסה הקודמת דילגה עליו, ולכן הערות מכסות לכל הילדים לא הופיעו לעולם. */
-    const covered=(overrides||[]).some(o=>!o.kid && o.date===isoDate(d));
+    const covered=(overrides||[]).some(o=>!o.kid && o.date===iso);
     if(covered) return d;
+    /* חופשה מלוח משרד החינוך — מדלגים, גם אם יש מערכת ליום הזה בשבוע */
+    if(isVacationDate(iso)) continue;
     if(hasLessons) return d;
   }
   return start;
@@ -766,10 +778,24 @@ function scheduleLabel(date,isTomorrow){
   if(gap===1) return 'מערכת למחר';
   return 'מערכת לחזרה ללימודים';
 }
-/* שורת הסבר קטנה על הימים המדולגים — מופיעה רק כשלא מדובר במחר */
+/* שורת הסבר קטנה על הימים המדולגים — מופיעה רק כשלא מדובר במחר.
+   כשהדילוג נובע מחופשה בלוח משרד החינוך, מציינים את שם החופשה
+   במקום לפרט את כל שמות הימים. */
 function skippedDaysNote(date){
   const gap=daysBetween(israelNow(),date);
   if(gap<=1) return '';
+  const vacNames=[];
+  for(let i=0;i<gap;i++){
+    const d=israelNow(); d.setDate(d.getDate()+i);
+    const iso=isoDate(d);
+    if(i===0 && israelNow().getHours()<CONFIG.SWITCH_HOUR) continue;
+    calRowsCovering(iso).filter(r=>r.kind==='vacation').forEach(r=>{
+      if(r.event && !vacNames.includes(r.event)) vacNames.push(r.event);
+    });
+  }
+  if(vacNames.length){
+    return 'חופשת '+vacNames.join(' ו')+' — אין לימודים';
+  }
   const names=[];
   for(let i=0;i<gap;i++){
     const d=israelNow(); d.setDate(d.getDate()+i);
@@ -813,6 +839,133 @@ function iconFor(n){
   if(n.includes('ראש השנה'))return'🍎';
   if(n.includes('כיפור'))return'🕊️';
   return'🕯️';
+}
+
+/* ============================================================
+   לוח חופשות שנה"ל (טבלת school_calendar) — מקור אחד לשני דברים:
+   ימי חופשה שהלוח מדלג עליהם, וימים עם יציאה מוקדמת שדורסים
+   את שעת הסיום הנגזרת. טבלה ריקה/חסרה = התנהגות כמו קודם.
+     kind: 'vacation' | 'study_day' | 'early_dismissal'
+   ============================================================ */
+let SCHOOL_CAL=[];
+
+function calRowsCovering(iso){
+  return SCHOOL_CAL.filter(r=>{
+    const s=String(r.start_date||'').trim();
+    const e=String(r.end_date||'').trim()||s;
+    return s && iso>=s && iso<=e;
+  });
+}
+function isVacationDate(iso){
+  return calRowsCovering(iso).some(r=>r.kind==='vacation');
+}
+/* 'HH:MM' ליציאה מוקדמת באותו יום, או null */
+function earlyDismissalFor(iso){
+  const r=calRowsCovering(iso).find(x=>x.kind==='early_dismissal' && x.early_time);
+  return r?String(r.early_time).slice(0,5):null;
+}
+/* תגית ליום שאינו חופשה אבל מצוין (סיגד, יום זיכרון) */
+function studyDayNote(iso){
+  const r=calRowsCovering(iso).find(x=>x.kind==='study_day');
+  return r?(r.event||''):'';
+}
+
+/* שעת סיום היום לילד: השיעור האחרון בלוח, אלא אם היום מסומן
+   כיציאה מוקדמת — ואז הזמן מהלוח גובר. מחזיר '' אם אין ממה לגזור. */
+function endOfDayFor(items,iso){
+  const early=earlyDismissalFor(iso);
+  if(early) return {time:early, forced:true};
+  const lessons=items.filter(x=>x.type==='lesson' && x.t);
+  if(!lessons.length) return null;
+  return {time:lessons[lessons.length-1].t, forced:false};
+}
+
+/* ============================================================
+   שכבת שליטה ידנית מעל Hebcal (סדר עדיפות מלמעלה למטה):
+     1. manual_windows source='force'  — "הצג עכשיו", גובר על הכל
+     2. manual_windows source='manual' — אירוע מתוזמן שהוגדר ידנית
+     3. zmanim_overrides               — דריסת שעת כניסה/יציאה לתאריך מסוים
+     4. Hebcal                         — ברירת המחדל, כמו עד היום
+   שלוש הראשונות נטענות מ-Supabase; אם הטבלאות ריקות/חסרות,
+   ההתנהגות זהה לחלוטין למה שהיה לפני השינוי.
+   ============================================================ */
+let ZMANIM_OVERRIDES=[];   // [{date:'YYYY-MM-DD', candle_time:'HH:MM', havdalah_time:'HH:MM'}]
+let MANUAL_WINDOWS=[];     // [{name, start_at, end_at, source}]
+
+/* 'HH:MM' על תאריך נתון → Date אמיתי, לפי שעון ישראל ולא לפי שעון המכשיר.
+   קריטי: הקיוסק הוא TV stick שעלול לחזור מאיפוס באזור זמן שגוי, ולכן
+   דריסה של "18:20" חייבת להיות 18:20 בישראל בכל מקרה. */
+/* 'YYYY-MM-DD' של רגע נתון לפי שעון ישראל */
+function israelIsoOf(at){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit'}).format(at);
+  return p;
+}
+function israelOffsetMs(at){  const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(at);
+  const g=t=>+p.find(x=>x.type===t).value;
+  const asUTC=Date.UTC(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'));
+  return asUTC-at.getTime();
+}
+function atTimeOn(baseDate,hhmm){
+  const m=hhmmToMin(hhmm);
+  if(m===null) return null;
+  /* התאריך נלקח לפי שעון ישראל של baseDate, לא לפי המכשיר */
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(baseDate);
+  const g=t=>+p.find(x=>x.type===t).value;
+  const wall=Date.UTC(g('year'),g('month')-1,g('day'),Math.floor(m/60),m%60,0);
+  /* היפוך: מנחשים ומתקנים לפי ההיסט בפועל באותו רגע (עמיד למעבר שעון קיץ) */
+  let t=new Date(wall-israelOffsetMs(new Date(wall)));
+  t=new Date(wall-israelOffsetMs(t));
+  return t;
+}
+
+/* מחיל דריסות זמנים על החלונות שכבר חושבו מ-Hebcal.
+   הדריסה מזוהה לפי התאריך של הדלקת הנרות (כניסה) או של ההבדלה (יציאה),
+   כך שאפשר לדרוס רק צד אחד ולהשאיר את השני אוטומטי. */
+function applyZmanimOverrides(){
+  for(const w of SHABBAT_WINDOWS){
+    /* שומרים את הערכים האוטומטיים פעם אחת, וכל הרצה נגזרת מהם מחדש —
+       כך שהסרת דריסה בפאנל באמת מחזירה את הזמן האוטומטי. */
+    if(!w._auto){
+      w._auto={candles:new Date(w.candles),havdala:new Date(w.havdala),end:new Date(w.end)};
+    }
+    w.candles=new Date(w._auto.candles);
+    w.havdala=new Date(w._auto.havdala);
+    w.end=new Date(w._auto.end);
+    w.manualStart=false; w.manualEnd=false;
+
+    /* התאריך שאליו הדריסה משויכת נקבע לפי שעון ישראל, לא לפי המכשיר */
+    const candleIso=israelIsoOf(w.candles), havIso=israelIsoOf(w.havdala);
+    const ovStart=ZMANIM_OVERRIDES.find(o=>o.date===candleIso && o.candle_time);
+    const ovEnd  =ZMANIM_OVERRIDES.find(o=>o.date===havIso    && o.havdalah_time);
+    if(ovStart){
+      const t=atTimeOn(w._auto.candles,ovStart.candle_time);
+      if(t){ w.candles=t; w.manualStart=true; }
+    }
+    if(ovEnd){
+      const t=atTimeOn(w._auto.havdala,ovEnd.havdalah_time);
+      if(t){ w.havdala=t; w.end=new Date(t.getTime()+30*60*1000); w.manualEnd=true; }
+    }
+  }
+}
+
+/* חלון ידני פעיל כרגע — force קודם, אחר כך אירוע מתוזמן */
+function activeManualWindow(){
+  const now=new Date();
+  const inRange=r=>{
+    const s=new Date(r.start_at), e=new Date(r.end_at);
+    return !isNaN(s) && !isNaN(e) && now>=s && now<e;
+  };
+  const pick=MANUAL_WINDOWS.filter(inRange);
+  if(!pick.length) return null;
+  const forced=pick.find(r=>r.source==='force');
+  const r=forced||pick[0];
+  const s=new Date(r.start_at), e=new Date(r.end_at);
+  return {start:s, end:e, names:r.name?[r.name]:[],
+          candles:s, havdala:e, manual:true, forced:r.source==='force'};
 }
 
 /* ============================================================
@@ -885,8 +1038,10 @@ async function buildShabbatWindows(){
   }
 }
 
-/* החלון הפעיל כרגע, אם יש */
+/* החלון הפעיל כרגע, אם יש — חלון ידני גובר על החישוב האוטומטי */
 function activeShabbatWindow(){
+  const manual=activeManualWindow();
+  if(manual) return manual;
   const now=new Date();
   return SHABBAT_WINDOWS.find(w=>now>=w.start && now<w.end)||null;
 }
@@ -1180,21 +1335,33 @@ let WX_BY_DATE={};
 async function loadWeather(){
   try{
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}`
-      +`&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&forecast_days=4`;
+      +`&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
+      +`&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&forecast_days=4`;
     const j=await (await fetch(url)).json(), d=j.daily;
+    const rainArr=d.precipitation_probability_max||[];
     WX_BY_DATE={};
     for(let i=0;i<(d.time||[]).length;i++){
       WX_BY_DATE[d.time[i]]={code:d.weather_code[i],
-        max:d.temperature_2m_max[i],min:d.temperature_2m_min[i]};
+        max:d.temperature_2m_max[i],min:d.temperature_2m_min[i],
+        rain:(rainArr[i]==null?null:rainArr[i])};
     }
     for(let i=0;i<2;i++){
       $('wicon'+i).textContent=WCODE[d.weather_code[i]]||'🌡️';
       $('wtemp'+i).textContent=Math.round(d.temperature_2m_max[i])+'°';
       $('wrange'+i).textContent=`מקסימום ${Math.round(d.temperature_2m_max[i])}° · מינימום ${Math.round(d.temperature_2m_min[i])}°`;
     }
+    /* התראת גשם מחליפה את המלצת הבגדים באותה שורה — לא מוסיפה שורה */
     for(let i=0;i<2;i++){
-      $('wtip'+i).textContent=clothingIcon(d.temperature_2m_max[i],d.weather_code[i])
-        +' '+clothingTip(d.temperature_2m_max[i],d.weather_code[i]);
+      const el=$('wtip'+i);
+      const p=(rainArr[i]==null?null:rainArr[i]);
+      if(p!==null && p>=CONFIG.RAIN_ALERT_PCT){
+        el.textContent=`☔ ${Math.round(p)}% לגשם — קחו מטרייה`;
+        el.classList.add('wrain');
+      }else{
+        el.textContent=clothingIcon(d.temperature_2m_max[i],d.weather_code[i])
+          +' '+clothingTip(d.temperature_2m_max[i],d.weather_code[i]);
+        el.classList.remove('wrain');
+      }
     }
     markActiveWeather();
     if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
@@ -1235,9 +1402,9 @@ function shortDayLabel(iso,w){
 }
 
 /* ---- מערכת שעות — כרטיס לכל ילד ---- */
-const SPORT_RE=/(חינוך\s*גופני|חנ"?ג|חנ׳?ג|ספורט|התעמלות|שחי[יה]ה)/;
+const SPORT_RE=/(חינוך\s*גופני|חנ["׳״”’']?ג|ספורט|התעמלות|שחי[יה]ה)/;
 
-function buildSchedule(periods,rows,overrides,meals,isToday){
+function buildSchedule(periods,rows,overrides,meals,isToday,targetIso){
   const wrap=$('kidcards'); wrap.innerHTML='';
   overrides = overrides || [];
   meals = meals || {};
@@ -1265,6 +1432,7 @@ function buildSchedule(periods,rows,overrides,meals,isToday){
     const hasSport=rows.some(r=>r.kid===k.name && r.subject && SPORT_RE.test(r.subject));
 
     let inner='';
+    let endInfo=null;
     if(ov){
       inner=`<div class="dayoff small">${ov.note||'חופש'}</div>`;
     }else{
@@ -1306,6 +1474,7 @@ function buildSchedule(periods,rows,overrides,meals,isToday){
         return `<div class="${cls}"><span class="ltime">${x.t}</span>`+
                `<span class="lsubj">${x.subj}</span>${shoe}${tag}</div>`;
       }).join('');
+      endInfo=endOfDayFor(items, targetIso||'');
       if(!inner) inner='<div class="nosched">אין מערכת מעודכנת</div>';
     }
 
@@ -1315,12 +1484,20 @@ function buildSchedule(periods,rows,overrides,meals,isToday){
         (m.note?`<span class="fx">${m.note}</span>`:'')+`</span></div>`
       : '';
 
+    /* שעת סיום — נגזרת מהשיעור האחרון, או מיציאה מוקדמת בלוח החופשות */
+    const endHtml = endInfo
+      ? `<div class="endchip${endInfo.forced?' early':''}">`+
+        `<span class="el">${endInfo.forced?'סיום מוקדם':'סיום'}</span>`+
+        `<span class="ev">${endInfo.time}</span></div>`
+      : '';
+
     wrap.insertAdjacentHTML('beforeend',
       `<div class="kidcard" style="--c:${k.color};--cbg:${k.bg}">
          <div class="kidhead">
            <span class="kidname">${k.name}</span>
            ${k.grade?`<span class="kidgrade">${k.grade}</span>`:''}
            ${hasSport?'<span class="kidem">👟</span>':''}
+           ${endHtml}
          </div>
          <div class="lessons">${inner}</div>
          ${mealHtml}
@@ -1530,7 +1707,27 @@ async function init(){
   window.addEventListener('resize',fitToScreen);
 }
 
+/* טעינת שלוש טבלאות השליטה לפני שמחליטים אם המסך במצב שבת/חג.
+   חייבות להיטען לפני activeShabbatWindow(), אחרת טריגר ידני לא ייכנס
+   לתוקף עד הרענון הבא. אופציונליות לחלוטין: טבלה חסרה/ריקה = התנהגות
+   זהה לזו שהייתה לפני התוספת. */
+async function loadControlTables(){
+  if(!db) return;
+  try{
+    const [zmOv,manWin,schoolCal]=await Promise.all([
+      db.from('zmanim_overrides').select('*'),
+      db.from('manual_windows').select('*'),
+      db.from('school_calendar').select('*'),
+    ]);
+    ZMANIM_OVERRIDES=(zmOv&&zmOv.data)||[];
+    MANUAL_WINDOWS=(manWin&&manWin.data)||[];
+    SCHOOL_CAL=(schoolCal&&schoolCal.data)||[];
+    applyZmanimOverrides();
+  }catch(e){ console.warn('control tables unavailable',e); }
+}
+
 async function render(){
+  await loadControlTables();
   const {date,isTomorrow}=displayDate();
   const dayLetter=DAYS[date.getDay()];
 
@@ -1639,7 +1836,8 @@ async function render(){
         buildSchedule(periods.data||[],(sched.data||[]).filter(r=>r.day===targetLetter),
                       (overrides.data||[]).filter(o=>o.date===isoDate(target)
                         && (o.scope||'schedule')==='schedule'),
-                      mealsForDay(mealsRes.data||[],target,targetLetter), isToday);
+                      mealsForDay(mealsRes.data||[],target,targetLetter), isToday,
+                      isoDate(target));
         buildChugim((chug.data||[]).filter(c=>chugimKids.includes(c.kid)));
 
         const reason=whiteShirtReason(target, shirts.data||[], rules.data||[]);

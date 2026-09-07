@@ -443,6 +443,7 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
     <button class="tab" data-p="sched">מערכת שעות</button>
     <button class="tab" data-p="chugim">חוגים</button>
     <button class="tab" data-p="note">הערת הורים</button>
+    <button class="tab" data-p="shabbat">שבת וחגים</button>
     <button class="tab" data-p="vac">חופשות</button>
     <button class="tab" data-p="periods">שעות והפסקות</button>
     <button class="tab" data-p="food">אוכל</button>
@@ -646,6 +647,93 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
   </div>
 
   <!-- חופשות -->
+  <!-- שבת וחגים -->
+  <div class="page" id="p-shabbat">
+
+    <div class="card">
+      <h2>הפעלה מיידית</h2>
+      <div class="hint">מעלה את מסך השבת/חג עכשיו, בלי קשר לחישוב האוטומטי. נכבה מעצמו בזמן שתבחר, כדי שלא יישאר דלוק בטעות.</div>
+      <div class="rowline">
+        <select id="fcHours">
+          <option value="2">לשעתיים</option>
+          <option value="4" selected>ל-4 שעות</option>
+          <option value="8">ל-8 שעות</option>
+          <option value="24">ליממה</option>
+        </select>
+        <button id="fcOn">הצג מסך שבת/חג עכשיו</button>
+        <button class="ghost" id="fcOff">כיבוי</button>
+      </div>
+      <div class="lastchg" id="fcState"></div>
+    </div>
+
+    <div class="card">
+      <h2>זמני כניסה ויציאה</h2>
+      <div class="hint">ריק = הזמן האוטומטי מ-Hebcal, כמו היום. מילוי שדה דורס אותו לתאריך הזה בלבד. אפשר לדרוס רק צד אחד.</div>
+      <div class="rowline">
+        <input type="date" id="zmDate">
+        <input type="time" id="zmIn" placeholder="כניסה">
+        <input type="time" id="zmOut" placeholder="יציאה">
+        <button id="zmAdd">שמירה</button>
+      </div>
+      <div class="hint" style="margin:0">שדה ריק לא נשמר כדריסה — הוא פשוט נשאר אוטומטי.</div>
+      <div id="zmList" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>אירוע מתוזמן</h2>
+      <div class="hint">אירוע משלך שהלוח לא מכיר — תענית, יום משפחתי, אירוע קהילתי. עולה אוטומטית בטווח שהגדרת.</div>
+      <div class="rowline">
+        <input type="text" id="mwName" placeholder="שם האירוע">
+        <input type="datetime-local" id="mwStart">
+        <input type="datetime-local" id="mwEnd">
+        <button id="mwAdd">הוספה</button>
+      </div>
+      <div id="mwList" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>לוח זמנים לאירוע</h2>
+      <div class="hint">התפילות והאירועים שמופיעים על מסך השבת/חג. כל שורה נושאת את התאריך שבו היא באמת מתקיימת — שורת ערב שבת מקבלת את תאריך יום שישי, לא את תאריך שבת.</div>
+      <div class="rowline">
+        <select id="psType">
+          <option value="regular_shabbat">שבת רגילה</option>
+          <option value="holiday">חג</option>
+          <option value="shabbat_holiday">שבת + חג</option>
+        </select>
+      </div>
+      <div class="rowline">
+        <input type="text" id="psTitle" placeholder="שם התפילה/האירוע">
+        <input type="date" id="psDate">
+        <input type="time" id="psTime">
+        <input type="text" id="psLoc" placeholder="מיקום (אופציונלי)">
+        <button id="psAdd">הוספה</button>
+      </div>
+      <div id="psList" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>לוח חופשות שנה"ל</h2>
+      <div class="hint">מקור אחד לשני דברים: ימי חופשה שהלוח בבית מדלג עליהם, וימים עם יציאה מוקדמת שדורסים את שעת הסיום. "יום לימודים מצוין" לא חוסם כלום — רק מסומן.</div>
+      <div class="rowline">
+        <input type="text" id="scEvent" placeholder="שם האירוע">
+        <input type="date" id="scStart">
+        <input type="date" id="scEnd">
+        <select id="scKind">
+          <option value="vacation">חופשה</option>
+          <option value="study_day">יום לימודים מצוין</option>
+          <option value="early_dismissal">יציאה מוקדמת</option>
+        </select>
+        <input type="time" id="scTime" placeholder="שעת סיום" disabled>
+        <button id="scAdd">הוספה</button>
+      </div>
+      <div class="rowline">
+        <button class="ghost" id="scSeed">טעינת לוח תשפ"ז ממשרד החינוך</button>
+      </div>
+      <div id="scList" style="margin-top:14px"></div>
+    </div>
+
+  </div>
+
   <div class="page" id="p-vac">
     <div class="card">
       <h2>מצב חופשה</h2>
@@ -787,7 +875,7 @@ const $=id=>document.getElementById(id);
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 
-let state={kids:[],locations:[],photos:[],wsRules:[],overrides:[],foods:[],restrictions:[],weeklyMeals:[],periods:[],schedule:[],chugim:[],shirts:[],vac:[],settings:{}};
+let state={kids:[],locations:[],photos:[],wsRules:[],overrides:[],foods:[],restrictions:[],weeklyMeals:[],periods:[],schedule:[],chugim:[],shirts:[],vac:[],settings:{},zmanim:[],manualWins:[],schoolCal:[],prayers:[]};
 let activeKid=null;
 
 function toast(msg,bad){
@@ -913,7 +1001,7 @@ $('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
    טעינת נתונים
    ============================================================ */
 async function loadAll(){
-  const [kd,lo,p,s,c,w,wr,ov,ft,kr,v,st]=await Promise.all([
+  const [kd,lo,p,s,c,w,wr,ov,ft,kr,v,st,zm,mw,sc,ps]=await Promise.all([
     db.from('kids').select('*').order('order_index'),
     db.from('locations').select('*').order('name'),
     db.from('periods').select('*').order('order_index'),
@@ -926,6 +1014,10 @@ async function loadAll(){
     db.from('kid_restrictions').select('*'),
     db.from('vacation_plan').select('*').order('date'),
     db.from('settings').select('*'),
+    db.from('zmanim_overrides').select('*').order('date'),
+    db.from('manual_windows').select('*').order('start_at'),
+    db.from('school_calendar').select('*').order('start_date'),
+    db.from('prayer_schedule').select('*').order('date'),
   ]);
   state.kids=kd.data||[];
   state.locations=lo.data||[];
@@ -934,6 +1026,10 @@ async function loadAll(){
   state.periods=p.data||[]; state.schedule=s.data||[]; state.chugim=c.data||[];
   state.shirts=w.data||[]; state.wsRules=wr.data||[]; state.overrides=ov.data||[]; state.foods=ft.data||[]; state.restrictions=kr.data||[]; state.vac=v.data||[];
   state.settings={}; (st.data||[]).forEach(r=>state.settings[r.key]=r.value);
+  state.zmanim=(zm&&zm.data)||[];
+  state.manualWins=(mw&&mw.data)||[];
+  state.schoolCal=(sc&&sc.data)||[];
+  state.prayers=(ps&&ps.data)||[];
 }
 
 /* ============================================================
@@ -2302,6 +2398,285 @@ function renderVac(){
 }
 
 /* ============================================================
+   שבת וחגים — הפעלה ידנית, דריסת זמנים, לוח לאירוע, לוח חופשות.
+   הכל אופציונלי: טבלה ריקה = הלוח בבית מתנהג בדיוק כמו קודם.
+   ============================================================ */
+
+/* המרה בין קלט datetime-local (שעון ישראל) לבין ISO אמיתי, ובחזרה.
+   הפאנל נפתח לפעמים ממכשיר באזור זמן אחר — אסור להסתמך על שעון המכשיר. */
+function israelOffsetMs(at){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(at);
+  const g=t=>+p.find(x=>x.type===t).value;
+  return Date.UTC(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'))-at.getTime();
+}
+/* 'YYYY-MM-DDTHH:MM' בשעון ישראל → Date */
+function ilLocalToDate(s){
+  const m=/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(String(s||'').trim());
+  if(!m) return null;
+  const wall=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],0);
+  let t=new Date(wall-israelOffsetMs(new Date(wall)));
+  return new Date(wall-israelOffsetMs(t));
+}
+/* Date → 'DD/MM HH:MM' בשעון ישראל, לתצוגה */
+function ilStamp(v){
+  const d=new Date(v);
+  if(isNaN(d)) return '';
+  return new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',
+    day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
+}
+
+/* ---------- הפעלה מיידית ---------- */
+function activeForce(){
+  const now=Date.now();
+  return state.manualWins.find(r=>r.source==='force'
+    && new Date(r.start_at).getTime()<=now && new Date(r.end_at).getTime()>now)||null;
+}
+function renderForce(){
+  const f=activeForce();
+  $('fcState').textContent = f
+    ? `מסך שבת/חג מוצג עכשיו — נכבה אוטומטית ב-${ilStamp(f.end_at)}`
+    : 'כרגע פועל החישוב האוטומטי בלבד';
+  $('fcOff').style.display = f ? '' : 'none';
+}
+$('fcOn').onclick=async()=>{
+  const hrs=+$('fcHours').value||4;
+  const start=new Date(), end=new Date(Date.now()+hrs*3600*1000);
+  /* טריגר קודם שעדיין פעיל מוחלף, כדי שלא יצטברו כמה במקביל */
+  const old=activeForce();
+  if(old){
+    await db.from('manual_windows').delete().eq('id',old.id);
+    state.manualWins=state.manualWins.filter(r=>r.id!==old.id);
+  }
+  const {data,error}=await db.from('manual_windows').insert({
+    name:'', source:'force', start_at:start.toISOString(), end_at:end.toISOString()
+  }).select().single();
+  if(error||!data){ toast('לא נשמר',true); return; }
+  state.manualWins.push(data); renderForce(); renderManual();
+  toast('מסך שבת/חג מוצג');
+};
+$('fcOff').onclick=async()=>{
+  const f=activeForce(); if(!f) return;
+  const ok=await ask('כיבוי מסך שבת/חג','לחזור לחישוב האוטומטי עכשיו?',{yes:'כיבוי'});
+  if(!ok) return;
+  await db.from('manual_windows').delete().eq('id',f.id);
+  state.manualWins=state.manualWins.filter(r=>r.id!==f.id);
+  renderForce(); renderManual(); toast('כובה');
+};
+
+/* ---------- דריסת זמני כניסה/יציאה ---------- */
+function renderZmanimOv(){
+  $('zmList').innerHTML = state.zmanim.length
+    ? state.zmanim.map(z=>{
+        const parts=[];
+        parts.push(z.candle_time?`כניסה ${String(z.candle_time).slice(0,5)}`:'כניסה אוטומטית');
+        parts.push(z.havdalah_time?`יציאה ${String(z.havdalah_time).slice(0,5)}`:'יציאה אוטומטית');
+        return `<div class="dateitem" style="background:var(--soft)">
+          <b>${fmtDate(z.date)}</b>
+          <span class="sp">${parts.join(' · ')}</span>
+          <button class="danger" data-del="${z.id}">מחיקה</button></div>`;
+      }).join('')
+    : '<div class="hint">אין דריסות — כל הזמנים אוטומטיים</div>';
+  $('zmList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const rec=state.zmanim.find(x=>x.id==b.dataset.del);
+    const ok=await ask('מחיקת דריסת זמנים',
+      `למחוק את הדריסה של ${rec?fmtDate(rec.date):''}? הזמן יחזור להיות אוטומטי.`,{yes:'מחיקה'});
+    if(!ok) return;
+    await db.from('zmanim_overrides').delete().eq('id',b.dataset.del);
+    state.zmanim=state.zmanim.filter(z=>z.id!=b.dataset.del);
+    renderZmanimOv(); toast('נמחק');
+  });
+}
+$('zmAdd').onclick=async()=>{
+  const date=$('zmDate').value;
+  if(!date){ toast('בחרו תאריך',true); return; }
+  const cin=$('zmIn').value||null, cout=$('zmOut').value||null;
+  if(!cin&&!cout){ toast('מלאו לפחות זמן אחד',true); return; }
+  const exists=state.zmanim.find(z=>z.date===date);
+  if(exists){
+    const ok=await ask('עדכון דריסה קיימת',
+      `כבר קיימת דריסה ל-${fmtDate(date)}. להחליף אותה?`,{danger:false,yes:'עדכון'});
+    if(!ok) return;
+    const {data}=await db.from('zmanim_overrides')
+      .update({candle_time:cin,havdalah_time:cout}).eq('id',exists.id).select().single();
+    if(data) Object.assign(exists,data);
+  }else{
+    const {data,error}=await db.from('zmanim_overrides')
+      .insert({date,candle_time:cin,havdalah_time:cout}).select().single();
+    if(error||!data){ toast('לא נשמר',true); return; }
+    state.zmanim.push(data); state.zmanim.sort((a,b)=>a.date.localeCompare(b.date));
+  }
+  $('zmIn').value=''; $('zmOut').value='';
+  renderZmanimOv(); toast('נשמר');
+};
+
+/* ---------- אירוע מתוזמן ---------- */
+function renderManual(){
+  const rows=state.manualWins.filter(r=>r.source!=='force');
+  $('mwList').innerHTML = rows.length
+    ? rows.map(r=>`<div class="dateitem" style="background:var(--soft)">
+        <b>${esc(r.name||'אירוע')}</b>
+        <span class="sp">${ilStamp(r.start_at)} – ${ilStamp(r.end_at)}</span>
+        <button class="danger" data-del="${r.id}">מחיקה</button></div>`).join('')
+    : '<div class="hint">אין אירועים מתוזמנים</div>';
+  $('mwList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const rec=state.manualWins.find(x=>x.id==b.dataset.del);
+    const ok=await ask('מחיקת אירוע',`למחוק את "${rec?rec.name:''}"?`,{yes:'מחיקה'});
+    if(!ok) return;
+    await db.from('manual_windows').delete().eq('id',b.dataset.del);
+    state.manualWins=state.manualWins.filter(r=>r.id!=b.dataset.del);
+    renderManual(); renderForce(); toast('נמחק');
+  });
+}
+$('mwAdd').onclick=async()=>{
+  const name=$('mwName').value.trim();
+  const s=ilLocalToDate($('mwStart').value), e=ilLocalToDate($('mwEnd').value);
+  if(!name){ toast('הזינו שם',true); return; }
+  if(!s||!e){ toast('מלאו התחלה וסיום',true); return; }
+  if(e<=s){ toast('הסיום חייב להיות אחרי ההתחלה',true); return; }
+  const {data,error}=await db.from('manual_windows').insert({
+    name, source:'manual', start_at:s.toISOString(), end_at:e.toISOString()
+  }).select().single();
+  if(error||!data){ toast('לא נשמר',true); return; }
+  state.manualWins.push(data);
+  $('mwName').value=''; $('mwStart').value=''; $('mwEnd').value='';
+  renderManual(); toast('נוסף');
+};
+
+/* ---------- לוח זמנים לאירוע ---------- */
+const PS_TYPE_HE={regular_shabbat:'שבת רגילה',holiday:'חג',shabbat_holiday:'שבת + חג'};
+function renderPrayerList(){
+  const type=$('psType').value;
+  const rows=state.prayers.filter(r=>r.schedule_type===type)
+    .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))
+      || (a.display_order||0)-(b.display_order||0)
+      || String(a.time||'').localeCompare(String(b.time||'')));
+  $('psList').innerHTML = rows.length
+    ? rows.map(r=>`<div class="dateitem" style="background:var(--soft)">
+        <b>${esc(r.title||'')}</b>
+        <span class="sp">${r.date?fmtDate(r.date):''}${r.time?' · '+String(r.time).slice(0,5):''}${r.location?' · '+esc(r.location):''}</span>
+        <button class="danger" data-del="${r.id}">מחיקה</button></div>`).join('')
+    : `<div class="hint">אין שורות ל${PS_TYPE_HE[type]} — המסך לא יציג לו"ז לאירוע כזה</div>`;
+  $('psList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const rec=state.prayers.find(x=>x.id==b.dataset.del);
+    const ok=await ask('מחיקת שורה',`למחוק את "${rec?rec.title:''}"?`,{yes:'מחיקה'});
+    if(!ok) return;
+    await db.from('prayer_schedule').delete().eq('id',b.dataset.del);
+    state.prayers=state.prayers.filter(r=>r.id!=b.dataset.del);
+    renderPrayerList(); toast('נמחק');
+  });
+}
+$('psType').onchange=renderPrayerList;
+$('psAdd').onclick=async()=>{
+  const title=$('psTitle').value.trim(), date=$('psDate').value, time=$('psTime').value;
+  if(!title){ toast('הזינו שם',true); return; }
+  if(!date){ toast('בחרו תאריך',true); return; }
+  const type=$('psType').value;
+  const same=state.prayers.filter(r=>r.schedule_type===type&&r.date===date).length;
+  const {data,error}=await db.from('prayer_schedule').insert({
+    schedule_type:type, date, title, time:time||null,
+    location:$('psLoc').value.trim()||null, display_order:same+1
+  }).select().single();
+  if(error||!data){ toast('לא נשמר',true); return; }
+  state.prayers.push(data);
+  $('psTitle').value=''; $('psTime').value=''; $('psLoc').value='';
+  renderPrayerList(); toast('נוסף');
+};
+
+/* ---------- לוח חופשות שנה"ל ---------- */
+const SC_KIND_HE={vacation:'חופשה',study_day:'יום לימודים מצוין',early_dismissal:'יציאה מוקדמת'};
+$('scKind').onchange=()=>{
+  const early=$('scKind').value==='early_dismissal';
+  $('scTime').disabled=!early;
+  if(!early) $('scTime').value='';
+};
+function renderSchoolCal(){
+  const rows=[...state.schoolCal].sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date)));
+  $('scList').innerHTML = rows.length
+    ? rows.map(r=>{
+        const range=r.end_date&&r.end_date!==r.start_date
+          ? `${fmtDate(r.start_date)} – ${fmtDate(r.end_date)}` : fmtDate(r.start_date);
+        const extra=r.kind==='early_dismissal'&&r.early_time
+          ? ' · סיום '+String(r.early_time).slice(0,5) : '';
+        return `<div class="dateitem" style="background:var(--soft)">
+          <b>${esc(r.event||'')}</b>
+          <span class="sp">${range} · ${SC_KIND_HE[r.kind]||r.kind}${extra}</span>
+          <button class="danger" data-del="${r.id}">מחיקה</button></div>`;
+      }).join('')
+    : '<div class="hint">הלוח ריק — הלוח בבית מתנהג כמו לפני התוספת</div>';
+  $('scList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const rec=state.schoolCal.find(x=>x.id==b.dataset.del);
+    const ok=await ask('מחיקה מלוח החופשות',
+      `למחוק את "${rec?rec.event:''}"?`,{yes:'מחיקה'});
+    if(!ok) return;
+    await db.from('school_calendar').delete().eq('id',b.dataset.del);
+    state.schoolCal=state.schoolCal.filter(r=>r.id!=b.dataset.del);
+    renderSchoolCal(); toast('נמחק');
+  });
+}
+$('scAdd').onclick=async()=>{
+  const event=$('scEvent').value.trim(), start=$('scStart').value;
+  if(!event){ toast('הזינו שם',true); return; }
+  if(!start){ toast('בחרו תאריך התחלה',true); return; }
+  const end=$('scEnd').value||start;
+  if(end<start){ toast('הסיום לפני ההתחלה',true); return; }
+  const kind=$('scKind').value;
+  if(kind==='early_dismissal' && !$('scTime').value){ toast('הזינו שעת סיום',true); return; }
+  const {data,error}=await db.from('school_calendar').insert({
+    event, start_date:start, end_date:end, kind,
+    early_time: kind==='early_dismissal' ? $('scTime').value : null
+  }).select().single();
+  if(error||!data){ toast('לא נשמר',true); return; }
+  state.schoolCal.push(data);
+  $('scEvent').value=''; $('scStart').value=''; $('scEnd').value=''; $('scTime').value='';
+  renderSchoolCal(); toast('נוסף');
+};
+
+/* לוח תשפ"ז מחוזר מנכ"ל משרד החינוך (הודעה 0363).
+   טעינה חד-פעמית — מדלגת על שורות שכבר קיימות באותו תאריך. */
+const TASHPAZ=[
+  ['ראש השנה','2026-09-11','2026-09-13','vacation',null],
+  ['צום גדליה','2026-09-14','2026-09-14','early_dismissal','13:30'],
+  ['יום כיפור','2026-09-20','2026-09-24','vacation',null],
+  ['סוכות','2026-09-25','2026-10-03','vacation',null],
+  ['יום הזיכרון לאירועי 7 באוקטובר','2026-10-05','2026-10-05','study_day',null],
+  ['יום הזיכרון לרחבעם זאבי','2026-10-11','2026-10-11','study_day',null],
+  ['יום הזיכרון ליצחק רבין','2026-10-22','2026-10-22','study_day',null],
+  ['חג הסיגד','2026-11-09','2026-11-09','study_day',null],
+  ['יום הזיכרון לדוד בן גוריון','2026-11-16','2026-11-16','study_day',null],
+  ['חנוכה','2026-12-06','2026-12-12','vacation',null],
+  ['עשרה בטבת','2026-12-20','2026-12-20','early_dismissal','13:30'],
+  ['ציון יום זאב זבוטינסקי','2026-12-22','2026-12-22','study_day',null],
+  ['טו בשבט','2027-01-23','2027-01-23','study_day',null],
+  ['יום הזיכרון ליוסף טרומפלדור','2027-03-18','2027-03-18','study_day',null],
+  ['תענית אסתר','2027-03-22','2027-03-22','early_dismissal','13:30'],
+  ['פורים','2027-03-23','2027-03-24','vacation',null],
+  ['פסח','2027-04-13','2027-04-28','vacation',null],
+  ['יום הזיכרון לשואה ולגבורה','2027-05-04','2027-05-04','study_day',null],
+  ['יום הזיכרון לחללי צהל','2027-05-11','2027-05-11','early_dismissal','12:00'],
+  ['יום העצמאות','2027-05-12','2027-05-12','vacation',null],
+  ['ציון יום בנימין זאב הרצל','2027-05-17','2027-05-17','study_day',null],
+  ['לג בעומר','2027-05-25','2027-05-25','study_day',null],
+  ['יום ירושלים','2027-06-04','2027-06-04','study_day',null],
+  ['שבועות','2027-06-10','2027-06-11','vacation',null],
+];
+$('scSeed').onclick=async()=>{
+  const fresh=TASHPAZ.filter(r=>!state.schoolCal.some(x=>x.event===r[0]&&x.start_date===r[1]));
+  if(!fresh.length){ toast('הלוח כבר טעון'); return; }
+  const ok=await ask('טעינת לוח תשפז',
+    `להוסיף ${fresh.length} שורות מחוזר מנכל? שורות שכבר קיימות לא ישוכפלו. `+
+    `שימו לב: החוזר לא מציין חולצה לבנה — היא נשארת בהזנה ידנית.`,
+    {danger:false,yes:'טעינה'});
+  if(!ok) return;
+  const payload=fresh.map(r=>({event:r[0],start_date:r[1],end_date:r[2],kind:r[3],early_time:r[4]}));
+  const {data,error}=await db.from('school_calendar').insert(payload).select();
+  if(error){ toast('הטעינה נכשלה',true); return; }
+  state.schoolCal.push(...(data||[]));
+  renderSchoolCal(); toast(`נוספו ${(data||[]).length} שורות`);
+};
+
+/* ============================================================
    ניהול ילדים
    ============================================================ */
 function renderKids(){
@@ -2712,6 +3087,7 @@ async function start(){
   renderKids(); renderKidTabs(); renderSchedule(); renderLastChanged(); renderPeriods();
   await loadWeeklyMeals();
   renderFoodTypes(); renderRestrictions(); renderFoodWeekly(); renderRules(); renderOvKids(); ovWire(); ovRenderList(); renderShirts(); renderShirtSquares(); renderChugim(); renderVac();
+  renderForce(); renderZmanimOv(); renderManual(); renderPrayerList(); renderSchoolCal();
   loadPhotos();
   $('noteText').value=state.settings.parent_note||'';
   const until=String(state.settings.parent_note_until||'').trim();
