@@ -956,11 +956,23 @@ function applyZmanimOverrides(){
 }
 
 /* חלון ידני פעיל כרגע — force קודם, אחר כך אירוע מתוזמן.
-   אם לשורה יש target_date (תצוגה מקדימה של אירוע עתידי אמיתי), הלו"ז/תאריכים/
-   זמני כניסה-יציאה נלקחים מהחלון האמיתי של Hebcal שמכיל את אותו תאריך —
-   כך ש-scheduleTypeFor()/windowDates() רואים את האירוע האמיתי ולא את שעון
-   ההפעלה הידנית עצמו. משך ההצגה בפועל (מתי המסך דלוק) עדיין נשלט לגמרי
-   ע"י start_at/end_at של השורה — רק תוכן התצוגה משתנה. */
+   תוכן התצוגה תמיד נגזר מחלון שבת/חג אמיתי של Hebcal, לעולם לא משעות
+   ההפעלה הידנית עצמן (שהן שרירותיות — "עוד שעתיים" וכו'). הבחירה:
+     1. target_date מפורש — החלון שמכיל אותו תאריך (תצוגה מקדימה מכוונת)
+     2. אין target_date — החלון האמיתי הקרוב ביותר: זה שפעיל כרגע אם יש,
+        אחרת הבא בתור. זה מה ש"הצג מסך שבת/חג עכשיו" תמיד אמור להביא.
+   משך ההצגה בפועל (מתי המסך דלוק) עדיין נשלט לגמרי ע"י start_at/end_at.
+   רק אם אין שום חלון אמיתי ידוע (Hebcal לא נטען) נופלים לשעות הידניות. */
+function nearestRealWindow(now){
+  if(!SHABBAT_WINDOWS.length) return null;
+  const active=SHABBAT_WINDOWS.find(x=>now>=x.start && now<x.end);
+  if(active) return active;
+  const upcoming=SHABBAT_WINDOWS.filter(x=>x.start>=now)
+    .sort((a,b)=>a.start-b.start);
+  if(upcoming.length) return upcoming[0];
+  /* אין קדימה — לוקחים את האחרון שהיה, עדיף מלוח ריק */
+  return [...SHABBAT_WINDOWS].sort((a,b)=>b.start-a.start)[0]||null;
+}
 function activeManualWindow(){
   const now=new Date();
   const inRange=r=>{
@@ -973,16 +985,21 @@ function activeManualWindow(){
   const r=forced||pick[0];
   const s=new Date(r.start_at), e=new Date(r.end_at);
 
+  let rw=null;
   if(r.target_date){
-    const rw=SHABBAT_WINDOWS.find(x=>windowDates(x).includes(r.target_date));
-    if(rw){
-      return {start:rw.start, end:rw.end, names:rw.names,
-              candles:rw.candles, havdala:rw.havdala,
-              manual:true, forced:r.source==='force', previewDate:r.target_date};
-    }
-    console.warn('manual_windows target_date לא נמצא בחלונות Hebcal הידועים:',r.target_date);
+    rw=SHABBAT_WINDOWS.find(x=>windowDates(x).includes(r.target_date))||null;
+    if(!rw) console.warn('manual_windows target_date לא נמצא בחלונות Hebcal הידועים:',r.target_date);
+  }
+  if(!rw) rw=nearestRealWindow(now);
+
+  if(rw){
+    return {start:rw.start, end:rw.end, names:rw.names,
+            candles:rw.candles, havdala:rw.havdala,
+            manual:true, forced:r.source==='force',
+            previewDate:r.target_date||null};
   }
 
+  /* מוצא אחרון: אין נתוני Hebcal בכלל */
   return {start:s, end:e, names:r.name?[r.name]:[],
           candles:s, havdala:e, manual:true, forced:r.source==='force'};
 }
