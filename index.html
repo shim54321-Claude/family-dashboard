@@ -952,7 +952,12 @@ function applyZmanimOverrides(){
   }
 }
 
-/* חלון ידני פעיל כרגע — force קודם, אחר כך אירוע מתוזמן */
+/* חלון ידני פעיל כרגע — force קודם, אחר כך אירוע מתוזמן.
+   אם לשורה יש target_date (תצוגה מקדימה של אירוע עתידי אמיתי), הלו"ז/תאריכים/
+   זמני כניסה-יציאה נלקחים מהחלון האמיתי של Hebcal שמכיל את אותו תאריך —
+   כך ש-scheduleTypeFor()/windowDates() רואים את האירוע האמיתי ולא את שעון
+   ההפעלה הידנית עצמו. משך ההצגה בפועל (מתי המסך דלוק) עדיין נשלט לגמרי
+   ע"י start_at/end_at של השורה — רק תוכן התצוגה משתנה. */
 function activeManualWindow(){
   const now=new Date();
   const inRange=r=>{
@@ -964,6 +969,17 @@ function activeManualWindow(){
   const forced=pick.find(r=>r.source==='force');
   const r=forced||pick[0];
   const s=new Date(r.start_at), e=new Date(r.end_at);
+
+  if(r.target_date){
+    const rw=SHABBAT_WINDOWS.find(x=>windowDates(x).includes(r.target_date));
+    if(rw){
+      return {start:rw.start, end:rw.end, names:rw.names,
+              candles:rw.candles, havdala:rw.havdala,
+              manual:true, forced:r.source==='force', previewDate:r.target_date};
+    }
+    console.warn('manual_windows target_date לא נמצא בחלונות Hebcal הידועים:',r.target_date);
+  }
+
   return {start:s, end:e, names:r.name?[r.name]:[],
           candles:s, havdala:e, manual:true, forced:r.source==='force'};
 }
