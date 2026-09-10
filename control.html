@@ -665,6 +665,10 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
         <button id="fcOn">הצג מסך שבת/חג עכשיו</button>
         <button class="ghost" id="fcOff">כיבוי</button>
       </div>
+      <div class="rowline">
+        <input type="date" id="fcTarget">
+        <label class="hint" style="margin:0" for="fcTarget">תצוגה מקדימה של תאריך עתידי (אופציונלי) — מציג את הלו"ז האמיתי של אותו שבת/חג במקום מסך ריק</label>
+      </div>
       <div class="lastchg" id="fcState"></div>
     </div>
 
@@ -2440,10 +2444,16 @@ function activeForce(){
   return state.manualWins.find(r=>r.source==='force'
     && new Date(r.start_at).getTime()<=now && new Date(r.end_at).getTime()>now)||null;
 }
+function dmy(iso){
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||''));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+}
 function renderForce(){
   const f=activeForce();
   $('fcState').textContent = f
-    ? `מסך שבת/חג מוצג עכשיו — נכבה אוטומטית ב-${ilStamp(f.end_at)}`
+    ? (f.target_date
+        ? `מציג תצוגה מקדימה של ${dmy(f.target_date)} — נכבה אוטומטית ב-${ilStamp(f.end_at)}`
+        : `מסך שבת/חג מוצג עכשיו — נכבה אוטומטית ב-${ilStamp(f.end_at)}`)
     : 'כרגע פועל החישוב האוטומטי בלבד';
   $('fcOff').style.display = f ? '' : 'none';
 }
@@ -2469,12 +2479,14 @@ $('fcOn').onclick=async()=>{
     await db.from('manual_windows').delete().eq('id',old.id);
     state.manualWins=state.manualWins.filter(r=>r.id!==old.id);
   }
+  const target=$('fcTarget').value||null;
   const {data,error}=await db.from('manual_windows').insert({
-    name:'', source:'force', start_at:start.toISOString(), end_at:end.toISOString()
+    name: target?'תצוגה מקדימה':'', source:'force',
+    start_at:start.toISOString(), end_at:end.toISOString(), target_date:target
   }).select().single();
   if(error||!data){ toast('לא נשמר',true); return; }
-  state.manualWins.push(data); renderForce(); renderManual();
-  toast('מסך שבת/חג מוצג');
+  state.manualWins.push(data); $('fcTarget').value=''; renderForce(); renderManual();
+  toast(target?`מציג תצוגה מקדימה של ${dmy(target)}`:'מסך שבת/חג מוצג');
 };
 $('fcOff').onclick=async()=>{
   const f=activeForce(); if(!f) return;
