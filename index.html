@@ -362,6 +362,8 @@ body.shabbat.night .sbart svg{opacity:.2}
 .sbfoot .greet{font-weight:700;color:var(--ink)}
 .cnote{font-size:1.6rem;color:var(--ink-soft);text-align:center;flex:1;min-width:0}
 .cnote.hidden{display:none}
+.pdaynote{font-size:1.35rem;color:var(--ink-soft);margin-top:.6rem;
+  padding-top:.6rem;border-top:1px dashed var(--line);line-height:1.35}
 
 #err{position:fixed;bottom:0;inset-inline:0;background:#8B2020;color:#fff;
   font-size:1.8rem;padding:.8rem 2vw;display:none;z-index:50;text-align:center}
@@ -446,6 +448,7 @@ body.shabbat.night .sbart svg{opacity:.2}
   .sbart svg{width:70%}
   .sbfoot{font-size:12px}
   .cnote{font-size:12px}
+  .pdaynote{font-size:11px;margin-top:6px;padding-top:6px}
   #gotoControl{display:block}
 }
 </style>
@@ -1210,7 +1213,11 @@ function prayerInstant(r){
 }
 
 /* ---- ציור: מקובץ לפי יום, עמודה ליום, הדגשה לפריט הקרוב ---- */
-function renderPrayerRows(box,rows,w){
+/* מציג לוח תפילות מקובץ לפי יום; notesByDate={iso:[טקסטים]} — הודעת קהילה
+   ליום הספציפי הזה (לא הודעה גלובלית אחת למסך כולו, כדי שכמה ימים עם
+   הודעות שונות באותו חלון יוצגו כולם, כל אחד תחת היום הנכון שלו) */
+function renderPrayerRows(box,rows,w,notesByDate){
+  notesByDate=notesByDate||{};
   const sorted=[...rows].sort((a,b)=>
     String(a.date).localeCompare(String(b.date)) ||
     (a.display_order||0)-(b.display_order||0));
@@ -1220,10 +1227,16 @@ function renderPrayerRows(box,rows,w){
     if(!byDay.has(r.date)) byDay.set(r.date,[]);
     byDay.get(r.date).push(r);
   }
+  // ימים שיש להם רק הודעת קהילה בלי אף שורת תפילה — עדיין מקבלים עמודה
+  for(const iso of Object.keys(notesByDate)){
+    if(!byDay.has(iso)) byDay.set(iso,[]);
+  }
+  const entries=[...byDay.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+
   const nextId=nextPrayerId(sorted);
 
   // מספר העמודות נגזר ממספר הימים בפועל, כדי שחג ארוך לא יישבר
-  box.dataset.cols=String(Math.min(byDay.size,4));
+  box.dataset.cols=String(Math.min(entries.length,4));
   box.innerHTML='';
 
   const nowT=israelNow().getTime();
@@ -1231,11 +1244,11 @@ function renderPrayerRows(box,rows,w){
   // אין "הבא", וללא התנאי הזה כל הלוח היה נצבע חיוור ונראה שבור.
   const dimPast=(nextId!==null);
 
-  for(const [iso,list] of byDay){
+  for(const [iso,list] of entries){
     const col=document.createElement('div');
     col.className='pday';
 
-    if(byDay.size===1){
+    if(entries.length===1){
       const head=document.createElement('div');
       head.className='ptitle';
       head.textContent='זמני תפילות';
@@ -1271,13 +1284,25 @@ function renderPrayerRows(box,rows,w){
       row.appendChild(tm); row.appendChild(nm);
       col.appendChild(row);
     }
+
+    const noteTexts=notesByDate[iso];
+    if(noteTexts&&noteTexts.length){
+      const nd=document.createElement('div');
+      nd.className='pdaynote';
+      nd.textContent=noteTexts.join(' · ');
+      col.appendChild(nd);
+    }
+
     box.appendChild(col);
   }
 }
 
-/* שליפה + הצגה. לא ממציא לו"ז: אם אין נתונים לתאריך — לא מוצג כלום */
+/* שליפה + הצגה. לא ממציא לו"ז: אם אין נתונים לתאריך — לא מוצג כלום.
+   הודעות קהילה מוצגות לפי היום שלהן (community_notes.date), לא כהודעה
+   גלובלית אחת — כך שכמה אירועים בימים שונים (או אפילו באותו יום) בתוך
+   אותו חלון שבת/חג מוצגים כולם, כל אחד תחת היום הנכון שלו. */
 async function renderPrayers(w){
-  const box=$('prayers'), note=$('cnote');
+  const box=$('prayers');
   const type=scheduleTypeFor(w);
   const dates=windowDates(w);
   const key=type+'|'+dates.join(',');
@@ -1300,16 +1325,18 @@ async function renderPrayers(w){
     if(cached){ rows=cached.rows; notes=cached.notes; }
   }
 
-  if(rows&&rows.length){
-    renderPrayerRows(box,rows,w);
+  const notesByDate={};
+  for(const n of (notes||[])){
+    if(!n||!n.text||!n.date) continue;
+    (notesByDate[n.date]||(notesByDate[n.date]=[])).push(n.text);
+  }
+
+  if((rows&&rows.length)||Object.keys(notesByDate).length){
+    renderPrayerRows(box,rows||[],w,notesByDate);
     box.classList.remove('hidden');
   }else{
     box.innerHTML=''; box.classList.add('hidden');
   }
-
-  const n=(notes||[])[0];
-  if(n&&n.text){ note.textContent=n.text; note.classList.remove('hidden'); }
-  else{ note.textContent=''; note.classList.add('hidden'); }
 }
 
 /* ---- מזג אוויר ---- */
