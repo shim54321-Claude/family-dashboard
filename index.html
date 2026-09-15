@@ -873,14 +873,21 @@ function studyDayNote(iso){
   return r?(r.event||''):'';
 }
 
-/* שעת סיום היום לילד: השיעור האחרון בלוח, אלא אם היום מסומן
-   כיציאה מוקדמת — ואז הזמן מהלוח גובר. מחזיר '' אם אין ממה לגזור. */
+/* שעת סיום היום לילד: תחילת השיעור האחרון + אורך שיעור (45 דק׳),
+   אלא אם היום מסומן כיציאה מוקדמת — ואז הזמן מהלוח גובר כמו שהוא.
+   מחזיר null אם אין ממה לגזור. */
+const LESSON_MIN=45;
 function endOfDayFor(items,iso){
   const early=earlyDismissalFor(iso);
   if(early) return {time:early, forced:true};
   const lessons=items.filter(x=>x.type==='lesson' && x.t);
   if(!lessons.length) return null;
-  return {time:lessons[lessons.length-1].t, forced:false};
+  const start=hhmmToMin(lessons[lessons.length-1].t);
+  if(start===null) return null;
+  const end=Math.min(start+LESSON_MIN, 23*60+59);
+  const hh=String(Math.floor(end/60)).padStart(2,'0');
+  const mm=String(end%60).padStart(2,'0');
+  return {time:`${hh}:${mm}`, forced:false};
 }
 
 /* ============================================================
