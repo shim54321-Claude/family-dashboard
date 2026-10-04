@@ -140,6 +140,10 @@ body.kiosk{cursor:none}
 .schedtitle .sysday{font-family:var(--font-display);font-size:2.6rem;font-weight:900}
 .schednote{font-size:1.6rem;color:var(--ink-soft)}
 .schednote.hidden{display:none}
+/* הערת "אין חיבור" — מוצגת כשהלוח מציג נתונים אחרונים שנשמרו */
+.stalenote{font-size:1.5rem;color:var(--alert);font-weight:700}
+.stalenote.hidden{display:none}
+@media (max-aspect-ratio:1/1){ .stalenote{font-size:12px} }
 
 .kidcards{display:grid;grid-template-columns:repeat(var(--kidcols,3),1fr);gap:1vw;align-items:stretch}
 .kidcard{position:relative;border-radius:1.6rem;padding:1rem 1.6vw .9rem 1.2vw;
@@ -371,7 +375,7 @@ body.shabbat.night .sbart svg{opacity:.2}
 
 /* כפתור מעבר לבקרה — מופיע רק בטלפון, לעולם לא על הצג בבית */
 #gotoControl{display:none;position:fixed;bottom:16px;inset-inline-end:16px;
-  background:var(--ink);color:#fff;border:none;border-radius:30px;
+  background:var(--ink);color:var(--bg);border:none;border-radius:30px;
   padding:13px 22px;font-size:15px;font-weight:700;font-family:var(--font-body);
   box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:60;cursor:pointer;
   text-decoration:none}
@@ -545,6 +549,7 @@ body.shabbat.night .sbart svg{opacity:.2}
     <div class="schedhead">
       <div class="schedtitle" id="schedtitle">—</div>
       <div class="schednote hidden" id="schednote"></div>
+      <div class="stalenote hidden" id="stalenote"></div>
     </div>
     <div class="kidcards" id="kidcards"></div>
   </div>
@@ -650,6 +655,19 @@ const DAYS=['א','ב','ג','ד','ה','ו','ש'];
 const DAY_FULL={'א':'ראשון','ב':'שני','ג':'שלישי','ד':'רביעי','ה':'חמישי','ו':'שישי','ש':'שבת'};
 const $=id=>document.getElementById(id);
 function showErr(m){const e=$('err');e.textContent=m;e.classList.add('on');}
+function hideErr(){const e=$('err'); if(e){e.textContent=''; e.classList.remove('on');}}
+
+/* ---- נתונים אחרונים שנטענו בהצלחה (לשימוש כשהשרת דוחה בקשה) ---- */
+const LASTGOOD_KEY='fd_lastgood_v1';
+function saveLastGood(obj){
+  try{ localStorage.setItem(LASTGOOD_KEY,JSON.stringify({ts:Date.now(),data:obj})); }catch(e){}
+}
+function loadLastGood(){
+  try{ const r=localStorage.getItem(LASTGOOD_KEY); return r?JSON.parse(r):null; }catch(e){ return null; }
+}
+function hhmmOf(ts){
+  return new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts));
+}
 
 /* ---- הסרת ניקוד וטעמים (משאיר גרש/גרשיים) ---- */
 const stripNikud = s => s.replace(/[\u0591-\u05BD\u05BF-\u05C7]/g,'');
@@ -1756,7 +1774,10 @@ async function init(){
   windowsBuiltForDay=israelNow().toDateString();
   try{
     const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
-    db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
+    /* הלוח הציבורי לא משתמש בהתחברות שמורה. אחרת הוא יורש את הכרטיס של לוח הבקרה
+       (אותו דומיין, אותו אחסון), ואם הכרטיס פג Supabase דוחה גם קריאות פתוחות (401). */
+    db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY,
+      {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   }catch(e){ showErr('לא ניתן להתחבר למסד הנתונים'); console.error(e); }
   await loadPhotoList();
   await loadWeather();
@@ -1786,9 +1807,10 @@ async function loadControlTables(){
       db.from('manual_windows').select('*'),
       db.from('school_calendar').select('*'),
     ]);
-    ZMANIM_OVERRIDES=(zmOv&&zmOv.data)||[];
-    MANUAL_WINDOWS=(manWin&&manWin.data)||[];
-    SCHOOL_CAL=(schoolCal&&schoolCal.data)||[];
+    /* שגיאה בטעינה לא מוחקת את מה שכבר נטען */
+    if(zmOv&&!zmOv.error) ZMANIM_OVERRIDES=zmOv.data||[];
+    if(manWin&&!manWin.error) MANUAL_WINDOWS=manWin.data||[];
+    if(schoolCal&&!schoolCal.error) SCHOOL_CAL=schoolCal.data||[];
     applyZmanimOverrides();
   }catch(e){ console.warn('control tables unavailable',e); }
 }
@@ -1837,7 +1859,7 @@ async function render(){
 
   if(db){
     try{
-      const [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=await Promise.all([
+      let [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=await Promise.all([
         db.from('kids').select('*').order('order_index'),
         db.from('periods').select('*'),
         db.from('schedule').select('*'),
@@ -1848,6 +1870,33 @@ async function render(){
         db.from('meals').select('*, food_types(name)'),
         db.from('settings').select('*'),
       ]);
+
+      /* בקשה שנדחתה (401 וכד') לא זורקת חריגה — היא מחזירה error ו-data ריק,
+         ולכן הלוח היה מתרוקן בשקט. כאן מזהים את זה ועוברים לנתונים האחרונים שנשמרו. */
+      const RAW=['kids','periods','sched','chug','shirts','rules','overrides','meals','settings'];
+      const resList=[kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings];
+      const failed=resList.some(r=>!r||r.error);
+      if(failed){
+        const lg=loadLastGood();
+        if(lg&&lg.data){
+          const d=lg.data;
+          [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=RAW.map(k=>({data:d[k]||[]}));
+          hideErr();
+          $('stalenote').textContent='אין חיבור — נתונים מ-'+hhmmOf(lg.ts);
+          $('stalenote').classList.remove('hidden');
+        }else{
+          $('stalenote').classList.add('hidden');
+          showErr('לא ניתן לטעון נתונים — בדוק חיבור');
+          console.error('fetch failed, no cached data',resList.map(r=>r&&r.error));
+          scheduleFit();
+          return;
+        }
+      }else{
+        const snap={}; RAW.forEach((k,i)=>{ snap[k]=resList[i].data||[]; });
+        saveLastGood(snap);
+        hideErr();
+        $('stalenote').classList.add('hidden');
+      }
 
       const allKids=(kidsRes.data||[]);
       KIDS=allKids.filter(k=>k.show_schedule!==false)
