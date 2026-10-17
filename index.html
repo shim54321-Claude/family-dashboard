@@ -1384,25 +1384,19 @@ async function renderPrayers(w){
 /* ---- מזג אוויר ---- */
 const WCODE={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌦️',
  61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'🌨️',80:'🌧️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
-/* אייקון לבוש — נגזר מאותם תנאים כמו הטקסט */
-function clothingIcon(max,code){
-  const rainy=[51,53,55,61,63,65,80,81,82,95,96,99].includes(code);
-  const snowy=[71,73,75].includes(code);
-  if(snowy)      return '🧥🧣';
-  if(rainy)      return '🧥☂️';
-  if(max>=30)    return '👕🧢';
-  if(max>=25)    return '👕';
-  if(max>=18)    return '👚';
-  if(max>=12)    return '🧶';
-  return '🧥🧣';
+/* המלצת לבוש — לפי הטמפרטורה המעוגלת שמוצגת על המסך בלבד.
+   גשם לא משנה את הבגד; הוא רק מוסיף ☂️ + אחוז (ראו rainSuffix). */
+function clothingFor(max){
+  const t=Math.round(max);
+  if(t>=30) return {icon:'👕🧢',   text:'חם מאוד — קצרים וכובע'};
+  if(t>=25) return {icon:'👕',     text:'נעים — קצרים'};
+  if(t>=18) return {icon:'🧥',     text:'מומלץ סווטשירט'};
+  if(t>=12) return {icon:'🧥🧣',   text:'קריר — מעיל קל'};
+  return          {icon:'🧥🧤🧣', text:'קר — מעיל חם'};
 }
-function clothingTip(max,code){
-  if([51,53,55,61,63,65,80,81,82,95,96,99].includes(code))return'קחו מעיל, צפוי גשם';
-  if(max>=30)return'חם מאוד — קצרים וכובע';
-  if(max>=25)return'נעים — קצרים';
-  if(max>=18)return'מומלץ סווטשירט';
-  if(max>=12)return'קריר — סוודר';
-  return'קר — מעיל חם';
+function rainSuffix(p){
+  return (p!==null && p!==undefined && p>=CONFIG.RAIN_ALERT_PCT)
+    ? ` · ☂️ ${Math.round(p)}%` : '';
 }
 /* הדגשה נודדת: "היום" עד 17:00, אח"כ "מחר" עד חצות */
 const WEATHER_FOCUS_HOUR=17;
@@ -1435,18 +1429,14 @@ async function loadWeather(){
       $('wtemp'+i).textContent=Math.round(d.temperature_2m_max[i])+'°';
       $('wrange'+i).textContent=`מקסימום ${Math.round(d.temperature_2m_max[i])}° · מינימום ${Math.round(d.temperature_2m_min[i])}°`;
     }
-    /* התראת גשם מחליפה את המלצת הבגדים באותה שורה — לא מוסיפה שורה */
+    /* שורת לבוש + מטרייה: הבגד לפי טמפרטורה, הגשם רק מתווסף בסוף השורה */
     for(let i=0;i<2;i++){
       const el=$('wtip'+i);
       const p=(rainArr[i]==null?null:rainArr[i]);
-      if(p!==null && p>=CONFIG.RAIN_ALERT_PCT){
-        el.textContent=`☔ ${Math.round(p)}% לגשם — קחו מטרייה`;
-        el.classList.add('wrain');
-      }else{
-        el.textContent=clothingIcon(d.temperature_2m_max[i],d.weather_code[i])
-          +' '+clothingTip(d.temperature_2m_max[i],d.weather_code[i]);
-        el.classList.remove('wrain');
-      }
+      const c=clothingFor(d.temperature_2m_max[i]);
+      const r=rainSuffix(p);
+      el.textContent=`${c.icon} ${c.text}${r}`;
+      el.classList.toggle('wrain', r!=='');
     }
     markActiveWeather();
     if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
