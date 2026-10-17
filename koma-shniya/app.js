@@ -3,7 +3,6 @@
 
 const SB_URL = 'https://ghnvkgufqtbwfmsaassx.supabase.co';
 const SB_KEY = 'sb_publishable_bC4IdJRndDNrFVEogNu-6w_cIQurKtH';
-const VAPID_PUBLIC = 'BGwvf_xwZS4UW5ZHq09kqDG-4j9jDTKvfS4vaOOrqrC1CrQ_Y-nxskiybxQqGnFit8C4Ltlenvp1TbSK4zZKwYU';
 const G_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events';
 const DRIVE = 'https://drive.google.com/drive/folders/';
 const ROOT_FOLDER = '13B9_eKr4sBGD7RQrAM1baqtMvWwrSDiW';
@@ -661,7 +660,9 @@ async function enablePush() {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') return toast('ההתראות לא אושרו. אפשר לשנות בהגדרות הטלפון.');
     const reg = await navigator.serviceWorker.ready;
-    const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) }));
+    const cfg = await q(sb.from('sf_config').select('value').eq('name', 'vapid_public').maybeSingle());
+    if (!cfg) throw new Error('מפתח ההתראות עוד לא מוכן');
+    const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(cfg.value) }));
     const j = sub.toJSON();
     await q(sb.from('sf_push_subs').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, email: S.me.email }));
     lsSet('sf_push_on', '1'); S.sheet = null;
