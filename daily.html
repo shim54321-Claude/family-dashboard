@@ -488,7 +488,7 @@ function ask(title,body,{danger=true,yes='אישור'}={}){
 }
 
 /* ---------- מצב לילה — אותם כללים בדיוק כמו בלוח ---------- */
-const NIGHT_DEFAULTS={enabled:true,startMin:22*60+30,endMin:5*60+45};
+const NIGHT_DEFAULTS={enabled:false,startMin:22*60+30,endMin:5*60+45};
 let NIGHT={...NIGHT_DEFAULTS};
 function hhmmToMin(v){
   const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());
@@ -1249,6 +1249,22 @@ async function qpUndo(){
 }
 if($('qpUndo')) $('qpUndo').onclick=qpUndo;
 
+
+/* ניקוי חד-פעמי (10.11.2026): מחיקת תמונות המסך הישנות — שים אישר.
+   רשימת הקבצים שמורה ב-settings.photos_cleanup; ההורה הראשון שנכנס מוחק
+   אותם דרך ה-Storage API (מחיקה ישירה במסד חסומה), ואז ההגדרה נמחקת. */
+async function photosCleanupOnce(settings){
+  const raw=settings&&settings.photos_cleanup; if(!raw) return;
+  let names=[]; try{ names=JSON.parse(raw); }catch(_){ return; }
+  if(!Array.isArray(names)||!names.length) return;
+  const {data,error}=await db.storage.from('photos').remove(names);
+  if(error){ console.warn('photos cleanup failed',error); return; }
+  await db.from('settings').delete().eq('key','photos_cleanup');
+  try{ await db.from('audit_log').insert({intent:'delete old board photos (approved 10.11.2026)',entity:'storage.photos',action:'delete',
+    previous_value:names,new_value:(data||[]).map(x=>x.name),verification_result:'removed '+(data||[]).length+' of '+names.length,
+    source:location.pathname.split('/').pop()}); }catch(_){}
+}
+
 /* ---------- הפעלה ---------- */
 async function start(){
   $('login').style.display='none';
@@ -1270,6 +1286,7 @@ async function start(){
 
   applyNightSettings(S.settings);
   setInterval(applyNightMode,10000);
+  photosCleanupOnce(S.settings).catch(()=>{});
 
   const {date,isTomorrow}=shown();
   $('dayTitle').textContent=(isTomorrow?'מחר · יום ':'היום · יום ')+DAY_FULL[DAYS[date.getDay()]];

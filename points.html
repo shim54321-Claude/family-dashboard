@@ -316,7 +316,7 @@ function ask(title,body,{danger=true,yes='אישור'}={}){
   });
 }
 /* מצב לילה — אותם כללים בדיוק כמו בלוח */
-let NIGHT={enabled:true,startMin:22*60+30,endMin:5*60+45};
+let NIGHT={enabled:false,startMin:22*60+30,endMin:5*60+45};
 const hhmmToMin=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());return m&&+m[1]<24&&+m[2]<60?+m[1]*60+ +m[2]:null;};
 function applyNight(){
   const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
@@ -375,7 +375,7 @@ async function loadAll(){
     events=events.concat(more.data||[]);
   }
   S.events=events;
-  NIGHT={enabled:!['0','false'].includes(String(S.settings.night_mode_enabled||'').trim()),
+  NIGHT={enabled:['1','true'].includes(String(S.settings.night_mode_enabled||'').trim()),   /* ברירת מחדל: כבוי */
     startMin:hhmmToMin(S.settings.night_start)??22*60+30, endMin:hhmmToMin(S.settings.night_end)??5*60+45};
   applyNight();
 }
@@ -384,9 +384,9 @@ const goalOf=kidId=>S.goals.find(g=>kidId==null?g.kid_id==null:g.kid_id===kidId)
 function progress(g){
   if(!g) return {sum:0,reached:false};
   const start=new Date(g.started_at).getTime();
-  const ids=g.kid_id==null?kidsIn().map(k=>k.id):[g.kid_id];
+  /* צנצנת משפחתית: כל נקודה שניתנה נשארת בה — גם של ילד שהוצא אחר כך מהנקודות */
   let sum=g.carry_in||0;
-  for(const e of S.events) if(!e.undone_at && ids.includes(e.kid_id) && new Date(e.created_at).getTime()>=start) sum+=e.points;
+  for(const e of S.events) if(!e.undone_at && (g.kid_id==null || e.kid_id===g.kid_id) && new Date(e.created_at).getTime()>=start) sum+=e.points;
   return {sum,reached:!g.needs_setup&&sum>=g.target};
 }
 /* קצב: ממוצע נקודות ביום ב-14 הימים האחרונים */
@@ -543,7 +543,7 @@ function renderSetup(){
   }).join('');
   $('kidsSetup').querySelectorAll('[data-part]').forEach(b=>b.onclick=async()=>{
     const k=S.kids.find(x=>x.id==b.dataset.part), on=k.points_enabled===false;
-    if(!(await ask(on?'הוספה לנקודות':'הוצאה מהנקודות',`${on?'לצרף':'להוציא'} את ${k.name} ${on?'ל':'מ'}נקודות? ${on?'':'הנקודות שנצברו נשמרות.'}`,{danger:!on,yes:'אישור'}))) return;
+    if(!(await ask(on?'הוספה לנקודות':'הוצאה מהנקודות',`${on?'לצרף':'להוציא'} את ${k.name} ${on?'ל':'מ'}נקודות? ${on?'':'מה שכבר תרם/ה לצנצנת המשפחתית נשאר בה.'}`,{danger:!on,yes:'אישור'}))) return;
     const {error}=await db.from('kids').update({points_enabled:on}).eq('id',k.id);
     if(error){ toast('לא נשמר',true); return; }
     await audit('points participation','kids','update',{id:k.id,points_enabled:!on},{id:k.id,points_enabled:on});
@@ -805,10 +805,27 @@ function renderHist(){
 }
 $('histWeek').querySelectorAll('button').forEach(b=>b.onclick=()=>{ histWeek=+b.dataset.v; renderHist(); });
 
+
+/* ניקוי חד-פעמי (10.11.2026): מחיקת תמונות המסך הישנות — שים אישר.
+   רשימת הקבצים שמורה ב-settings.photos_cleanup; ההורה הראשון שנכנס מוחק
+   אותם דרך ה-Storage API (מחיקה ישירה במסד חסומה), ואז ההגדרה נמחקת. */
+async function photosCleanupOnce(settings){
+  const raw=settings&&settings.photos_cleanup; if(!raw) return;
+  let names=[]; try{ names=JSON.parse(raw); }catch(_){ return; }
+  if(!Array.isArray(names)||!names.length) return;
+  const {data,error}=await db.storage.from('photos').remove(names);
+  if(error){ console.warn('photos cleanup failed',error); return; }
+  await db.from('settings').delete().eq('key','photos_cleanup');
+  try{ await db.from('audit_log').insert({intent:'delete old board photos (approved 10.11.2026)',entity:'storage.photos',action:'delete',
+    previous_value:names,new_value:(data||[]).map(x=>x.name),verification_result:'removed '+(data||[]).length+' of '+names.length,
+    source:location.pathname.split('/').pop()}); }catch(_){}
+}
+
 /* ---------- הפעלה ---------- */
 async function start(){
   $('login').style.display='none'; $('panel').style.display='block';
   await loadAll();
+  photosCleanupOnce(S.settings).catch(()=>{});
   show('give');
   setInterval(applyNight,10000);
   /* רענון שקט כל דקה — אם הורה אחר נתן נקודות מטלפון אחר */

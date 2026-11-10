@@ -322,10 +322,22 @@ body.night{--wx-hot:#E59A62;--wx-cold:#8FB4E0}
 .ptcard .ptn{font-family:var(--font-display);font-size:2.8rem;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums}
 .ptcard .ptp{font-size:1.5rem;color:var(--ink-soft);font-weight:700;text-align:center;line-height:1.25}
 .ptcard .ptdone{font-size:1.5rem;font-weight:900;color:var(--alert);text-align:center}
-.ptextra{width:100%;border-top:1px solid var(--line);margin-top:.3rem;padding-top:.6rem;
-  display:flex;flex-direction:column;align-items:center;gap:.25rem}
-.ptextra .xn{font-family:var(--font-display);font-size:1.7rem;font-weight:900;color:var(--c)}
-.ptextra .xs{font-size:1.3rem;color:var(--ink-soft);font-weight:700;text-align:center}
+.ptextra{width:100%;border-top:1px solid var(--line);margin-top:.4rem;padding-top:.7rem;display:flex;flex-direction:column;gap:.9rem}
+/* ילד בתוך כרטיס הצנצנת / ברצועת הנקודות — שם גדול, ערך, פס או כוכבים, ושורת "עוד X" */
+.ptkid{display:flex;flex-direction:column;gap:.35rem;width:100%}
+.ptkid .pkh{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw}
+.ptkid .xn{font-family:var(--font-display);font-size:2.1rem;font-weight:900;color:var(--c);line-height:1.1}
+.ptkid .xv{font-family:var(--font-display);font-size:1.8rem;font-weight:800;direction:ltr;font-variant-numeric:tabular-nums}
+.ptkid .xs{font-size:1.5rem;color:var(--ink-soft);font-weight:700;line-height:1.25}
+.ptkid .xs.done{color:#9C6B1F;font-weight:900}
+.ptkid .stars{justify-content:flex-start}
+.ptkid .stars svg{width:2.1rem;height:2.1rem}
+/* רצועת נקודות — כשאין כרטיסי ילדים (יום חופש / הודעה על כל המסך) */
+.ptstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(18vw,1fr));gap:1vw;flex-shrink:0}
+.ptstrip.hidden{display:none}
+.ptstrip .ptkid{background:var(--card);border-radius:1.6rem;padding:1.2rem 1.4vw;border-top:.5rem solid var(--c);
+  box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.ptstrip .ptkid .xn{font-size:2.6rem}
 .stars{display:flex;flex-wrap:wrap;justify-content:center;gap:.15rem;direction:rtl}
 .stars svg{width:1.6rem;height:1.6rem}
 .kpts{margin-top:.6rem;display:flex;flex-direction:column;gap:.35rem}
@@ -341,7 +353,7 @@ body.night{--wx-hot:#E59A62;--wx-cold:#8FB4E0}
 .goaltag{display:inline-flex;align-items:center;gap:.4rem;background:#E2A13B;color:#16211E;border-radius:999px;
   padding:.2rem 1rem .2rem .6rem;font-family:var(--font-display);font-size:1.5rem;font-weight:900;white-space:nowrap}
 .goaltag svg{width:2rem;height:2rem}
-body.shabbat .ptcard,body.shabbat .kpts,body.shabbat #gotoPoints{display:none!important}
+body.shabbat .ptcard,body.shabbat .kpts,body.shabbat .ptstrip,body.shabbat #gotoPoints{display:none!important}
 
 /* חגיגה — מסך מלא פעם אחת כשילד מגיע ליעד */
 #celebrate{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
@@ -505,7 +517,7 @@ body.shabbat.night .sbart svg{opacity:.2}
   .fcsum .s1{font-size:17px}.fcsum .s2{font-size:13px}
   .fcsum .s3{display:inline;font-size:13px;font-weight:800;color:var(--ink)}
   .fcleg{display:none}
-  .fcday .dl{font-size:13px}.fcday .dd{font-size:10px}.fcday .ic{font-size:20px}
+  .fcday .dl{font-size:12px;white-space:normal;text-align:center;line-height:1.15;max-width:100%}.fcday .dd{font-size:10px}.fcday .ic{font-size:20px}
   .fcchart{height:100px}
   .fclbl{font-size:15px}.fclbl.lo{font-size:13px}.fclbl.big{font-size:17px}
   .fcpt{width:9px;height:9px;border-width:2px}.fcpt.big{width:12px;height:12px}
@@ -516,7 +528,9 @@ body.shabbat.night .sbart svg{opacity:.2}
   .ptcard{width:auto;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:10px;padding:12px}
   .ptcard svg.jar{height:70px}
   .ptcard .pth{font-size:15px;width:100%}.ptcard .ptn{font-size:22px}.ptcard .ptp{font-size:13px}
-  .ptextra{border-top:0;border-inline-start:1px solid var(--line);margin:0;padding:0 0 0 10px;width:auto}
+  .ptextra{width:100%;margin:0;padding-top:8px}
+  .ptkid .xn{font-size:16px}.ptkid .xv{font-size:14px}.ptkid .xs{font-size:12px}.ptkid .stars svg{width:16px;height:16px}
+  .ptstrip{grid-template-columns:1fr 1fr;gap:10px}.ptstrip .ptkid{padding:10px 12px;border-radius:14px}.ptstrip .ptkid .xn{font-size:17px}
   .kpts .kpt{font-size:12px}.kbar{height:8px}
   .goaltag{font-size:12px}
   #celebrate .cbox{max-width:90vw;padding:24px 18px}
@@ -665,6 +679,8 @@ body.shabbat.night .sbart svg{opacity:.2}
     <div class="kidcards" id="kidcards"></div>
   </div>
 
+  <div class="ptstrip hidden" id="ptstrip" aria-label="נקודות"></div>
+
   <div class="chugim hidden" id="chugim">
     <div class="chtitle" id="chtitle">חוגים — השבוע</div>
     <table class="chweek"><tbody id="chlist"></tbody></table>
@@ -761,11 +777,11 @@ function renderOffbar(){
 /* ============================================================
    מצב לילה — ברירת מחדל 22:30–05:45 (Asia/Jerusalem), ניתן
    לשינוי או לכיבוי מפאנל ההורים דרך טבלת settings:
-     night_mode_enabled = '1' / '0'   (חסר = דלוק)
+     night_mode_enabled = '1' / '0'   (חסר = כבוי — מ-10.11.2026 ברירת המחדל היא בלי מצב לילה)
      night_start        = 'HH:MM'     (חסר = 22:30)
      night_end          = 'HH:MM'     (חסר = 05:45)
    ============================================================ */
-const NIGHT_DEFAULTS = {enabled:true, startMin:22*60+30, endMin:5*60+45};
+const NIGHT_DEFAULTS = {enabled:false, startMin:22*60+30, endMin:5*60+45};
 let NIGHT = {...NIGHT_DEFAULTS};
 
 /* 'HH:MM' -> דקות מחצות. כל קלט לא תקין מחזיר null כדי שנפול לברירת המחדל. */
@@ -1582,17 +1598,19 @@ const ARROW_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 const ARROW_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg>';
 
 function wxDayLabel(iso,rel){
-  if(rel===-1) return 'אתמול';
-  if(rel===0) return 'היום';
-  if(rel===1) return 'מחר';
+  /* "היום שלישי", "מחר רביעי", "אתמול שני", ושאר הימים בשמם (בקשת שים, 10.11.2026) */
   const d=new Date(iso+'T12:00:00');
-  return d.getDay()===6 ? 'שבת' : 'יום '+DAYS[d.getDay()]+'׳';
+  const name=DAY_FULL[DAYS[d.getDay()]];
+  if(rel===-1) return 'אתמול '+name;
+  if(rel===0) return 'היום '+name;
+  if(rel===1) return 'מחר '+name;
+  return name;
 }
-/* "ביום ב׳" / "מחר" / "בשבת" — לשורת הסיכום */
+/* "ביום חמישי" / "מחר" / "בשבת" — לשורת הסיכום */
 function wxDayPhrase(iso,rel){
   if(rel===1) return 'מחר';
-  const l=wxDayLabel(iso,rel);
-  return l==='שבת'?'בשבת':'ב'+l;
+  const name=DAY_FULL[DAYS[new Date(iso+'T12:00:00').getDay()]];
+  return name==='שבת'?'בשבת':'ביום '+name;
 }
 /* ההפרש בין שני ימים לפי המקסימום המעוגל — אותו מספר שמוצג על המסך */
 function wxDelta(a,b){ return Math.round(b.max)-Math.round(a.max); }
@@ -1670,7 +1688,7 @@ function renderForecast(){
   $('fcdelta').innerHTML=cols.map((c,i)=>{
     if(i===0) return `<span class="fcbase">נקודת השוואה</span>`;
     const d=wxDelta(cols[i-1],c), a=Math.abs(d);
-    if(a<=1) return `<span class="wxchip same">= <span class="w">כמו ${wxDayLabel(cols[i-1].iso,cols[i-1].rel)}</span></span>`;
+    if(a<=1) return `<span class="wxchip same">= <span class="w">כמו ${cols[i-1].rel===-1?'אתמול':cols[i-1].rel===0?'היום':cols[i-1].rel===1?'מחר':DAY_FULL[DAYS[new Date(cols[i-1].iso+'T12:00:00').getDay()]]}</span></span>`;
     const up=d>0, big=a>=4;
     return `<span class="wxchip ${big?'big':(up?'up':'down')}">${up?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span>`+
       (big?`<span class="w">${up?' חם!':' קר!'}</span>`:(i===1&&c.rel===0?'<span class="w"> מאתמול</span>':''))+`</span>`;
@@ -1943,8 +1961,8 @@ let PTS={show:false, goals:[], events:[], settings:{}, kids:[]};
    reachedAt = רגע הנקודה שחצתה את היעד (לחגיגה). */
 function goalProgress(g){
   const start=new Date(g.started_at).getTime();
-  const ids=g.kid_id==null ? PTS.kids.filter(k=>k.points_enabled!==false).map(k=>k.id) : [g.kid_id];
-  const evs=PTS.events.filter(e=>!e.undone_at && ids.includes(e.kid_id) && new Date(e.created_at).getTime()>=start)
+  /* צנצנת משפחתית: כל נקודה שניתנה נשארת בה — גם של ילד שהוצא אחר כך מהנקודות (10.11.2026) */
+  const evs=PTS.events.filter(e=>!e.undone_at && (g.kid_id==null || e.kid_id===g.kid_id) && new Date(e.created_at).getTime()>=start)
                       .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   let sum=g.carry_in||0, reachedAt=sum>=g.target?start:null;
   for(const e of evs){ sum+=e.points; if(reachedAt===null && sum>=g.target) reachedAt=new Date(e.created_at).getTime(); }
@@ -1999,10 +2017,21 @@ function kidPoints(k){
           tag:reached?`<span class="goaltag">${MEDAL_SVG}הגעתי ליעד!</span>`:''};
 }
 
+function ptKidHtml(k){
+  const g=goalOf(k.id), p=goalProgress(g);
+  const stars=k.points_display==='stars' && g.target<=20;
+  let body='';
+  if(stars){ for(let i=0;i<g.target;i++) body+=starSvg(i<Math.min(p.sum,g.target)); body=`<div class="stars">${body}</div>`; }
+  else body=`<div class="kbar"><span style="width:${Math.min(100,Math.round(p.sum/g.target*100))}%"></span></div>`;
+  const msg=g.needs_setup?'יעד חדש בקרוב':p.reached?`${esc(g.prize)} מחכה לך!`:`עוד ${g.target-p.sum} ל${esc(g.prize)}`;
+  return `<div class="ptkid" style="--c:${k.color}"><div class="pkh"><span class="xn">${esc(k.name)}</span>`+
+    `<span class="xv">${Math.min(p.sum,g.target)}/${g.target}${stars?' ★':''}</span></div>${body}`+
+    `<div class="xs${p.reached?' done':''}">${msg}</div></div>`;
+}
 /* הצנצנת המשפחתית + ילדים שאין להם כרטיס על הלוח (למשל שהם) */
 function renderPointsCard(cardKidNames){
   const box=$('ptcard');
-  if(!PTS.show){ box.classList.add('hidden'); return; }
+  if(!PTS.show){ box.classList.add('hidden'); $('ptstrip').classList.add('hidden'); return; }
   const fam=goalOf(null);
   let html='';
   if(fam){
@@ -2019,21 +2048,16 @@ function renderPointsCard(cardKidNames){
       <div class="ptn">${Math.min(p.sum,fam.target)} / ${fam.target}</div>
       ${p.reached&&!fam.needs_setup?`<div class="ptdone">הגענו ליעד! ${esc(fam.prize)}</div>`:`<div class="ptp">${esc(fam.prize)}</div>`}`;
   }
-  const extras=PTS.kids.filter(k=>k.points_enabled!==false && !cardKidNames.includes(k.name));
-  if(extras.length){
-    html+='<div class="ptextra">';
-    for(const k of extras){
-      const g=goalOf(k.id); if(!g) continue;
-      const p=goalProgress(g);
-      let body;
-      if(k.points_display==='stars' && g.target<=20){
-        let st=''; for(let i=0;i<g.target;i++) st+=starSvg(i<Math.min(p.sum,g.target));
-        body=`<div class="stars">${st}</div>`;
-      }else body=`<div class="xs">★ ${p.sum} / ${g.target}</div>`;
-      const msg=p.reached?`${esc(g.prize)} מחכה לך!`:`עוד ${g.target-p.sum} ל${esc(g.prize)}`;
-      html+=`<span class="xn" style="--c:${k.color}">${esc(k.name)}${p.reached?' 🏅':''}</span>${body}<span class="xs">${msg}</span>`;
-    }
-    html+='</div>';
+  /* ילדים בלי כרטיס על הלוח: בדרך כלל רק שהם → בתוך כרטיס הצנצנת.
+     כשאין כרטיסים בכלל (חופש / הודעה על כל המסך) → רצועה נפרדת וגדולה לכולם. */
+  const others=PTS.kids.filter(k=>k.points_enabled!==false && !cardKidNames.includes(k.name) && goalOf(k.id));
+  const strip=$('ptstrip');
+  if(!cardKidNames.length && others.length){
+    strip.innerHTML=others.map(ptKidHtml).join('');
+    strip.classList.remove('hidden');
+  }else{
+    strip.innerHTML=''; strip.classList.add('hidden');
+    if(others.length) html+='<div class="ptextra">'+others.map(ptKidHtml).join('')+'</div>';
   }
   box.innerHTML=html;
   box.classList.toggle('hidden',!html);
@@ -2129,7 +2153,7 @@ function fitToScreen(){
   const overflows=()=>{
     if(app.scrollHeight > window.innerHeight+1) return true;
     if(app.scrollWidth  > window.innerWidth +1) return true;
-    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li,.wear,.wxchip,.kpts .kpt,.ptcard .ptp,.goaltag')){
+    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li,.wear,.wxchip,.kpts .kpt,.ptcard .ptp,.goaltag,.ptkid .xs,.ptkid .xn')){
       if(el.scrollHeight > el.clientHeight+2) return true;   // טקסט נחתך לגובה
       if(el.scrollWidth  > el.clientWidth +2) return true;   // טקסט נחתך לרוחב
     }

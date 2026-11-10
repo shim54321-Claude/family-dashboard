@@ -939,7 +939,7 @@ function israelNow(){
     .formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
   return new Date(+p.year,+p.month-1,+p.day,+(p.hour==='24'?'0':p.hour),+p.minute,+p.second);
 }
-const NIGHT_DEFAULTS={enabled:true,startMin:22*60+30,endMin:5*60+45};
+const NIGHT_DEFAULTS={enabled:false,startMin:22*60+30,endMin:5*60+45};
 let NIGHT={...NIGHT_DEFAULTS};
 function hhmmToMin(v){
   const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());
@@ -3241,10 +3241,25 @@ async function cleanupOldPrayers(){
   await db.from('prayer_schedule').delete().in('id',ids);
   state.prayers=state.prayers.filter(r=>!ids.includes(r.id));
 }
+/* ניקוי חד-פעמי (10.11.2026): מחיקת תמונות המסך הישנות — שים אישר.
+   רשימת הקבצים שמורה ב-settings.photos_cleanup; ההורה הראשון שנכנס מוחק
+   אותם דרך ה-Storage API (מחיקה ישירה במסד חסומה), ואז ההגדרה נמחקת. */
+async function photosCleanupOnce(settings){
+  const raw=settings&&settings.photos_cleanup; if(!raw) return;
+  let names=[]; try{ names=JSON.parse(raw); }catch(_){ return; }
+  if(!Array.isArray(names)||!names.length) return;
+  const {data,error}=await db.storage.from('photos').remove(names);
+  if(error){ console.warn('photos cleanup failed',error); return; }
+  await db.from('settings').delete().eq('key','photos_cleanup');
+  try{ await db.from('audit_log').insert({intent:'delete old board photos (approved 10.11.2026)',entity:'storage.photos',action:'delete',
+    previous_value:names,new_value:(data||[]).map(x=>x.name),verification_result:'removed '+(data||[]).length+' of '+names.length,
+    source:location.pathname.split('/').pop()}); }catch(_){}
+}
 async function start(){
   $('login').style.display='none';
   $('panel').style.display='block';
   await loadAll();
+  photosCleanupOnce(state.settings).catch(()=>{});
   await cleanupOldPrayers();
   await seedShabbatTemplateIfMissing();
   syncKidVars();
