@@ -6,6 +6,9 @@
 <title>לוח המשפחה</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FBF8F3">
+<!-- הלוח מנהל בעצמו מצב יום/לילה. "only light" אוסר על הדפדפן (WebView של ה-TV Stick)
+     להחשיך את הדף בעצמו — זה מה שגרם לרקע הסגול-כהה בקיוסק (15.10.2026) -->
+<meta name="color-scheme" content="only light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="לוח המשפחה">
@@ -66,8 +69,7 @@ body.night .kidname,body.night .chent .k{color:color-mix(in srgb, var(--c) 45%, 
 body.night .kidcard .mealchip{background:color-mix(in srgb, var(--c) 10%, #0C1512)}
 body.night .lesson.now{background:color-mix(in srgb, var(--c) 60%, #FFFFFF)}
 body.night .lesson.now .lsubj,body.night .lesson.now .ltime{color:#111A17}
-body.night .photobox img,body.night .photobg{filter:brightness(.7) saturate(.85)}
-body.night .photobg{filter:blur(1.6rem) saturate(.85) brightness(.6)}
+:root{color-scheme:only light}
 html{font-size:calc(1vh * var(--k))}
 *{margin:0;padding:0;box-sizing:border-box}
 body{height:100vh;overflow:hidden;background:var(--bg);color:var(--ink);
@@ -253,20 +255,116 @@ table.chweek td.chnow{background:var(--card);border-radius:0 0 1.1rem 1.1rem}
 .chent .loc{color:var(--ink-faint);font-size:.9em;margin-inline-start:.2em}
 .chempty{font-size:1.4rem;color:var(--ink-faint)}
 
-/* ז. תמונות */
-.photobox{position:relative;flex:0 0 auto;width:16vw;border-radius:1.6rem;overflow:hidden;
-  background:var(--card);box-shadow:0 1px 3px rgba(22,33,30,.06)}
-.photobox.hidden{display:none}
-/* התמונה בטלפון: ממוזערת בכותרת, לא בלוק ברוחב מלא */
 .datetext{display:contents}
-.photothumb{display:none}
-#photoview{position:fixed;inset:0;z-index:120;background:rgba(8,12,11,.94);
-  display:flex;align-items:center;justify-content:center;padding:14px}
-#photoview.hidden{display:none}
-#photoview img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
-.photobg{position:absolute;inset:-12%;background-size:cover;background-position:center;
-  filter:blur(1.6rem) saturate(1.1);transform:scale(1.15)}
-.photobox img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+
+/* ז. רצועת תחזית — אתמול + היום + 3 ימים (הוחלפה בה התמונה המשפחתית, 10.11.2026)
+   עמודות ב-grid; הקווים ב-SVG נמתח (viewBox 1000×100), הנקודות והמספרים
+   ב-HTML עם left באחוזים — כך שום עיגול/טקסט לא נמתח בשום רוחב מסך. */
+:root{--wx-hot:#B4561C;--wx-cold:#2F5F96;--wx-chip-up:#B4561C;--wx-chip-down:#2F5F96;--wx-chip-big:#9C3D0C}
+body.night{--wx-hot:#E59A62;--wx-cold:#8FB4E0}
+.fc{flex:1 1 auto;min-width:0;background:color-mix(in srgb,var(--card) 40%,var(--bg));
+  border:1px solid var(--line);border-radius:1.6rem;padding:.8rem .9vw;
+  display:flex;flex-direction:column;gap:.35rem}
+.fc.hidden{display:none}
+.fchead{display:flex;justify-content:space-between;align-items:center;gap:1vw;padding:0 .5vw}
+.fcsum{display:flex;align-items:center;gap:.7vw;flex-wrap:wrap;min-width:0}
+.fcsum .s1{font-family:var(--font-display);font-size:2.2rem;font-weight:800;white-space:nowrap}
+.fcsum .s2{font-size:1.8rem;color:var(--ink-soft);font-weight:600;white-space:nowrap}
+.fcsum .s3{display:none}
+.fcleg{display:flex;gap:1vw;font-size:1.4rem;color:var(--ink-soft);font-weight:600;white-space:nowrap}
+.fcleg i{display:inline-block;width:2rem;height:.3rem;border-radius:2px;margin-inline-end:.4rem;vertical-align:middle}
+.fcbody{position:relative}
+.fcgrid{display:grid;grid-template-columns:repeat(var(--fcn,5),minmax(0,1fr))}
+.fcbg{position:absolute;inset:0}
+.fcbg>div.past{background:repeating-linear-gradient(135deg,transparent 0 .9rem,color-mix(in srgb,var(--ink) 3%,transparent) .9rem 1.8rem);border-radius:1.2rem}
+.fcbg>div.focus{background:var(--card);border-radius:1.2rem;box-shadow:0 1px 4px rgba(22,33,30,.08)}
+.fcday{position:relative;display:flex;flex-direction:column;align-items:center;gap:.2rem;padding-top:.5rem}
+.fcday.past{opacity:.55}
+.fcday .dl{font-family:var(--font-display);font-size:2rem;font-weight:800;line-height:1.15;white-space:nowrap}
+.fcday.focus .dl{background:var(--ink);color:var(--bg);padding:0 1vw;border-radius:999px}
+.fcday .dd{font-size:1.3rem;color:var(--ink-soft);font-weight:600;font-variant-numeric:tabular-nums}
+.fcday .ic{font-size:2.6rem;line-height:1.1}
+.fcchart{position:relative;height:15rem}
+.fcchart svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fcchart path{fill:none;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.fcchart path.dash{stroke-dasharray:2 9;opacity:.6}
+.fcpt{position:absolute;transform:translate(50%,-50%);width:1.3rem;height:1.3rem;border-radius:50%;
+  border:.25rem solid var(--card);box-sizing:content-box}
+.fcpt.big{width:1.7rem;height:1.7rem}
+.fcpt.past,.fclbl.past{opacity:.55}
+.fclbl{position:absolute;transform:translateX(50%);font-family:var(--font-display);font-weight:800;
+  font-size:2.1rem;line-height:1;white-space:nowrap;direction:ltr}
+.fclbl.lo{font-size:1.75rem}
+.fclbl.big{font-size:2.6rem}
+.fcrow{position:relative;display:grid;grid-template-columns:repeat(var(--fcn,5),minmax(0,1fr));
+  justify-items:center;align-items:center;padding:.25rem 0}
+.wxchip{display:inline-flex;align-items:center;gap:.35rem;font-size:1.8rem;font-weight:900;line-height:1.2;
+  padding:.25rem 1.1rem;border-radius:999px;white-space:nowrap;color:#FFFFFF}
+.wxchip svg{width:2rem;height:2rem}
+.wxchip.up{background:var(--wx-chip-up)}
+.wxchip.down{background:var(--wx-chip-down)}
+.wxchip.big{background:var(--wx-chip-big);font-size:2rem;box-shadow:0 0 0 .35rem color-mix(in srgb,var(--wx-chip-big) 22%,transparent)}
+.wxchip.same{background:var(--card);color:var(--ink-soft);border:2px solid var(--line)}
+.wxchip .n{direction:ltr;font-variant-numeric:tabular-nums}
+.fcbase{font-size:1.3rem;color:var(--ink-soft);font-weight:600;opacity:.75}
+.wear{display:inline-flex;align-items:center;gap:.4rem;font-size:1.55rem;font-weight:700;color:var(--alert);
+  white-space:nowrap;line-height:1.2;padding:.15rem .7rem;border-radius:999px}
+.wear .wi{font-size:1.9rem}
+.wear b{font-weight:900}
+.wear.severe{background:var(--alert-bg);font-weight:900}
+
+/* ח. נקודות — צנצנת משפחתית בשורה העליונה + פס בכל כרטיס ילד */
+.ptcard{flex:0 0 auto;width:15vw;background:var(--card);border-radius:1.6rem;padding:1rem .9vw;
+  display:flex;flex-direction:column;align-items:center;gap:.35rem;box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.ptcard.hidden{display:none}
+.ptcard .pth{font-family:var(--font-display);font-size:1.8rem;font-weight:800;text-align:center}
+.ptcard svg.jar{height:11rem;width:auto}
+.ptcard .ptn{font-family:var(--font-display);font-size:2.8rem;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums}
+.ptcard .ptp{font-size:1.5rem;color:var(--ink-soft);font-weight:700;text-align:center;line-height:1.25}
+.ptcard .ptdone{font-size:1.5rem;font-weight:900;color:var(--alert);text-align:center}
+.ptextra{width:100%;border-top:1px solid var(--line);margin-top:.3rem;padding-top:.6rem;
+  display:flex;flex-direction:column;align-items:center;gap:.25rem}
+.ptextra .xn{font-family:var(--font-display);font-size:1.7rem;font-weight:900;color:var(--c)}
+.ptextra .xs{font-size:1.3rem;color:var(--ink-soft);font-weight:700;text-align:center}
+.stars{display:flex;flex-wrap:wrap;justify-content:center;gap:.15rem;direction:rtl}
+.stars svg{width:1.6rem;height:1.6rem}
+.kpts{margin-top:.6rem;display:flex;flex-direction:column;gap:.35rem}
+.kpts .kpt{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw;font-size:1.5rem;font-weight:700;color:var(--ink-soft)}
+.kpts .kpt b{color:var(--kid-ink);font-variant-numeric:tabular-nums}
+.kpts .kpt .togo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kbar{height:1.3rem;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,var(--card));overflow:hidden}
+.kbar>span{display:block;height:100%;border-radius:999px;background:var(--c)}
+.kidcard.reached{box-shadow:0 0 0 .4rem #F3D9A8,0 .6rem 2rem rgba(201,135,31,.25)}
+.kidcard.reached .kbar{background:#F6EEDD}
+.kidcard.reached .kbar>span{background:repeating-linear-gradient(135deg,#E2A13B 0 1.2rem,#EDB85A 1.2rem 2.4rem)}
+.kidcard.reached .kpt .togo{color:#9C6B1F;font-weight:900}
+.goaltag{display:inline-flex;align-items:center;gap:.4rem;background:#E2A13B;color:#16211E;border-radius:999px;
+  padding:.2rem 1rem .2rem .6rem;font-family:var(--font-display);font-size:1.5rem;font-weight:900;white-space:nowrap}
+.goaltag svg{width:2rem;height:2rem}
+body.shabbat .ptcard,body.shabbat .kpts,body.shabbat #gotoPoints{display:none!important}
+
+/* חגיגה — מסך מלא פעם אחת כשילד מגיע ליעד */
+#celebrate{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+  background:rgba(22,33,30,.55)}
+#celebrate.hidden{display:none}
+#celebrate .cbox{background:#FFFFFF;color:#16211E;border-radius:3rem;padding:4rem 4.4vw 3.4rem;
+  display:flex;flex-direction:column;align-items:center;gap:1.2rem;border-top:1rem solid var(--c);
+  box-shadow:0 2rem 6rem rgba(0,0,0,.25);max-width:60vw;text-align:center}
+#celebrate .cbig{font-family:var(--font-display);font-size:6rem;font-weight:900;color:var(--c);line-height:1.05}
+#celebrate .cnum{font-family:var(--font-display);font-size:2.8rem;font-weight:800;color:#606E69;direction:ltr}
+#celebrate .cprize{display:flex;align-items:center;gap:1.2rem;background:color-mix(in srgb,var(--c) 12%,#FFFFFF);
+  border-radius:2rem;padding:1.4rem 2.6vw}
+#celebrate .cprize span{font-size:2.1rem;color:#606E69;font-weight:700}
+#celebrate .cprize b{font-family:var(--font-display);font-size:3.2rem;font-weight:900}
+#celebrate .cprize svg{width:4.4rem;height:4.4rem}
+#celebrate .csub{font-size:1.7rem;color:#606E69;font-weight:600}
+
+/* פס "אין אינטרנט" — כששעון המכשיר לא אמין, המסך האחרון מוקפא */
+#offbar{display:none;align-items:center;justify-content:center;gap:1rem;background:var(--alert-bg);color:var(--alert);
+  border:1px solid color-mix(in srgb,var(--alert) 35%,transparent);border-radius:999px;
+  min-height:4rem;font-size:1.8rem;font-weight:800;flex-shrink:0;padding:0 2vw;text-align:center}
+#offbar.on{display:flex}
+#offbar svg{width:2.2rem;height:2.2rem;flex:none}
 .lastsync{flex-shrink:0;text-align:center;font-size:1.15rem;color:var(--ink-faint);
   opacity:.65;letter-spacing:.02em;margin-top:.15rem;line-height:1.2}
 
@@ -303,7 +401,6 @@ body.shabbat .parasha{display:block}
 .sbend{display:none;flex-direction:column;align-items:flex-end;gap:.75rem;flex:0 0 auto}
 body.shabbat .sbend{display:flex}
 body.shabbat .datebar{border-bottom:0;padding-bottom:0;align-items:flex-start}
-body.shabbat .photothumb{display:none}
 
 .zmanim{display:flex;gap:1.1vw}
 .zmanim.hidden{display:none}
@@ -379,35 +476,53 @@ body.shabbat.night .sbart svg{opacity:.2}
   padding:13px 22px;font-size:15px;font-weight:700;font-family:var(--font-body);
   box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:60;cursor:pointer;
   text-decoration:none}
+/* עיגול הנקודות — בצד השני מלחצן "היום", אותה שפה (כהה ביום, בהיר בלילה) */
+#gotoPoints{display:none;position:fixed;bottom:12px;inset-inline-start:16px;width:54px;height:54px;
+  border-radius:50%;background:var(--ink);align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:60;text-decoration:none}
+#gotoPoints svg{width:34px;height:34px}
+#gotoPoints.hidden{display:none!important}
 
 /* טלפון / מסך צר */
 @media (max-aspect-ratio:1/1){
   html{font-size:1vh}
   body{overflow:auto;height:auto}
   body.kiosk{cursor:auto}
-  body.kiosk #gotoControl{pointer-events:auto!important}
-  /* הלוח הוא קיוסק ולכן pointer-events מכובה על הכל. בטלפון מחזירים אותו
-     לממוזערת ולתצוגה המוגדלת בלבד — אחרת הלחיצה פשוט לא מגיעה אליהן. */
-  body.kiosk #photothumb,body.kiosk #photothumb *,
-  body.kiosk #photoview,body.kiosk #photoview *{pointer-events:auto!important}
+  body.kiosk #gotoControl,body.kiosk #gotoPoints,body.kiosk #gotoPoints *,
+  body.kiosk #celebrate,body.kiosk #celebrate *{pointer-events:auto!important}
   #app{padding:14px 4vw;gap:12px;min-height:auto;padding-bottom:80px}
 
   .datebar{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
   .datetext{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
-  /* התמונה הגדולה יורדת בטלפון וההצגה עוברת לממוזערת שבכותרת */
-  .photobox{display:none!important}
-  .photothumb{display:block;flex:0 0 auto;width:74px;height:74px;border-radius:12px;
-    overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer}
-  .photothumb.hidden{display:none}
-  .photothumb img{width:100%;height:100%;object-fit:cover;display:block}
   .dayname{font-size:26px}
   .hebdate{font-size:22px}
   .gregdate{font-size:14px}
 
   .toprow{flex-direction:column;gap:10px}
-  .weather{gap:8px}
-  .wcard{flex:1}
-  .photobox{width:100%;height:34vh}
+  /* תחזית בטלפון: עמודות צרות — אייקון בגד בלבד; המלצת היום במילים עוברת לשורת הסיכום */
+  .fc{padding:10px 8px;border-radius:16px}
+  .fchead{flex-direction:column;align-items:flex-start;gap:4px}
+  .fcsum .s1{font-size:17px}.fcsum .s2{font-size:13px}
+  .fcsum .s3{display:inline;font-size:13px;font-weight:800;color:var(--ink)}
+  .fcleg{display:none}
+  .fcday .dl{font-size:13px}.fcday .dd{font-size:10px}.fcday .ic{font-size:20px}
+  .fcchart{height:100px}
+  .fclbl{font-size:15px}.fclbl.lo{font-size:13px}.fclbl.big{font-size:17px}
+  .fcpt{width:9px;height:9px;border-width:2px}.fcpt.big{width:12px;height:12px}
+  .wxchip{font-size:12px;padding:2px 6px;gap:1px}.wxchip svg{width:12px;height:12px}
+  .wxchip.big{font-size:12px}.wxchip .w{display:none}
+  .fcbase{font-size:10px}
+  .wear{font-size:11px;padding:0;flex-direction:column;gap:0}.wear .wt{display:none}.wear .wi{font-size:18px}
+  .ptcard{width:auto;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:10px;padding:12px}
+  .ptcard svg.jar{height:70px}
+  .ptcard .pth{font-size:15px;width:100%}.ptcard .ptn{font-size:22px}.ptcard .ptp{font-size:13px}
+  .ptextra{border-top:0;border-inline-start:1px solid var(--line);margin:0;padding:0 0 0 10px;width:auto}
+  .kpts .kpt{font-size:12px}.kbar{height:8px}
+  .goaltag{font-size:12px}
+  #celebrate .cbox{max-width:90vw;padding:24px 18px}
+  #celebrate .cbig{font-size:30px}#celebrate .cnum{font-size:18px}
+  #celebrate .cprize b{font-size:22px}#celebrate .cprize span{font-size:14px}
+  #offbar{font-size:12px;min-height:30px}
   .kidcards{grid-template-columns:1fr;gap:10px}
   .kidname{font-size:20px}.kidgrade{font-size:12px}
   .lsubj{font-size:16px}.ltime{font-size:13px;min-width:44px}
@@ -454,11 +569,13 @@ body.shabbat.night .sbart svg{opacity:.2}
   .cnote{font-size:12px}
   .pdaynote{font-size:11px;margin-top:6px;padding-top:6px}
   #gotoControl{display:block}
+  #gotoPoints{display:flex}
 }
 </style>
 </head>
 <body class="kiosk">
 <div id="app">
+  <div id="offbar" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.3" fill="currentColor"/><path d="M3 3l18 18"/></svg><span id="offtext"></span></div>
   <div class="datebar">
     <div class="datetext">
       <div style="display:flex;align-items:baseline;gap:1.6vw">
@@ -479,8 +596,6 @@ body.shabbat.night .sbart svg{opacity:.2}
       </div>
       <div class="sbwx hidden" id="sbwx"></div>
     </div>
-    <!-- תמונה ממוזערת — מוצגת רק בטלפון, בפינה הנגדית לתאריך. לחיצה מגדילה. -->
-    <div class="photothumb hidden" id="photothumb"><img id="photothumbimg" alt=""></div>
   </div>
 
   <div id="holiday">
@@ -504,24 +619,20 @@ body.shabbat.night .sbart svg{opacity:.2}
   </div>
 
   <div class="toprow" id="toprow">
-    <div class="weather">
-      <div class="wcard" id="wcard0">
-        <div class="wlabel">היום</div>
-        <div class="wmain"><span class="wicon" id="wicon0">—</span><span class="wtemp" id="wtemp0">—</span></div>
-        <div class="wrange" id="wrange0"></div>
-        <div class="wtip" id="wtip0"></div>
+    <section class="fc hidden" id="fc" aria-label="תחזית">
+      <div class="fchead">
+        <div class="fcsum" id="fcsum"></div>
+        <div class="fcleg"><span><i style="background:var(--wx-hot)"></i>יום</span><span><i style="background:var(--wx-cold)"></i>לילה</span></div>
       </div>
-      <div class="wcard" id="wcard1">
-        <div class="wlabel">מחר</div>
-        <div class="wmain"><span class="wicon" id="wicon1">—</span><span class="wtemp" id="wtemp1">—</span></div>
-        <div class="wrange" id="wrange1"></div>
-        <div class="wtip" id="wtip1"></div>
+      <div class="fcbody">
+        <div class="fcbg fcgrid" id="fcbg"></div>
+        <div class="fcgrid" id="fcdays"></div>
+        <div class="fcchart" id="fcchart"></div>
+        <div class="fcrow" id="fcdelta"></div>
+        <div class="fcrow" id="fcwear"></div>
       </div>
-    </div>
-    <div class="photobox hidden" id="photobox">
-      <div class="photobg" id="photobg"></div>
-      <img id="photoimg" alt="">
-    </div>
+    </section>
+    <section class="ptcard hidden" id="ptcard" aria-label="נקודות משפחתיות"></section>
     <div class="shirtbox" id="shirtbox">
       <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
@@ -562,7 +673,8 @@ body.shabbat.night .sbart svg{opacity:.2}
   <div class="lastsync" id="lastsync"></div>
 </div>
 <a id="gotoControl" href="daily.html">היום</a>
-<div id="photoview" class="hidden"><img id="photoviewimg" alt=""></div>
+<a id="gotoPoints" href="points.html" aria-label="נקודות"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M50 22l18 44h-14L36 22z" fill="#EE719E"/><path d="M64 22l16 40 16-40z" fill="#7A5FA8"/><path d="M110 22l-18 44h14l18-44z" fill="#2E7D52"/><circle cx="80" cy="98" r="40" fill="#E2A13B"/><path d="M80 78l6 12 13 1.5-9.5 9 2.5 13-12-6.5-12 6.5 2.5-13-9.5-9 13-1.5z" fill="#FFFFFF"/></svg></a>
+<div id="celebrate" class="hidden" role="dialog" aria-label="הגעה ליעד"></div>
 <div id="err"></div>
 
 <script type="module">
@@ -573,16 +685,78 @@ const CONFIG = {
   SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
   SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
   LAT:32.0702, LON:35.0542, TIMEZONE:'Asia/Jerusalem',
-  SWITCH_HOUR:12, REFRESH_MIN:1, PHOTO_COUNT:4,
+  SWITCH_HOUR:12, REFRESH_MIN:1,
   SHABBAT_START_HOUR:12,        // מסך שבת/חג נכנס ב-12:00 בערב שבת/חג
   RAIN_ALERT_PCT:30,            // אחוז סיכוי לגשם שמעליו מוצגת התראה
-  BUCKET:'photos',
 };
 
 let KIDS=[];   // נטען מטבלת kids
 const CLOCK_FMT=new Intl.DateTimeFormat('he-IL',
   {timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false});
-function tickClock(){ const e=$('clock'); if(e) e.textContent=CLOCK_FMT.format(new Date()); }
+function tickClock(){
+  const e=$('clock'); if(!e) return;
+  e.textContent = clockIsFrozen() ? '--:--' : CLOCK_FMT.format(nowDate());
+  rememberTrustedTime();
+}
+
+/* ============================================================
+   שעון אמין (10.11.2026)
+   ל-TV Stick אין סוללת שעון: אחרי הפסקת חשמל בלי אינטרנט השעון שלו
+   חוזר לתאריך ישן, והלוח הציג יום/מערכת שגויים. מעכשיו:
+   - בכל רענון קוראים את השעה מכותרת Date של השרת שלנו (אותו דומיין,
+     ולכן מותר לקרוא אותה) ומחשבים תיקון לשעון המכשיר.
+   - שומרים את "הזמן האמיתי האחרון שראינו" במכשיר.
+   - אם אין אינטרנט ושעון המכשיר מוקדם מהזמן הזה — לא סומכים עליו:
+     מקפיאים את המסך על הזמן האחרון הידוע ומציגים פס "אין אינטרנט".
+   - כשהרשת חוזרת, השעה מתוקנת מהשרת גם אם שעון המכשיר עדיין שגוי.
+   ============================================================ */
+const CLOCK_KEY='fd_clock_v1';
+let CLOCK_OFFSET=null;      // ms להוספה לשעון המכשיר; ידוע רק אחרי סנכרון מוצלח בהפעלה הנוכחית
+let CLOCK_FROZEN_AT=null;   // ms; כששעון המכשיר לא אמין ועדיין אין סנכרון
+function readClockStore(){ try{ return JSON.parse(localStorage.getItem(CLOCK_KEY)||'null'); }catch(e){ return null; } }
+function writeClockStore(ms){ try{ localStorage.setItem(CLOCK_KEY,JSON.stringify({serverMs:ms})); }catch(e){} }
+function nowMs(){
+  if(CLOCK_OFFSET!==null) return Date.now()+CLOCK_OFFSET;
+  if(CLOCK_FROZEN_AT!==null) return CLOCK_FROZEN_AT;
+  return Date.now();
+}
+function nowDate(){ return new Date(nowMs()); }
+function clockIsFrozen(){ return CLOCK_OFFSET===null && CLOCK_FROZEN_AT!==null; }
+/* שעון שחזר אחורה ביותר מ-10 דקות מהזמן האמיתי האחרון = שעון שאיבד את עצמו */
+function evaluateClockTrust(){
+  if(CLOCK_OFFSET!==null){ CLOCK_FROZEN_AT=null; return; }
+  const s=readClockStore();
+  CLOCK_FROZEN_AT=(s&&s.serverMs&&Date.now()<s.serverMs-10*60*1000)?s.serverMs:null;
+}
+/* שומרים את הזמן האמיתי רק כשהוא באמת אמין (אחרי סנכרון), פעם בדקה לכל היותר */
+let lastRemember=0;
+function rememberTrustedTime(){
+  if(CLOCK_OFFSET===null) return;
+  const t=nowMs(); if(t-lastRemember<60000) return;
+  lastRemember=t; writeClockStore(t);
+}
+async function syncClock(){
+  try{
+    const t0=Date.now();
+    const r=await fetch('manifest.json?clock='+t0,{method:'HEAD',cache:'no-store'});
+    const t1=Date.now();
+    const h=r.headers.get('date'); const server=h?Date.parse(h):NaN;
+    if(isNaN(server)) return false;
+    let off=server+500+(t1-t0)/2-t1;          // כותרת Date ברזולוציה של שנייה
+    if(Math.abs(off)<3000) off=0;             // שעון תקין — לא מזיזים אותו בשניות
+    CLOCK_OFFSET=off; CLOCK_FROZEN_AT=null;
+    lastRemember=0; rememberTrustedTime();
+    return true;
+  }catch(e){ return false; }
+}
+function renderOffbar(){
+  const bar=$('offbar'); if(!bar) return;
+  if(!clockIsFrozen()){ bar.classList.remove('on'); return; }
+  const d=new Date(CLOCK_FROZEN_AT);
+  const day=new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',weekday:'long'}).format(d);
+  $('offtext').textContent=`אין אינטרנט · מוצג המצב מ-${CLOCK_FMT.format(d)}, ${day} · יתעדכן לבד כשהחיבור יחזור`;
+  bar.classList.add('on');
+}
 
 /* ============================================================
    מצב לילה — ברירת מחדל 22:30–05:45 (Asia/Jerusalem), ניתן
@@ -660,7 +834,7 @@ function hideErr(){const e=$('err'); if(e){e.textContent=''; e.classList.remove(
 /* ---- נתונים אחרונים שנטענו בהצלחה (לשימוש כשהשרת דוחה בקשה) ---- */
 const LASTGOOD_KEY='fd_lastgood_v1';
 function saveLastGood(obj){
-  try{ localStorage.setItem(LASTGOOD_KEY,JSON.stringify({ts:Date.now(),data:obj})); }catch(e){}
+  try{ localStorage.setItem(LASTGOOD_KEY,JSON.stringify({ts:nowMs(),data:obj})); }catch(e){}
 }
 function loadLastGood(){
   try{ const r=localStorage.getItem(LASTGOOD_KEY); return r?JSON.parse(r):null; }catch(e){ return null; }
@@ -753,7 +927,7 @@ function isoOf(d){
 function israelNow(){
   const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
     year:'numeric',month:'2-digit',day:'2-digit',
-    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date());
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(nowDate());
   const g=t=>+p.find(x=>x.type===t).value;
   return new Date(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'));
 }
@@ -999,7 +1173,7 @@ function nearestRealWindow(now){
   return [...SHABBAT_WINDOWS].sort((a,b)=>b.start-a.start)[0]||null;
 }
 function activeManualWindow(){
-  const now=new Date();
+  const now=nowDate();
   const inRange=r=>{
     const s=new Date(r.start_at), e=new Date(r.end_at);
     return !isNaN(s) && !isNaN(e) && now>=s && now<e;
@@ -1043,8 +1217,8 @@ async function buildShabbatWindows(){
   try{
     const {HebrewCalendar,Location,flags}=hebcal;
     const loc=new Location(CONFIG.LAT,CONFIG.LON,true,CONFIG.TIMEZONE,'Custom','IL');
-    const start=new Date(); start.setDate(start.getDate()-3);
-    const end=new Date(); end.setDate(end.getDate()+45);
+    const start=nowDate(); start.setDate(start.getDate()-3);
+    const end=nowDate(); end.setDate(end.getDate()+45);
     const events=HebrewCalendar.calendar({start,end,location:loc,il:true,candlelighting:true});
 
     // שלב 1: זוגות התחלה/סוף לפי סוג האירוע ולא לפי דגלים.
@@ -1103,7 +1277,7 @@ async function buildShabbatWindows(){
 function activeShabbatWindow(){
   const manual=activeManualWindow();
   if(manual) return manual;
-  const now=new Date();
+  const now=nowDate();
   return SHABBAT_WINDOWS.find(w=>now>=w.start && now<w.end)||null;
 }
 
@@ -1398,49 +1572,164 @@ function rainSuffix(p){
   return (p!==null && p!==undefined && p>=CONFIG.RAIN_ALERT_PCT)
     ? ` · ☂️ ${Math.round(p)}%` : '';
 }
-/* הדגשה נודדת: "היום" עד 17:00, אח"כ "מחר" עד חצות */
+/* ---- רצועת התחזית (10.11.2026) — אתמול + היום + 3 ימים ----
+   הדגשה נודדת: "היום" עד 17:00, ומ-17:00 "מחר" (כמו הכרטיסים הקודמים). */
 const WEATHER_FOCUS_HOUR=17;
-function markActiveWeather(){
-  const idx=(israelNow().getHours()<WEATHER_FOCUS_HOUR)?0:1;
-  for(let i=0;i<2;i++){
-    const c=$('wcard'+i); if(!c) continue;
-    c.classList.toggle('wnow', i===idx);
+const WX_CACHE_KEY='fd_wx_v1';
+let WX_RAW=null;            // תשובת open-meteo האחרונה (daily) — גם מהמטמון כשאין רשת
+let WX_BY_DATE={};          // תחזית לפי תאריך — מסך שבת משתמש בזה
+const ARROW_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg>';
+const ARROW_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg>';
+
+function wxDayLabel(iso,rel){
+  if(rel===-1) return 'אתמול';
+  if(rel===0) return 'היום';
+  if(rel===1) return 'מחר';
+  const d=new Date(iso+'T12:00:00');
+  return d.getDay()===6 ? 'שבת' : 'יום '+DAYS[d.getDay()]+'׳';
+}
+/* "ביום ב׳" / "מחר" / "בשבת" — לשורת הסיכום */
+function wxDayPhrase(iso,rel){
+  if(rel===1) return 'מחר';
+  const l=wxDayLabel(iso,rel);
+  return l==='שבת'?'בשבת':'ב'+l;
+}
+/* ההפרש בין שני ימים לפי המקסימום המעוגל — אותו מספר שמוצג על המסך */
+function wxDelta(a,b){ return Math.round(b.max)-Math.round(a.max); }
+
+function wxColumns(){
+  if(!WX_RAW||!WX_RAW.time) return null;
+  const today=isoDate(israelNow());
+  const t=WX_RAW.time.indexOf(today);
+  if(t<0) return null;                       // מטמון מיום אחר לגמרי — לא מציגים תחזית שגויה
+  const from=Math.max(0,t-1), cols=[];
+  for(let i=from;i<WX_RAW.time.length && cols.length<5;i++){
+    cols.push({iso:WX_RAW.time[i], rel:i-t, code:WX_RAW.weather_code[i],
+      max:WX_RAW.temperature_2m_max[i], min:WX_RAW.temperature_2m_min[i],
+      rain:(WX_RAW.precipitation_probability_max||[])[i]??null});
   }
+  return cols.length>=2?cols:null;
 }
 
-/* תחזית לפי תאריך — מסך שבת צריך ימים שאינם בהכרח "היום/מחר" */
-let WX_BY_DATE={};
+function renderForecast(){
+  const box=$('fc');
+  const cols=wxColumns();
+  if(!cols){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const n=cols.length;
+  box.style.setProperty('--fcn',n);
+  const todayIdx=cols.findIndex(c=>c.rel===0);
+  const focusRel=(israelNow().getHours()<WEATHER_FOCUS_HOUR)?0:1;
+  let f=cols.findIndex(c=>c.rel===focusRel); if(f<0) f=todayIdx;
+
+  /* רקע: אתמול מקווקו, היום/מחר המודגש — כרטיס לבן */
+  $('fcbg').innerHTML=cols.map((c,i)=>`<div class="${c.rel<0?'past':''}${i===f?' focus':''}"></div>`).join('');
+
+  /* שורת הימים */
+  $('fcdays').innerHTML=cols.map((c,i)=>{
+    const d=new Date(c.iso+'T12:00:00');
+    return `<div class="fcday${c.rel<0?' past':''}${i===f?' focus':''}">`+
+      `<span class="dl">${wxDayLabel(c.iso,c.rel)}</span>`+
+      `<span class="dd">${d.getDate()}/${d.getMonth()+1}</span>`+
+      `<span class="ic">${WCODE[c.code]||'🌡️'}</span></div>`;
+  }).join('');
+
+  /* גרף: שני קווים חלקים, אתמול מקווקו. y באחוזים מגובה האזור */
+  const all=cols.flatMap(c=>[c.max,c.min]);
+  const hi=Math.max(...all), lo=Math.min(...all), span=Math.max(1,hi-lo);
+  const yOf=t=>28+(hi-t)/span*44;           // 28%..72% — מקום למספרים מעל ומתחת
+  const xOf=i=>(i+.5)/n*100;                // אחוז מימין
+  const svgX=i=>1000-xOf(i)*10;
+  const pathFor=(key,a,b)=>{
+    let s=`M${svgX(a).toFixed(1)} ${yOf(cols[a][key]).toFixed(1)}`;
+    for(let i=a;i<b;i++){
+      const x0=svgX(i),x1=svgX(i+1),y0=yOf(cols[i][key]),y1=yOf(cols[i+1][key]),h=(x0-x1)/2;
+      s+=` C${(x0-h).toFixed(1)} ${y0.toFixed(1)} ${(x1+h).toFixed(1)} ${y1.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+    }
+    return s;
+  };
+  const p0=cols[0].rel<0?1:0;               // הקטע מאתמול להיום מקווקו
+  let svg='<svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">';
+  for(const [key,col] of [['max','var(--wx-hot)'],['min','var(--wx-cold)']]){
+    if(p0) svg+=`<path class="dash" d="${pathFor(key,0,1)}" style="stroke:${col}"/>`;
+    svg+=`<path d="${pathFor(key,p0,n-1)}" style="stroke:${col}"/>`;
+  }
+  svg+='</svg>';
+  let marks='';
+  cols.forEach((c,i)=>{
+    const cls=(c.rel<0?' past':'')+(i===f?' big':'');
+    const x=xOf(i).toFixed(2);
+    marks+=`<div class="fcpt${cls}" style="right:${x}%;top:${yOf(c.max).toFixed(2)}%;background:var(--wx-hot)"></div>`;
+    marks+=`<div class="fcpt${cls}" style="right:${x}%;top:${yOf(c.min).toFixed(2)}%;background:var(--wx-cold)"></div>`;
+    marks+=`<div class="fclbl${cls}" style="right:${x}%;top:calc(${yOf(c.max).toFixed(2)}% - 3.3rem);color:var(--wx-hot)">${Math.round(c.max)}°</div>`;
+    marks+=`<div class="fclbl lo${cls}" style="right:${x}%;top:calc(${yOf(c.min).toFixed(2)}% + 1.2rem);color:var(--wx-cold)">${Math.round(c.min)}°</div>`;
+  });
+  $('fcchart').innerHTML=svg+marks;
+
+  /* תגיות שינוי: כל יום מול היום שלפניו */
+  $('fcdelta').innerHTML=cols.map((c,i)=>{
+    if(i===0) return `<span class="fcbase">נקודת השוואה</span>`;
+    const d=wxDelta(cols[i-1],c), a=Math.abs(d);
+    if(a<=1) return `<span class="wxchip same">= <span class="w">כמו ${wxDayLabel(cols[i-1].iso,cols[i-1].rel)}</span></span>`;
+    const up=d>0, big=a>=4;
+    return `<span class="wxchip ${big?'big':(up?'up':'down')}">${up?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span>`+
+      (big?`<span class="w">${up?' חם!':' קר!'}</span>`:(i===1&&c.rel===0?'<span class="w"> מאתמול</span>':''))+`</span>`;
+  }).join('');
+
+  /* בגדים + מטרייה לכל יום מהיום והלאה (אותם כללים כמו בכרטיסים הקודמים) */
+  $('fcwear').innerHTML=cols.map(c=>{
+    if(c.rel<0) return '<span></span>';
+    const w=clothingFor(c.max);
+    const rain=(c.rain!==null && c.rain>=CONFIG.RAIN_ALERT_PCT)?`<b class="wr">☂️ ${Math.round(c.rain)}%</b>`:'';
+    const sev=SEVERE.includes(c.code);
+    return `<span class="wear${sev?' severe':''}"><span class="wi">${sev?'⚠️':''}${w.icon}</span>`+
+      `<span class="wt">${w.text}</span>${rain?(`<span class="wt"> · </span>`+rain):''}</span>`;
+  }).join('');
+
+  /* משפט הסיכום — בשפה של ילדים */
+  const fc=cols[f], prev=cols[f-1];
+  const who=fc.rel===0?'היום':'מחר', than=fc.rel===0?'מאתמול':'מהיום';
+  let s1='', chip='';
+  if(prev){
+    const d=wxDelta(prev,fc), a=Math.abs(d);
+    if(a<=1) s1=`${who} בערך כמו ${fc.rel===0?'אתמול':'היום'}`;
+    else{
+      s1=`${who} ${d>0?'חם':'קריר'} יותר ${than}`;
+      chip=`<span class="wxchip ${a>=4?'big':(d>0?'up':'down')}">${d>0?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span></span>`;
+    }
+  }else s1=`${who} ${Math.round(fc.max)}°`;
+  let s2='';
+  for(let j=f+1;j<n;j++){
+    const d=wxDelta(cols[j-1],cols[j]);
+    if(Math.abs(d)>=4){ s2=`· ${wxDayPhrase(cols[j].iso,cols[j].rel)} ${d>0?'מתחמם':'מתקרר'} ל־${Math.round(cols[j].max)}°`; break; }
+  }
+  const fw=clothingFor(fc.max);
+  const fr=(fc.rain!==null && fc.rain>=CONFIG.RAIN_ALERT_PCT)?` · ☂️ ${Math.round(fc.rain)}%`:'';
+  $('fcsum').innerHTML=`<span class="s1">${s1}</span>${chip}${s2?`<span class="s2">${s2}</span>`:''}`+
+    `<span class="s3">${fw.icon} ${fw.text}${fr}</span>`;
+}
 
 async function loadWeather(){
+  let daily=null;
   try{
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}`
       +`&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
-      +`&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&forecast_days=4`;
-    const j=await (await fetch(url)).json(), d=j.daily;
-    const rainArr=d.precipitation_probability_max||[];
-    WX_BY_DATE={};
-    for(let i=0;i<(d.time||[]).length;i++){
-      WX_BY_DATE[d.time[i]]={code:d.weather_code[i],
-        max:d.temperature_2m_max[i],min:d.temperature_2m_min[i],
-        rain:(rainArr[i]==null?null:rainArr[i])};
-    }
-    for(let i=0;i<2;i++){
-      $('wicon'+i).textContent=WCODE[d.weather_code[i]]||'🌡️';
-      $('wtemp'+i).textContent=Math.round(d.temperature_2m_max[i])+'°';
-      $('wrange'+i).textContent=`מקסימום ${Math.round(d.temperature_2m_max[i])}° · מינימום ${Math.round(d.temperature_2m_min[i])}°`;
-    }
-    /* שורת לבוש + מטרייה: הבגד לפי טמפרטורה, הגשם רק מתווסף בסוף השורה */
-    for(let i=0;i<2;i++){
-      const el=$('wtip'+i);
-      const p=(rainArr[i]==null?null:rainArr[i]);
-      const c=clothingFor(d.temperature_2m_max[i]);
-      const r=rainSuffix(p);
-      el.textContent=`${c.icon} ${c.text}${r}`;
-      el.classList.toggle('wrain', r!=='');
-    }
-    markActiveWeather();
-    if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
+      +`&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&past_days=1&forecast_days=4`;
+    const j=await (await fetch(url)).json();
+    if(j&&j.daily&&j.daily.time){ daily=j.daily; try{ localStorage.setItem(WX_CACHE_KEY,JSON.stringify(daily)); }catch(e){} }
   }catch(e){ console.warn('weather failed'); }
+  if(!daily){ try{ daily=JSON.parse(localStorage.getItem(WX_CACHE_KEY)||'null'); }catch(e){} }
+  if(!daily) return;
+  WX_RAW=daily;
+  const rainArr=daily.precipitation_probability_max||[];
+  WX_BY_DATE={};
+  for(let i=0;i<(daily.time||[]).length;i++){
+    WX_BY_DATE[daily.time[i]]={code:daily.weather_code[i],
+      max:daily.temperature_2m_max[i],min:daily.temperature_2m_min[i],
+      rain:(rainArr[i]==null?null:rainArr[i])};
+  }
+  renderForecast();
+  if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
 }
 
 /* ---- מזג אוויר על מסך שבת: שורה אחת, יום אחד לכל יום בחלון ---- */
@@ -1566,16 +1855,19 @@ function buildSchedule(periods,rows,overrides,meals,isToday,targetIso){
         `<span class="ev">${endInfo.time}</span></div>`
       : '';
 
+    const pts=kidPoints(k);
     wrap.insertAdjacentHTML('beforeend',
-      `<div class="kidcard" style="--c:${k.color};--cbg:${k.bg}">
+      `<div class="kidcard${pts.reached?' reached':''}" style="--c:${k.color};--cbg:${k.bg}">
          <div class="kidhead">
            <span class="kidname">${k.name}</span>
            ${k.grade?`<span class="kidgrade">${k.grade}</span>`:''}
            ${hasSport?'<span class="kidem">👟</span>':''}
+           ${pts.tag}
            ${endHtml}
          </div>
          <div class="lessons">${inner}</div>
          ${mealHtml}
+         ${pts.html}
        </div>`);
   });
 }
@@ -1625,47 +1917,162 @@ function buildChugim(list){
   box.classList.remove('hidden');
 }
 
-let PHOTO_URLS=[];
-let photoDay='';
+/* ============================================================
+   נקודות (10.11.2026)
+   כל ההגדרות (מעשים, יעדים, פרסים, תצוגה, חגיגה, הצגה/הסתרה) מגיעות
+   מהמסד ונערכות באפליקציית "נקודות" — שינוי שם מופיע כאן תוך דקה,
+   בלי העלאת גרסה. הלוח רק קורא; כל כתיבה נעשית באפליקציה.
+   ============================================================ */
+const PRIZE_ICONS={
+  icecream:'<svg viewBox="0 0 24 24" fill="none" stroke="#C2406F" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M7.5 10.5 12 22l4.5-11.5"/></svg>',
+  film:'<svg viewBox="0 0 24 24" fill="none" stroke="#7A5FA8" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>',
+  game:'<svg viewBox="0 0 24 24" fill="none" stroke="#2E6F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/></svg>',
+  pizza:'<svg viewBox="0 0 24 24" fill="none" stroke="#C9871F" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 22 3 5c6-3 12-3 18 0z"/><circle cx="10" cy="9" r="1.2"/><circle cx="14" cy="12" r="1.2"/><circle cx="11.5" cy="15" r="1.2"/></svg>',
+  ball:'<svg viewBox="0 0 24 24" fill="none" stroke="#2E7D52" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
+  gift:'<svg viewBox="0 0 24 24" fill="none" stroke="#9C3D0C" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="1.5"/><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1.5S9 9 12 9zM12 9c2-4 6-4 6-1.5S15 9 12 9z"/></svg>',
+};
+const MEDAL_SVG='<svg viewBox="0 0 160 160" aria-hidden="true"><path d="M50 22l18 44h-14L36 22z" fill="#EE719E"/><path d="M110 22l-18 44h14l18-44z" fill="#2E7D52"/><circle cx="80" cy="96" r="40" fill="#FFFFFF"/><path d="M80 76l6 12 13 1.5-9.5 9 2.5 13-12-6.5-12 6.5 2.5-13-9.5-9 13-1.5z" fill="#C9871F"/></svg>';
+const TROPHY_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" style="width:11rem;height:11rem"><path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#E2A13B"/><path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4" fill="none" stroke="#C9871F" stroke-width="1.6"/><path d="M10 13h4l-.5 4h-3z" fill="#C9871F"/><rect x="8" y="17" width="8" height="3" rx="1" fill="#9C6B1F"/><path d="M12 4.5l.9 1.9 2 .2-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.2z" fill="#FFFFFF"/></svg>';
+const starSvg=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21.1l1.5-7L2 9.3l7-.8z" fill="${on?'#E2A13B':'var(--line)'}"/></svg>`;
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* שליפת רשימת התמונות מהאחסון */
-async function loadPhotoList(){
+const PTS_CACHE_KEY='fd_pts_v1';
+let PTS={show:false, goals:[], events:[], settings:{}, kids:[]};
+
+/* התקדמות ליעד: נקודות שנצברו מאז שהיעד התחיל + עודף שהועבר אליו.
+   reachedAt = רגע הנקודה שחצתה את היעד (לחגיגה). */
+function goalProgress(g){
+  const start=new Date(g.started_at).getTime();
+  const ids=g.kid_id==null ? PTS.kids.filter(k=>k.points_enabled!==false).map(k=>k.id) : [g.kid_id];
+  const evs=PTS.events.filter(e=>!e.undone_at && ids.includes(e.kid_id) && new Date(e.created_at).getTime()>=start)
+                      .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  let sum=g.carry_in||0, reachedAt=sum>=g.target?start:null;
+  for(const e of evs){ sum+=e.points; if(reachedAt===null && sum>=g.target) reachedAt=new Date(e.created_at).getTime(); }
+  return {sum, reachedAt, reached:sum>=g.target};
+}
+function goalOf(kidId){ return PTS.goals.find(g=>g.status==='active' && (kidId==null ? g.kid_id==null : g.kid_id===kidId)); }
+
+async function loadPoints(settingsRows){
+  const get=k=>{ const r=(settingsRows||[]).find(x=>x.key===k); return r?String(r.value??'').trim():''; };
+  PTS.settings={show:get('points_show_kiosk')!=='0', mode:get('points_celebration')||'once',
+                secs:parseInt(get('points_celebration_seconds'),10)||60};
+  PTS.show=PTS.settings.show;
+  PTS.kids=ALL_KIDS;
   if(!db) return;
   try{
-    const {data,error}=await db.storage.from(CONFIG.BUCKET)
-      .list('',{limit:200});
-    if(error) throw error;
-    PHOTO_URLS=(data||[])
-      .filter(f=>f.name && !f.name.startsWith('.'))
-      .map(f=>db.storage.from(CONFIG.BUCKET).getPublicUrl(f.name).data.publicUrl);
-  }catch(e){ console.warn('photos unavailable',e); PHOTO_URLS=[]; }
+    const g=await db.from('point_goals').select('*').eq('status','active');
+    if(g.error) throw g.error;
+    const goals=g.data||[];
+    const since=goals.length?goals.map(x=>x.started_at).sort()[0]:new Date(nowMs()).toISOString();
+    const e=await db.from('point_events').select('id,kid_id,points,created_at,undone_at').gte('created_at',since);
+    if(e.error) throw e.error;
+    PTS.goals=goals; PTS.events=e.data||[];
+    try{ localStorage.setItem(PTS_CACHE_KEY,JSON.stringify({goals:PTS.goals,events:PTS.events})); }catch(_){}
+  }catch(err){
+    try{ const c=JSON.parse(localStorage.getItem(PTS_CACHE_KEY)||'null'); if(c){ PTS.goals=c.goals||[]; PTS.events=c.events||[]; } }catch(_){}
+  }
 }
 
-/* תמונה אחת ליום — נבחרת אקראית ומתחלפת בחצות.
-   מוצגת שלמה (contain) מעל רקע מטושטש של עצמה, בלי חיתוך ובלי פסים ריקים. */
-function buildPhotos(){
-  const box=$('photobox'), img=$('photoimg'), bg=$('photobg');
-  const thumb=$('photothumb'), timg=$('photothumbimg');
-  if(!PHOTO_URLS.length){box.classList.add('hidden');thumb.classList.add('hidden');return;}
+/* שורת "★ 28 / 40" + פס, או כוכבים לילד קטן */
+function pointsLine(k,g,p){
+  const togo=g.target-p.sum;
+  const prize=esc(g.prize||'');
+  const label = g.needs_setup ? 'יעד חדש בקרוב'
+    : p.reached ? `${prize} מחכה לך!`
+    : `עוד ${togo} ל${prize}`;
+  const extra = p.reached && p.sum>g.target ? ` <span style="color:var(--c)"><bdi>+${p.sum-g.target}</bdi> לבא</span>` : '';
+  if(k.points_display==='stars' && g.target<=20){
+    let st=''; for(let i=0;i<g.target;i++) st+=starSvg(i<Math.min(p.sum,g.target));
+    return `<div class="kpt"><span class="togo">${label}</span></div><div class="stars">${st}</div>`;
+  }
+  const pct=g.needs_setup?0:Math.min(100,Math.round(p.sum/g.target*100));
+  return `<div class="kpt"><span>★ <b>${p.sum}</b> / ${g.needs_setup?'—':g.target}${extra}</span><span class="togo">${label}</span></div>`+
+         `<div class="kbar"><span style="width:${pct}%"></span></div>`;
+}
+/* מה buildSchedule מוסיף לכרטיס של ילד */
+function kidPoints(k){
+  if(!PTS.show || k.points_enabled===false) return {html:'',reached:false,tag:''};
+  const g=goalOf(k.id); if(!g) return {html:'',reached:false,tag:''};
+  const p=goalProgress(g);
+  const reached=p.reached && !g.needs_setup;
+  return {html:`<div class="kpts">${pointsLine(k,g,p)}</div>`, reached,
+          tag:reached?`<span class="goaltag">${MEDAL_SVG}הגעתי ליעד!</span>`:''};
+}
 
-  const today=israelNow().toDateString();
-  photoDay=today;
-  let h=0; for(const ch of today) h=(h*31+ch.charCodeAt(0))>>>0;
-  h=(h*1103515245+12345)>>>0;
-  const url=PHOTO_URLS[h%PHOTO_URLS.length];
+/* הצנצנת המשפחתית + ילדים שאין להם כרטיס על הלוח (למשל שהם) */
+function renderPointsCard(cardKidNames){
+  const box=$('ptcard');
+  if(!PTS.show){ box.classList.add('hidden'); return; }
+  const fam=goalOf(null);
+  let html='';
+  if(fam){
+    const p=goalProgress(fam), frac=Math.min(1,p.sum/fam.target);
+    const fillTop=(124-100*frac).toFixed(1);   // גובה המילוי בצנצנת (24=מלאה, 124=ריקה)
+    html+=`<div class="pth">הצנצנת המשפחתית</div>
+      <svg class="jar" viewBox="0 0 104 128" role="img" aria-label="${p.sum} מתוך ${fam.target}">
+        <defs><clipPath id="jarclip"><path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z"/></clipPath></defs>
+        <rect x="30" y="4" width="44" height="12" rx="4" fill="#C9D3CE"/>
+        <path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z" fill="#F4F6F5"/>
+        <rect x="0" y="${fillTop}" width="104" height="128" fill="#E2A13B" clip-path="url(#jarclip)"/>
+        <path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z" fill="none" stroke="#9AA8A2" stroke-width="3"/>
+      </svg>
+      <div class="ptn">${Math.min(p.sum,fam.target)} / ${fam.target}</div>
+      ${p.reached&&!fam.needs_setup?`<div class="ptdone">הגענו ליעד! ${esc(fam.prize)}</div>`:`<div class="ptp">${esc(fam.prize)}</div>`}`;
+  }
+  const extras=PTS.kids.filter(k=>k.points_enabled!==false && !cardKidNames.includes(k.name));
+  if(extras.length){
+    html+='<div class="ptextra">';
+    for(const k of extras){
+      const g=goalOf(k.id); if(!g) continue;
+      const p=goalProgress(g);
+      let body;
+      if(k.points_display==='stars' && g.target<=20){
+        let st=''; for(let i=0;i<g.target;i++) st+=starSvg(i<Math.min(p.sum,g.target));
+        body=`<div class="stars">${st}</div>`;
+      }else body=`<div class="xs">★ ${p.sum} / ${g.target}</div>`;
+      const msg=p.reached?`${esc(g.prize)} מחכה לך!`:`עוד ${g.target-p.sum} ל${esc(g.prize)}`;
+      html+=`<span class="xn" style="--c:${k.color}">${esc(k.name)}${p.reached?' 🏅':''}</span>${body}<span class="xs">${msg}</span>`;
+    }
+    html+='</div>';
+  }
+  box.innerHTML=html;
+  box.classList.toggle('hidden',!html);
+}
 
-  img.src=url;
-  bg.style.backgroundImage=`url("${url}")`;
-  box.classList.remove('hidden');
-  img.onload=fitToScreen;
-  img.onerror=()=>{ box.classList.add('hidden'); fitToScreen(); };
-
-  /* אותה תמונה בדיוק, בגרסה הממוזערת של הטלפון */
-  timg.src=url;
-  thumb.classList.remove('hidden');
-  timg.onerror=()=>thumb.classList.add('hidden');
-  thumb.onclick=()=>{ $('photoviewimg').src=url; $('photoview').classList.remove('hidden'); };
-  $('photoview').onclick=()=>$('photoview').classList.add('hidden');
+/* חגיגה: מסך מלא (ברירת מחדל: פעם אחת) כשיעד מושג. נזכר במכשיר שכבר הוצג.
+   בלי אחסון במכשיר לא מציגים מסך מלא בכלל (התג בכרטיס עדיין מופיע) — כדי
+   שלא יקפוץ שוב בכל רענון. בשבת/חג לא מוצג; מוצג במוצאי שבת. */
+let celebrateTimer=null;
+function storageOk(){ try{ localStorage.setItem('fd_t','1'); localStorage.removeItem('fd_t'); return true; }catch(e){ return false; } }
+function maybeCelebrate(inShabbat){
+  const box=$('celebrate');
+  if(!PTS.show || inShabbat || PTS.settings.mode==='tag' || !storageOk() || !box.classList.contains('hidden')) return;
+  const now=nowMs(), iso=isoDate(israelNow());
+  for(const g of PTS.goals){
+    if(g.status!=='active' || g.needs_setup) continue;
+    const kid=g.kid_id==null?null:PTS.kids.find(k=>k.id===g.kid_id);
+    if(g.kid_id!=null && (!kid || kid.points_enabled===false)) continue;
+    const p=goalProgress(g);
+    if(!p.reached || now-p.reachedAt>96*3600*1000) continue;
+    const onceKey='fd_cele_'+g.id;
+    let key=null;
+    if(!localStorage.getItem(onceKey)) key=onceKey;
+    else if(PTS.settings.mode==='daily' && israelNow().getHours()>=7 && !localStorage.getItem(onceKey+'_'+iso)) key=onceKey+'_'+iso;
+    if(!key) continue;
+    localStorage.setItem(key,'1'); localStorage.setItem(onceKey,'1');
+    const color=kid?kid.color:'#E2A13B';
+    const title=kid?`כל הכבוד ${esc(kid.name)}!`:'כל הכבוד משפחה!';
+    box.innerHTML=`<div class="cbox" style="--c:${color}">${TROPHY_SVG}
+      <div class="cbig">${title}</div>
+      <div class="cnum">${Math.min(p.sum,g.target)} / ${g.target}</div>
+      <div class="cprize"><span>${kid?'הגעת ליעד! הפרס:':'הגענו ליעד המשפחתי! הפרס:'}</span>${PRIZE_ICONS[g.prize_icon]||''}<b>${esc(g.prize)}</b></div>
+      <div class="csub">מחכה למימוש — אבא או אמא יסמנו "מומש"</div></div>`;
+    box.classList.remove('hidden');
+    clearTimeout(celebrateTimer);
+    celebrateTimer=setTimeout(()=>box.classList.add('hidden'),Math.max(5,PTS.settings.secs)*1000);
+    box.onclick=()=>box.classList.add('hidden');
+    return;   // אחת בכל פעם — הבאה ברענון הבא
+  }
 }
 
 /* ============================================================
@@ -1722,7 +2129,7 @@ function fitToScreen(){
   const overflows=()=>{
     if(app.scrollHeight > window.innerHeight+1) return true;
     if(app.scrollWidth  > window.innerWidth +1) return true;
-    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li')){
+    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li,.wear,.wxchip,.kpts .kpt,.ptcard .ptp,.goaltag')){
       if(el.scrollHeight > el.clientHeight+2) return true;   // טקסט נחתך לגובה
       if(el.scrollWidth  > el.clientWidth +2) return true;   // טקסט נחתך לרוחב
     }
@@ -1744,7 +2151,7 @@ function fitToScreen(){
 /* חיווי דיסקרטי: מתי נמשכו הנתונים לאחרונה */
 function stampSync(){
   const el=$('lastsync'); if(!el) return;
-  el.textContent='עודכן '+CLOCK_FMT.format(new Date());
+  el.textContent='עודכן '+CLOCK_FMT.format(nowDate());
 }
 
 function scheduleFit(){
@@ -1759,6 +2166,8 @@ function scheduleFit(){
    ============================================================ */
 let db=null;
 async function init(){
+  /* קודם כל — שעה אמינה. בלי רשת ועם שעון שאיבד את עצמו המסך מוקפא */
+  if(!(await syncClock())) evaluateClockTrust();
   await loadHebcal();
   await buildShabbatWindows();
   windowsBuiltForDay=israelNow().toDateString();
@@ -1769,15 +2178,15 @@ async function init(){
     db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY,
       {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   }catch(e){ showErr('לא ניתן להתחבר למסד הנתונים'); console.error(e); }
-  await loadPhotoList();
   await loadWeather();
   await render();
   stampSync();
   setInterval(async()=>{
-    // רשימת התמונות וחלונות השבת/חג נטענים מחדש רק כשמתחלף היום
+    // חלונות השבת/חג נטענים מחדש רק כשמתחלף היום
+    const wasFrozen=clockIsFrozen();
+    if(!(await syncClock())) evaluateClockTrust();
     const today=israelNow().toDateString();
-    if(photoDay && photoDay!==today) await loadPhotoList();
-    if(windowsBuiltForDay!==today){ await buildShabbatWindows(); windowsBuiltForDay=today; }
+    if(wasFrozen!==clockIsFrozen() || windowsBuiltForDay!==today){ await buildShabbatWindows(); windowsBuiltForDay=today; }
     await loadWeather(); await render(); stampSync();
   },CONFIG.REFRESH_MIN*60*1000);
   tickClock(); applyNightMode(); applyShirtPulse();
@@ -1807,6 +2216,9 @@ async function loadControlTables(){
 
 async function render(){
   await loadControlTables();
+  renderOffbar();
+  tickClock();          // השעה מתעדכנת מיד כשהשעון חוזר להיות אמין
+  renderForecast();
   const {date,isTomorrow}=displayDate();
   const dayLetter=DAYS[date.getDay()];
 
@@ -1873,7 +2285,8 @@ async function render(){
           [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=RAW.map(k=>({data:d[k]||[]}));
           hideErr();
           $('stalenote').textContent='אין חיבור — נתונים מ-'+hhmmOf(lg.ts);
-          $('stalenote').classList.remove('hidden');
+          // כשהמסך מוקפא, הפס העליון כבר אומר את זה
+          $('stalenote').classList.toggle('hidden',clockIsFrozen());
         }else{
           $('stalenote').classList.add('hidden');
           showErr('לא ניתן לטעון נתונים — בדוק חיבור');
@@ -1890,13 +2303,15 @@ async function render(){
 
       const allKids=(kidsRes.data||[]);
       KIDS=allKids.filter(k=>k.show_schedule!==false)
-                  .map(k=>({name:k.name,color:k.color,bg:k.bg,grade:k.grade,show_food:k.show_food}));
+                  .map(k=>({id:k.id,name:k.name,color:k.color,bg:k.bg,grade:k.grade,show_food:k.show_food,
+                           points_enabled:k.points_enabled,points_display:k.points_display}));
       const chugimKids=allKids.filter(k=>k.show_chugim!==false).map(k=>k.name);
       ALL_KIDS=allKids;
 
       // הודעת הורים — נעלמת מעצמה אחרי תאריך התפוגה (parent_note_until).
       // בלי תאריך תפוגה ההודעה נשארת עד שמחליפים אותה.
       applyNightSettings(settings.data||[]);
+      await loadPoints(settings.data||[]);
 
       const note=(settings.data||[]).find(s=>s.key==='parent_note');
       const noteUntil=(settings.data||[]).find(s=>s.key==='parent_note_until');
@@ -1909,8 +2324,18 @@ async function render(){
 
       /* כיסוי מלא של הלוח — נבדק על היום האמיתי, לא על "יום הלימודים הבא",
          כי הוא מחליף את כל התוכן ולא רק את מערכת השעות. */
+      /* הודעה לפי שעות (10.11.2026): start_time/end_time רשות. בלי שעות = כל היום.
+         הרענון רץ כל דקה, ולכן ההודעה מופיעה ונעלמת לבד. */
+      const nowHM=(()=>{ const n=israelNow(); return n.getHours()*60+n.getMinutes(); })();
+      const inWindow=o=>{
+        const st=o.start_time?hhmmToMin(String(o.start_time).slice(0,5)):null;
+        const en=o.end_time?hhmmToMin(String(o.end_time).slice(0,5)):null;
+        if(st!==null && nowHM<st) return false;
+        if(en!==null && nowHM>=en) return false;
+        return true;
+      };
       const fullOv=(overrides.data||[]).find(o=>
-        o.scope==='full' && !o.kid && o.date===isoDate(israelNow()));
+        o.scope==='full' && !o.kid && o.date===isoDate(israelNow()) && inWindow(o));
       const covering=!hol && !!fullOv;
       if(covering){
         $('fullcover').classList.remove('hidden');
@@ -1954,7 +2379,10 @@ async function render(){
           $('shirtbox').classList.remove('on');
         }
       }
-      buildPhotos();
+      /* כרטיסי ילדים מוצגים רק ביום לימודים רגיל; אחרת כל הילדים עוברים לכרטיס הנקודות */
+      const cardsShown=!hol && !covering && !document.querySelector('#kidcards .dayoff:not(.small)');
+      renderPointsCard(cardsShown?KIDS.map(k=>k.name):[]);
+      maybeCelebrate(!!hol);
     }catch(e){ showErr('שגיאה בטעינת הנתונים'); console.error(e); }
   }
 

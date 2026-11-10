@@ -1,0 +1,17 @@
+{
+  "name": "נקודות",
+  "short_name": "נקודות",
+  "description": "נקודות חיוביות לילדים — מחובר ללוח המשפחה",
+  "start_url": "./points.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F4F2",
+  "theme_color": "#F2F4F2",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    { "src": "medal-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "medal-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

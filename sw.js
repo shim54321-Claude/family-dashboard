@@ -1,7 +1,9 @@
 /* Service Worker — מאפשר פתיחה כאפליקציה והצגה מהירה */
-const CACHE = 'family-dashboard-v1';
-const SHELL = ['./index.html', './control.html', './manifest.json',
-               './icon-192.png', './icon-512.png'];
+const CACHE = 'family-dashboard-v2';   /* v2 (10.11.2026): נוספו daily, points והאייקונים שלהם */
+const SHELL = ['./', './index.html', './control.html', './daily.html', './points.html',
+               './manifest.json', './points.webmanifest',
+               './icon-192.png', './icon-512.png', './medal-180.png', './medal-192.png', './medal-512.png',
+               './fonts/rubik-var.woff2', './fonts/assistant-var.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

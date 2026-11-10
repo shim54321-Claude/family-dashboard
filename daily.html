@@ -274,6 +274,23 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
 @media(max-width:700px){
   .expwrap{grid-template-columns:1fr 1fr}
 }
+.timerow{display:flex;gap:8px;align-items:center}.timerow input{flex:1;min-width:0}.timerow span{font-weight:700;color:#5F6D67}
+/* --- נקודות מהירות --- */
+.qpcard{border:2px solid #E2A13B}
+.qphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.qphead h2{margin:0}
+.qphead a{color:var(--kid1);font-weight:800;font-size:15px;text-decoration:none;min-height:44px;display:flex;align-items:center}
+.qpkids{display:flex;gap:6px;flex-wrap:wrap}
+.qpkid{flex:1;min-width:70px;background:var(--card);color:var(--c);border:2px solid var(--line);font-weight:900;padding:10px 6px}
+.qpkid.on{background:var(--c);border-color:var(--c);color:#FFFFFF}
+.qpacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qpact{display:flex;justify-content:space-between;align-items:center;gap:6px;background:var(--card);color:var(--ink);
+  border:1px solid var(--line);font-size:15px;padding:10px 12px;text-align:start}
+.qpact b{direction:ltr;unicode-bidi:isolate;font-family:var(--font-display);background:#F6EEDD;color:#8A5A12;border-radius:999px;padding:1px 9px}
+.qpdone{margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;
+  background:color-mix(in srgb,var(--ok) 14%,var(--card));color:var(--ok);border-radius:12px;padding:4px 4px 4px 12px;font-weight:800}
+.qpdone .ghost{min-height:44px;color:var(--kid1);border:0}
+.qpdone.hidden{display:none}
 </style>
 </head>
 <body>
@@ -292,6 +309,7 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
       <a href="index.html">לוח משפחה</a>
       <a href="daily.html" class="here">היום</a>
       <a href="control.html">בקרה מלאה</a>
+      <a href="points.html">נקודות</a>
       <button class="out" id="logoutBtn">יציאה</button>
     </div>
   </div>
@@ -330,6 +348,15 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
       <input type="date" id="foodDate">
       <div id="foodRows" style="margin-top:14px"></div>
       <button style="width:100%;margin-top:6px" id="foodSave">שמירה</button>
+    </div>
+
+    <!-- נקודות מהירות (10.11.2026) — 4 המעשים הנפוצים; ההגדרות באפליקציית "נקודות" -->
+    <div class="card qpcard">
+      <div class="qphead"><h2>★ נקודות מהירות</h2><a href="points.html">לאפליקציה המלאה ›</a></div>
+      <div class="qpkids" id="qpKids"></div>
+      <label id="qpLbl">הכי בשימוש</label>
+      <div class="qpacts" id="qpActs"></div>
+      <div class="qpdone hidden" id="qpDone"><span id="qpDoneTxt"></span><button type="button" class="ghost" id="qpUndo">ביטול</button></div>
     </div>
 
     <!-- הערה לילדים -->
@@ -391,6 +418,9 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
         <label>טקסט (רשות)</label>
         <textarea id="ovFullNote" rows="4" placeholder="מה להביא ליום הראשון:&#10;חולצת תלבושת&#10;קלמר מאובזר&#10;ארוחת עשר ובקבוק מים"></textarea>
         <div class="hint" style="margin-top:6px">שורה שנגמרת בנקודתיים תוצג ככותרת, וכל שורה אחריה כפריט ברשימה. בלי נקודתיים — הודעה גדולה רגילה. אין צורך להקליד תבליטים.</div>
+        <label>שעות הצגה (רשות)</label>
+        <div class="timerow"><span>מ-</span><input type="time" id="ovFrom"><span>עד</span><input type="time" id="ovTo"></div>
+        <div class="hint" style="margin-top:6px">בלי שעות — ההודעה מוצגת כל היום. עם שעות — מופיעה ונעלמת לבד על הלוח.</div>
         <div class="cvprev hidden" id="ovFullPreview">
           <div class="pvlabel">כך זה ייראה על הלוח</div>
           <div id="ovFullPreviewBody"></div>
@@ -950,7 +980,9 @@ function ovSetImage(url,name){
 
 function ovResetForm(){
   const P='ov';
-  ovStart=null; ovEnd=null; ovEditGroup=null;
+  /* ברירת מחדל: היום מסומן תמיד (10.11.2026) — גם אחרי 12:00 */
+  ovStart=ovTodayIso(); ovEnd=null; ovEditGroup=null; ovView=null;
+  if($(P+'From')){ $(P+'From').value=''; $(P+'To').value=''; }
   ovSetScope('schedule');
   ovSetImage(null);
   if($(P+'Note')) $(P+'Note').value='';
@@ -981,6 +1013,7 @@ function ovGroups(){
       from:list[0].date, to:list[list.length-1].date,
       note:list[0].note, scope:list[0].scope||'schedule',
       image_url:list[0].image_url||null,
+      start_time:list[0].start_time||null, end_time:list[0].end_time||null,
       kids
     };
   }).sort((a,b)=>a.from.localeCompare(b.from));
@@ -1006,10 +1039,12 @@ function ovRenderList(){
     const who = g.scope==='full' ? '' :
       (g.kids.length ? esc(g.kids.join(', '))+' · ' : 'כל הילדים · ');
     const pic = g.image_url ? '&#128444;&#65039; ' : '';
+    const hrs = (g.start_time||g.end_time)
+      ? '<span class="dnum">'+(g.start_time?String(g.start_time).slice(0,5):'')+'–'+(g.end_time?String(g.end_time).slice(0,5):'')+'</span> · ' : '';
     const txt = esc(g.note||'חופש');
     return '<div class="ovitem" data-g="'+esc(g.group_id)+'">'+badge+
       '<div class="range">'+range+'</div>'+
-      '<div class="txt">'+who+pic+txt+'</div>'+
+      '<div class="txt">'+who+hrs+pic+txt+'</div>'+
       '<button type="button" class="iconbtn" title="עריכה" aria-label="עריכה" data-edit="'+esc(g.group_id)+'">&#9998;</button>'+
       '<button type="button" class="iconbtn del" data-del="'+esc(g.group_id)+'">&#128465;</button>'+
       '</div>';
@@ -1034,6 +1069,7 @@ function ovStartEdit(gid){
     $(P+'FullNote').value=g.note||'';
     if(typeof renderCoverPreview==='function') renderCoverPreview();
     ovSetImage(g.image_url,'תמונה קיימת');
+    if($(P+'From')){ $(P+'From').value=g.start_time?String(g.start_time).slice(0,5):''; $(P+'To').value=g.end_time?String(g.end_time).slice(0,5):''; }
   }else{
     $(P+'Note').value=g.note||'';
     const kidsBox=$(P+'Kids');
@@ -1077,7 +1113,9 @@ async function ovSubmit(){
   if(ovScope==='full'){
     const note=$(P+'FullNote').value.trim()||null;
     if(!note && !ovImage){ toast('הוסיפו טקסט או תמונה',true); return; }
-    rows=dates.map(d=>({date:d,kid:null,note,scope:'full',image_url:ovImage}));
+    const from=$(P+'From')?($(P+'From').value||null):null, to=$(P+'To')?($(P+'To').value||null):null;
+    if(from&&to&&to<=from){ toast('שעת הסיום חייבת להיות אחרי שעת ההתחלה',true); return; }
+    rows=dates.map(d=>({date:d,kid:null,note,scope:'full',image_url:ovImage,start_time:from,end_time:to}));
   }else{
     const note=$(P+'Note').value.trim()||null;
     const kidsBox=$(P+'Kids');
@@ -1140,8 +1178,76 @@ function ovWire(){
   /* יציאה מעריכה בלי לשמור — הטופס חוזר להוספה רגילה */
   if($(P+'Cancel')) $(P+'Cancel').onclick=()=>{ ovResetForm(); ovRenderList(); };
   ovSetScope('schedule');
+  ovStart=ovTodayIso(); ovEnd=null;   /* היום מסומן מראש */
   ovRenderCal();
 }
+
+/* ============================================================
+   נקודות מהירות (10.11.2026)
+   כפתורי "הכי בשימוש": אם הוגדרו באפליקציה (settings.points_quick_actions)
+   — אלה; אחרת 4 המעשים שניתנו הכי הרבה ב-60 הימים האחרונים.
+   ============================================================ */
+let QP={kids:[],actions:[],sel:new Set(),last:null};
+async function qpInit(){
+  if(!$('qpKids')) return;
+  const since=new Date(Date.now()-60*86400000).toISOString();
+  const [a,e]=await Promise.all([
+    db.from('point_actions').select('*').eq('active',true).order('order_index'),
+    db.from('point_events').select('action_id').gte('created_at',since).is('undone_at',null),
+  ]);
+  QP.kids=S.kids.filter(k=>k.points_enabled!==false);
+  const acts=a.data||[];
+  let ids=[];
+  try{ ids=JSON.parse(S.settings.points_quick_actions||'[]'); }catch(_){ ids=[]; }
+  if(!Array.isArray(ids)||!ids.length){
+    const cnt={}; (e.data||[]).forEach(x=>{ if(x.action_id) cnt[x.action_id]=(cnt[x.action_id]||0)+1; });
+    ids=acts.slice().sort((x,y)=>(cnt[y.id]||0)-(cnt[x.id]||0)).slice(0,4).map(x=>x.id);
+  }
+  QP.actions=ids.map(id=>acts.find(x=>x.id===id)).filter(Boolean);
+  qpRender();
+}
+function qpRender(){
+  $('qpKids').innerHTML=QP.kids.map(k=>{
+    const on=QP.sel.has(k.id);
+    return `<button type="button" class="qpkid${on?' on':''}" aria-pressed="${on}" data-k="${k.id}" style="--c:${esc(k.color)}">${esc(k.name)}</button>`;
+  }).join('');
+  $('qpKids').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{
+    const id=+b.dataset.k; QP.sel.has(id)?QP.sel.delete(id):QP.sel.add(id); qpRender(); });
+  $('qpActs').innerHTML=QP.actions.length
+    ? QP.actions.map(a=>`<button type="button" class="qpact" data-a="${a.id}"><span>${esc(a.title)}</span><b>+${a.points}</b></button>`).join('')
+    : '<div class="hint">אין עדיין מעשים — מוסיפים באפליקציית "נקודות"</div>';
+  $('qpActs').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>qpGive(+b.dataset.a));
+}
+async function qpGive(actionId){
+  const a=QP.actions.find(x=>x.id===actionId); if(!a) return;
+  if(!QP.sel.size){ toast('בחרו ילד',true); return; }
+  const ok=[...QP.sel].filter(id=>!a.kid_ids||!a.kid_ids.length||a.kid_ids.includes(id));
+  if(!ok.length){ toast('המעשה הזה לא מוגדר לילדים שנבחרו',true); return; }
+  const rows=ok.map(id=>({kid_id:id,points:a.points,action_id:a.id,source:'daily'}));
+  try{
+    const {data,error}=await db.from('point_events').insert(rows).select();
+    if(error) throw error;
+    QP.last=data||[];
+    await db.from('audit_log').insert({intent:'give points (daily quick)',entity:'point_events',action:'insert',
+      new_value:data,verification_result:'ok: '+(data||[]).length+' rows',source:'daily.html'});
+    const names=ok.map(id=>(QP.kids.find(k=>k.id===id)||{}).name).join(', ');
+    $('qpDoneTxt').textContent=`✓ ${names} \u2066+${a.points}\u2069 · ${a.title}`;
+    $('qpDone').classList.remove('hidden');
+    toast('נוסף');
+  }catch(err){ toast('השמירה נכשלה',true); console.error(err); }
+}
+async function qpUndo(){
+  if(!QP.last||!QP.last.length) return;
+  const ids=QP.last.map(r=>r.id);
+  try{
+    const {error}=await db.from('point_events').update({undone_at:new Date().toISOString()}).in('id',ids);
+    if(error) throw error;
+    await db.from('audit_log').insert({intent:'undo points (daily quick)',entity:'point_events',action:'update',
+      previous_value:QP.last,verification_result:'undone '+ids.length,source:'daily.html'});
+    QP.last=null; $('qpDone').classList.add('hidden'); toast('בוטל');
+  }catch(err){ toast('הביטול נכשל',true); }
+}
+if($('qpUndo')) $('qpUndo').onclick=qpUndo;
 
 /* ---------- הפעלה ---------- */
 async function start(){
@@ -1181,6 +1287,7 @@ async function start(){
   renderOvKids();
   ovWire();
   ovRenderList();
+  qpInit().catch(e=>console.warn("points unavailable",e));
 }
 
 const {data:{session}}=await db.auth.getSession();

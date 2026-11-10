@@ -407,6 +407,9 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
   .sqbtn{font-size:16px}
   #login{margin:6vh auto}
 }
+.timerow{display:flex;gap:8px;align-items:center}.timerow input{flex:1;min-width:0}.timerow span{font-weight:700;color:#5F6D67}
+.cncard{border:2px solid var(--alert)}
+.cncard h2{color:var(--alert)}
 </style>
 </head>
 <body>
@@ -427,6 +430,7 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
       <a href="index.html">לוח משפחה</a>
       <a href="daily.html">היום</a>
       <a href="control.html" class="here">בקרה מלאה</a>
+      <a href="points.html">נקודות</a>
       <button class="out" id="logoutBtn">יציאה</button>
     </div>
   </div>
@@ -447,7 +451,6 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
     <button class="tab" data-p="vac">חופשות</button>
     <button class="tab" data-p="periods">שעות והפסקות</button>
     <button class="tab" data-p="food">אוכל</button>
-    <button class="tab" data-p="photos">תמונות</button>
     <button class="tab" data-p="kids">ילדים</button>
     <button class="tab" data-p="display">תצוגה</button>
   </div>
@@ -633,6 +636,9 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
         <label>טקסט (רשות)</label>
         <textarea id="ovFullNote" rows="4" placeholder="מה להביא ליום הראשון:&#10;חולצת תלבושת&#10;קלמר מאובזר&#10;ארוחת עשר ובקבוק מים"></textarea>
         <div class="hint" style="margin-top:6px">שורה שנגמרת בנקודתיים תוצג ככותרת, וכל שורה אחריה כפריט ברשימה. בלי נקודתיים — הודעה גדולה רגילה. אין צורך להקליד תבליטים.</div>
+        <label>שעות הצגה (רשות)</label>
+        <div class="timerow"><span>מ-</span><input type="time" id="ovFrom"><span>עד</span><input type="time" id="ovTo"></div>
+        <div class="hint" style="margin-top:6px">בלי שעות — ההודעה מוצגת כל היום. עם שעות — מופיעה ונעלמת לבד על הלוח.</div>
         <div class="cvprev hidden" id="ovFullPreview">
           <div class="pvlabel">כך זה ייראה על הלוח</div>
           <div id="ovFullPreviewBody"></div>
@@ -713,6 +719,7 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
         <input type="time" id="psTime">
         <input type="text" id="psLoc" placeholder="מיקום (אופציונלי)">
         <button id="psAdd">הוספה</button>
+        <button class="ghost" id="psCancel" style="display:none">ביטול העריכה</button>
       </div>
       <div id="psList" style="margin-top:14px"></div>
       <div class="hint" style="margin-top:14px">תבנית שבת רגילה: בחרו תאריך יום שישי, וכל שורות התבנית הבסיסית יתווספו אוטומטית (יום שישי + שבת שאחריו). כל שורה ניתנת למחיקה בנפרד אחרי הטעינה.</div>
@@ -720,6 +727,26 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
         <input type="date" id="shTplFriday">
         <button class="ghost" id="shTplLoad">טעינת תבנית שבת רגילה</button>
       </div>
+    </div>
+
+    <!-- הודעות קהילה (10.11.2026) — עד היום נכנסו רק דרך הצ'אט -->
+    <div class="card cncard">
+      <h2>הודעות קהילה בשבת</h2>
+      <div class="hint">מופיעות במסך השבת/חג מתחת לזמני התפילה, תחת היום שלהן — מזל טוב, ארוחות, וכל דבר אחר לקהילה.</div>
+      <div class="rowline">
+        <input type="date" id="cnDate">
+        <select id="cnCat">
+          <option value="mazal_tov">מזל טוב</option>
+          <option value="meal">ארוחה</option>
+          <option value="general">אחר</option>
+        </select>
+      </div>
+      <textarea id="cnText" rows="2" placeholder="למשל: קידוש אצל משפחת לוי ב-11:00"></textarea>
+      <div class="rowline" style="margin-top:8px">
+        <button id="cnAdd">הוספה</button>
+        <button class="ghost" id="cnCancel" style="display:none">ביטול העריכה</button>
+      </div>
+      <div id="cnList" style="margin-top:14px"></div>
     </div>
 
     <div class="card">
@@ -802,18 +829,6 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
       <h2>לוז אוכל שבועי</h2>
       <div class="hint">מנה קבועה לכל ילד בכל יום. הקלדה חופשית + חיפוש מתוך המאגר.</div>
       <div id="foodWeekly"></div>
-    </div>
-  </div>
-
-  <!-- תמונות -->
-  <div class="page" id="p-photos">
-    <div class="card">
-      <h2>תמונות המסך</h2>
-      <div class="hint">התמונות מוצגות בתחתית המסך בבית. בכל לילה נבחרות ארבע תמונות אקראיות מהאוסף.</div>
-      <input type="file" id="photoFile" accept="image/*" multiple>
-      <button id="photoUpload" style="margin-top:12px">העלאה</button>
-      <div id="photoProgress" class="hint" style="margin-top:10px"></div>
-      <div id="photoGrid" class="photogrid"></div>
     </div>
   </div>
 
@@ -2179,7 +2194,9 @@ function ovSetImage(url,name){
 
 function ovResetForm(){
   const P='ov';
-  ovStart=null; ovEnd=null; ovEditGroup=null;
+  /* ברירת מחדל: היום מסומן תמיד (10.11.2026) — גם אחרי 12:00 */
+  ovStart=ovTodayIso(); ovEnd=null; ovEditGroup=null; ovView=null;
+  if($(P+'From')){ $(P+'From').value=''; $(P+'To').value=''; }
   ovSetScope('schedule');
   ovSetImage(null);
   if($(P+'Note')) $(P+'Note').value='';
@@ -2210,6 +2227,7 @@ function ovGroups(){
       from:list[0].date, to:list[list.length-1].date,
       note:list[0].note, scope:list[0].scope||'schedule',
       image_url:list[0].image_url||null,
+      start_time:list[0].start_time||null, end_time:list[0].end_time||null,
       kids
     };
   }).sort((a,b)=>a.from.localeCompare(b.from));
@@ -2235,10 +2253,12 @@ function ovRenderList(){
     const who = g.scope==='full' ? '' :
       (g.kids.length ? esc(g.kids.join(', '))+' · ' : 'כל הילדים · ');
     const pic = g.image_url ? '&#128444;&#65039; ' : '';
+    const hrs = (g.start_time||g.end_time)
+      ? '<span class="dnum">'+(g.start_time?String(g.start_time).slice(0,5):'')+'–'+(g.end_time?String(g.end_time).slice(0,5):'')+'</span> · ' : '';
     const txt = esc(g.note||'חופש');
     return '<div class="ovitem" data-g="'+esc(g.group_id)+'">'+badge+
       '<div class="range">'+range+'</div>'+
-      '<div class="txt">'+who+pic+txt+'</div>'+
+      '<div class="txt">'+who+hrs+pic+txt+'</div>'+
       '<button type="button" class="iconbtn" title="עריכה" aria-label="עריכה" data-edit="'+esc(g.group_id)+'">&#9998;</button>'+
       '<button type="button" class="iconbtn del" data-del="'+esc(g.group_id)+'">&#128465;</button>'+
       '</div>';
@@ -2263,6 +2283,7 @@ function ovStartEdit(gid){
     $(P+'FullNote').value=g.note||'';
     if(typeof renderCoverPreview==='function') renderCoverPreview();
     ovSetImage(g.image_url,'תמונה קיימת');
+    if($(P+'From')){ $(P+'From').value=g.start_time?String(g.start_time).slice(0,5):''; $(P+'To').value=g.end_time?String(g.end_time).slice(0,5):''; }
   }else{
     $(P+'Note').value=g.note||'';
     const kidsBox=$(P+'Kids');
@@ -2306,7 +2327,9 @@ async function ovSubmit(){
   if(ovScope==='full'){
     const note=$(P+'FullNote').value.trim()||null;
     if(!note && !ovImage){ toast('הוסיפו טקסט או תמונה',true); return; }
-    rows=dates.map(d=>({date:d,kid:null,note,scope:'full',image_url:ovImage}));
+    const from=$(P+'From')?($(P+'From').value||null):null, to=$(P+'To')?($(P+'To').value||null):null;
+    if(from&&to&&to<=from){ toast('שעת הסיום חייבת להיות אחרי שעת ההתחלה',true); return; }
+    rows=dates.map(d=>({date:d,kid:null,note,scope:'full',image_url:ovImage,start_time:from,end_time:to}));
   }else{
     const note=$(P+'Note').value.trim()||null;
     const kidsBox=$(P+'Kids');
@@ -2369,6 +2392,7 @@ function ovWire(){
   /* יציאה מעריכה בלי לשמור — הטופס חוזר להוספה רגילה */
   if($(P+'Cancel')) $(P+'Cancel').onclick=()=>{ ovResetForm(); ovRenderList(); };
   ovSetScope('schedule');
+  ovStart=ovTodayIso(); ovEnd=null;   /* היום מסומן מראש */
   ovRenderCal();
 }
 
@@ -2588,8 +2612,10 @@ function renderPrayerList(){
     ? rows.map(r=>`<div class="dateitem" style="background:var(--soft)">
         <b>${esc(r.title||'')}</b>
         <span class="sp">${r.date?fmtDate(r.date):''}${r.time?' · '+String(r.time).slice(0,5):''}${r.location?' · '+esc(r.location):''}</span>
+        <button class="iconbtn" title="עריכה" aria-label="עריכה" data-edit="${r.id}">&#9998;</button>
         <button class="danger" data-del="${r.id}">מחיקה</button></div>`).join('')
     : `<div class="hint">אין שורות ל${PS_TYPE_HE[type]} — המסך לא יציג לו"ז לאירוע כזה</div>`;
+  $('psList').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>psStartEdit(b.dataset.edit));
   $('psList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     const rec=state.prayers.find(x=>x.id==b.dataset.del);
     const ok=await ask('מחיקת שורה',`למחוק את "${rec?rec.title:''}"?`,{yes:'מחיקה'});
@@ -2600,11 +2626,41 @@ function renderPrayerList(){
   });
 }
 $('psType').onchange=renderPrayerList;
+/* עריכת שורה (10.11.2026): טוענים את השורה לטופס, ו"שמירת השינויים" מעדכנת אותה במקום.
+   התאריך נשמר כמחרוזת YYYY-MM-DD מהשדה עצמו — בלי המרת Date, כדי שלא יזוז ביום. */
+let psEditId=null;
+function psStartEdit(id){
+  const r=state.prayers.find(x=>x.id==id); if(!r) return;
+  psEditId=r.id;
+  $('psTitle').value=r.title||''; $('psDate').value=r.date||'';
+  $('psTime').value=r.time?String(r.time).slice(0,5):''; $('psLoc').value=r.location||'';
+  $('psAdd').textContent='שמירת השינויים'; $('psCancel').style.display='';
+  $('psTitle').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function psResetForm(){
+  psEditId=null;
+  $('psTitle').value=''; $('psTime').value=''; $('psLoc').value='';
+  $('psAdd').textContent='הוספה'; $('psCancel').style.display='none';
+}
+$('psCancel').onclick=psResetForm;
 $('psAdd').onclick=async()=>{
   const title=$('psTitle').value.trim(), date=$('psDate').value, time=$('psTime').value;
   if(!title){ toast('הזינו שם',true); return; }
   if(!date){ toast('בחרו תאריך',true); return; }
   const type=$('psType').value;
+  if(psEditId!==null){
+    const old=state.prayers.find(x=>x.id==psEditId);
+    const upd={title, date, time:time||null, location:$('psLoc').value.trim()||null};
+    const ok=await ask('עדכון שורה',`לשמור את השינויים ב"${old?old.title:title}"?`,{danger:false,yes:'שמירה'});
+    if(!ok) return;
+    const {data,error}=await db.from('prayer_schedule').update(upd).eq('id',psEditId).select().single();
+    if(error||!data){ toast('לא נשמר',true); return; }
+    try{ await db.from('audit_log').insert({intent:'edit prayer row',entity:'prayer_schedule',action:'update',
+      previous_value:old||null,new_value:data,verification_result:'ok',source:'control.html'}); }catch(_){}
+    state.prayers=state.prayers.map(x=>x.id==data.id?data:x);
+    psResetForm(); renderPrayerList(); toast('עודכן');
+    return;
+  }
   const same=state.prayers.filter(r=>r.schedule_type===type&&r.date===date).length;
   const {data,error}=await db.from('prayer_schedule').insert({
     schedule_type:type, date, title, time:time||null,
@@ -3095,53 +3151,73 @@ $('restAdd').onclick=async()=>{
     $('nrTag').value=''; $('nrReason').value=''; renderRestrictions(); toast('נוסף'); }
 };
 
+/* תמונות המסך הוסרו מהלוח ב-10.11.2026 (הוחלפו בתחזית). העלאת תמונה להודעה על כל המסך נשארה. */
+
 /* ============================================================
-   תמונות
+   הודעות קהילה (10.11.2026) — טבלת community_notes
    ============================================================ */
-const BUCKET='photos';
-const publicUrl=name=>db.storage.from(BUCKET).getPublicUrl(name).data.publicUrl;
-
-async function loadPhotos(){
-  const {data,error}=await db.storage.from(BUCKET).list('',{limit:200,sortBy:{column:'created_at',order:'desc'}});
-  if(error){ $('photoGrid').innerHTML='<div class="hint">לא ניתן לטעון תמונות</div>'; return; }
-  state.photos=(data||[]).filter(f=>f.name && !f.name.startsWith('.'));
-  renderPhotos();
+const CN_CAT_HE={mazal_tov:'מזל טוב',meal:'ארוחה',general:'אחר'};
+let cnEditId=null;
+async function loadCommunityNotes(){
+  const from=new Date(Date.now()-2*86400000).toISOString().slice(0,10);
+  const {data,error}=await db.from('community_notes').select('*').gte('date',from).order('date');
+  state.cnotes=error?[]:(data||[]);
+  renderCommunityNotes();
 }
-
-function renderPhotos(){
-  const g=$('photoGrid');
-  g.innerHTML = state.photos.length ? state.photos.map(f=>`
-    <div class="photoitem">
-      <img src="${publicUrl(f.name)}" alt="" loading="lazy">
-      <button data-del="${f.name.replace(/"/g,'&quot;')}">מחיקה</button>
-    </div>`).join('')
-    : '<div class="hint">אין תמונות עדיין</div>';
-
-  g.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
-    const ok=await ask('מחיקת תמונה','למחוק את התמונה מהאוסף שמוצג על המסך בבית?',{yes:'מחיקה'});
+function renderCommunityNotes(){
+  const rows=state.cnotes||[];
+  $('cnList').innerHTML=rows.length ? rows.map(r=>`<div class="dateitem" style="background:var(--soft)">
+      <b>${r.date?fmtDate(r.date):''}</b>
+      <span class="sp">${CN_CAT_HE[r.category]?'<span style="color:var(--ink-soft)">'+CN_CAT_HE[r.category]+' · </span>':''}${esc(r.text||'')}</span>
+      <button class="iconbtn" title="עריכה" aria-label="עריכה" data-edit="${r.id}">&#9998;</button>
+      <button class="danger" data-del="${r.id}">מחיקה</button></div>`).join('')
+    : '<div class="hint">אין הודעות קהילה קרובות</div>';
+  $('cnList').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{
+    const r=rows.find(x=>x.id==b.dataset.edit); if(!r) return;
+    cnEditId=r.id; $('cnDate').value=r.date||''; $('cnText').value=r.text||'';
+    $('cnCat').value=CN_CAT_HE[r.category]?r.category:'general';
+    $('cnAdd').textContent='שמירת השינויים'; $('cnCancel').style.display='';
+    $('cnText').scrollIntoView({behavior:'smooth',block:'center'});
+  });
+  $('cnList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const r=rows.find(x=>x.id==b.dataset.del); if(!r) return;
+    const ok=await ask('מחיקת הודעה',`למחוק את "${r.text}"?`,{yes:'מחיקה'});
     if(!ok) return;
-    const {error}=await db.storage.from(BUCKET).remove([b.dataset.del]);
+    const {error}=await db.from('community_notes').delete().eq('id',r.id);
     if(error){ toast('המחיקה נכשלה',true); return; }
-    state.photos=state.photos.filter(f=>f.name!==b.dataset.del);
-    renderPhotos(); toast('נמחק');
+    try{ await db.from('audit_log').insert({intent:'delete community note',entity:'community_notes',action:'delete',
+      previous_value:r,verification_result:'ok',source:'control.html'}); }catch(_){}
+    state.cnotes=rows.filter(x=>x.id!==r.id);
+    if(cnEditId===r.id) cnReset();
+    renderCommunityNotes(); toast('נמחק');
   });
 }
-
-$('photoUpload').onclick=async()=>{
-  const files=[...$('photoFile').files];
-  if(!files.length){ toast('בחרו תמונות',true); return; }
-  let done=0, failed=0;
-  for(const f of files){
-    $('photoProgress').textContent=`מעלה ${done+1} מתוך ${files.length}…`;
-    const ext=(f.name.split('.').pop()||'jpg').toLowerCase();
-    const name=`${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-    const {error}=await db.storage.from(BUCKET).upload(name,f,{contentType:f.type});
-    if(error){ failed++; console.error(error); } else done++;
+function cnReset(){
+  cnEditId=null; $('cnText').value='';
+  $('cnAdd').textContent='הוספה'; $('cnCancel').style.display='none';
+}
+$('cnCancel').onclick=cnReset;
+$('cnAdd').onclick=async()=>{
+  const date=$('cnDate').value, text=$('cnText').value.trim(), category=$('cnCat').value;
+  if(!date){ toast('בחרו תאריך',true); return; }
+  if(!text){ toast('כתבו את ההודעה',true); return; }
+  if(cnEditId!==null){
+    const old=(state.cnotes||[]).find(x=>x.id===cnEditId);
+    const ok=await ask('עדכון הודעה','לשמור את השינויים?',{danger:false,yes:'שמירה'});
+    if(!ok) return;
+    const {data,error}=await db.from('community_notes').update({date,text,category}).eq('id',cnEditId).select().single();
+    if(error||!data){ toast('לא נשמר',true); return; }
+    try{ await db.from('audit_log').insert({intent:'edit community note',entity:'community_notes',action:'update',
+      previous_value:old||null,new_value:data,verification_result:'ok',source:'control.html'}); }catch(_){}
+    state.cnotes=state.cnotes.map(x=>x.id===data.id?data:x);
+    cnReset(); renderCommunityNotes(); toast('עודכן'); return;
   }
-  $('photoProgress').textContent='';
-  $('photoFile').value='';
-  await loadPhotos();
-  toast(failed?`הועלו ${done}, נכשלו ${failed}`:`הועלו ${done} תמונות`, failed>0);
+  const {data,error}=await db.from('community_notes').insert({date,text,category}).select().single();
+  if(error||!data){ toast('לא נשמר',true); return; }
+  try{ await db.from('audit_log').insert({intent:'add community note',entity:'community_notes',action:'insert',
+    new_value:data,verification_result:'ok',source:'control.html'}); }catch(_){}
+  state.cnotes=[...(state.cnotes||[]),data].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  cnReset(); renderCommunityNotes(); toast('נוסף');
 };
 
 /* ============================================================
@@ -3180,7 +3256,7 @@ async function start(){
   await loadWeeklyMeals();
   renderFoodTypes(); renderRestrictions(); renderFoodWeekly(); renderRules(); renderOvKids(); ovWire(); ovRenderList(); renderShirts(); renderShirtSquares(); renderChugim(); renderVac();
   renderForce(); renderZmanimOv(); renderManual(); renderPrayerList(); renderSchoolCal();
-  loadPhotos();
+  loadCommunityNotes().catch(e=>console.warn('community notes',e));
   $('noteText').value=state.settings.parent_note||'';
   const until=String(state.settings.parent_note_until||'').trim();
   if(!until) setExpMode('never');

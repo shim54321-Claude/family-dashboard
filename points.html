@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>נקודות</title>
+<link rel="manifest" href="points.webmanifest">
+<meta name="theme-color" content="#F2F4F2">
+<meta name="color-scheme" content="only light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="נקודות">
+<link rel="apple-touch-icon" href="medal-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="medal-192.png">
+<style>
+/* ============================================================
+   אפליקציית "נקודות" (10.11.2026) — נקודות חיוביות לילדים.
+   טוקנים זהים ללוח המשפחה ולמסך "היום". כל ההגדרות נשמרות במסד
+   ונערכות כאן — הלוח מתעדכן תוך דקה, בלי העלאת גרסה.
+   ============================================================ */
+@font-face{font-family:'Rubik';src:url('fonts/rubik-var.woff2') format('woff2-variations');
+  font-weight:300 900;font-display:swap}
+@font-face{font-family:'Assistant';src:url('fonts/assistant-var.woff2') format('woff2-variations');
+  font-weight:300 800;font-display:swap}
+:root{
+  color-scheme:only light;
+  --bg:#F2F4F2; --ink:#16211E; --ink-soft:#606E69; --line:#E3E8E4; --card:#FFFFFF;
+  --alert:#9C6B1F; --alert-bg:#F6EFE2; --ok:#2E7D52; --danger:#A33; --link:#2F5F96;
+  --gold:#E2A13B; --gold-bg:#F6EEDD; --gold-ink:#8A5A12; --soft:#F1F4F1;
+  --font-display:'Rubik',Arial,Helvetica,sans-serif;
+  --font-body:'Assistant',Arial,Helvetica,sans-serif;
+  --tap:48px;
+}
+body.night{
+  --bg:#111A17; --ink:#E8EDEA; --ink-soft:#8DA09A; --line:#28332F; --card:#1A2420;
+  --alert:#D8A857; --alert-bg:#2A2214; --ok:#5AA87C; --danger:#E08585; --link:#8FB4E0;
+  --gold-bg:#2A2214; --gold-ink:#E2B867; --soft:#1C2622;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;
+  padding-bottom:40px;-webkit-text-size-adjust:100%}
+.wrap{max-width:620px;margin:0 auto;padding:14px}
+h1{font-family:var(--font-display);font-size:26px;font-weight:900;line-height:1.2}
+h2{font-family:var(--font-display);font-size:18px;font-weight:900}
+.hint{font-size:13px;color:var(--ink-soft)}
+.hidden{display:none!important}
+input,select,textarea{width:100%;min-height:var(--tap);padding:11px 12px;border:1px solid var(--line);
+  border-radius:12px;font-family:var(--font-body);font-size:16px;background:var(--card);color:var(--ink)}
+label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin:12px 0 5px}
+button{font-family:var(--font-body);font-size:16px;font-weight:700;min-height:var(--tap);padding:11px 16px;
+  border:none;border-radius:12px;background:var(--ink);color:var(--bg);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+button.link{background:transparent;color:var(--link);padding:0 4px;font-weight:800;min-height:44px}
+button:disabled{opacity:.45}
+
+#login{max-width:360px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px}
+#login h1{text-align:center;margin-bottom:6px}
+#login .lmedal{display:flex;justify-content:center;margin-bottom:6px}
+.msg{font-size:14px;margin-top:12px;text-align:center;min-height:20px}
+.msg.err{color:var(--danger)}
+#panel{display:none}
+
+.navbar{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 0 10px}
+.navrow{display:flex;gap:8px;max-width:620px;margin:0 auto;padding:0 14px}
+.navrow a,.navrow button{flex:1;min-height:44px;padding:10px 8px;border-radius:999px;font-size:15px;font-weight:800;
+  text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.navrow a{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.navrow a svg{width:18px;height:18px}
+.navrow button.out{flex:0 0 auto;background:transparent;color:var(--ink-soft);border:1px solid var(--line);font-size:14px;padding:10px 14px}
+
+.top{display:flex;justify-content:space-between;align-items:center;margin:12px 0 10px}
+.top .fam{font-size:13px;color:var(--ink-soft);font-weight:700}
+.top .fam b{color:var(--ink);font-variant-numeric:tabular-nums}
+.tabs{display:flex;background:var(--card);border-radius:999px;padding:4px;gap:4px;margin-bottom:12px;border:1px solid var(--line)}
+.tabs button{flex:1;min-height:44px;background:transparent;color:var(--ink-soft);border-radius:999px;font-weight:800;font-size:15px;padding:0 6px}
+.tabs button.on{background:var(--ink);color:var(--bg)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.card h2{margin-bottom:10px}
+.grp{font-size:14px;font-weight:800;color:var(--ink-soft);margin:12px 2px 6px}
+
+.kids{display:flex;gap:6px;flex-wrap:wrap}
+.kidb{flex:1;min-width:72px;min-height:64px;border-radius:16px;border:2px solid var(--line);background:var(--card);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:17px;font-weight:900;color:var(--c);padding:6px}
+.kidb small{font-size:12px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.kidb.on{background:var(--c);border-color:var(--c);color:#FFFFFF}
+.kidb.on small{color:rgba(255,255,255,.85)}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.act{min-height:50px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;
+  padding:6px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:15px;font-weight:700;text-align:start}
+.act b,.pv{font-family:var(--font-display);font-size:16px;font-weight:900;background:var(--gold-bg);color:var(--gold-ink);
+  border-radius:999px;padding:1px 9px;white-space:nowrap}
+.act.dim{opacity:.4}
+.act b,.pv,.logrow .pts{direction:ltr;unicode-bidi:isolate}
+.free{display:flex;gap:8px;align-items:center}
+.free input{flex:1;min-width:0}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;height:48px;flex:none}
+.stepper button{width:38px;min-height:46px;padding:0;background:transparent;color:var(--ink);font-size:20px;font-weight:900}
+.stepper span{width:22px;text-align:center;font-family:var(--font-display);font-weight:900}
+.logrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.logrow:last-child{border-bottom:0}
+.logrow.undone{opacity:.5;text-decoration:line-through}
+.logrow .pts{font-weight:900;font-variant-numeric:tabular-nums}
+
+.pending{border:2px solid var(--gold)}
+.pending h2{color:var(--alert)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px}
+.row+.row{border-top:1px solid var(--line)}
+.sw{width:54px;height:32px;border-radius:999px;border:none;position:relative;padding:0;min-height:32px;background:#B9C3BF;flex:none}
+.sw[aria-checked="true"]{background:var(--ok)}
+.sw span{position:absolute;top:4px;inset-inline-start:4px;width:24px;height:24px;border-radius:50%;background:#FFFFFF;transition:inset-inline-start .15s}
+.sw[aria-checked="true"] span{inset-inline-start:26px}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;min-height:42px;background:transparent;color:var(--ink-soft);border-radius:10px;font-size:14px;font-weight:800;padding:0 8px}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.kidrow{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.kidrow .kn{font-family:var(--font-display);font-weight:900;font-size:17px;color:var(--c)}
+.kidrow .gs{font-size:14px;color:var(--ink-soft);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:0 14px;font-size:15px;font-weight:800}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.icons{display:flex;gap:8px;flex-wrap:wrap}
+.ico{width:52px;height:52px;min-height:52px;border-radius:14px;border:2px solid var(--line);background:var(--card);padding:0;display:flex;align-items:center;justify-content:center}
+.ico.on{border-color:var(--ink);background:var(--soft)}
+.ico svg{width:28px;height:28px}
+.est{background:color-mix(in srgb,var(--link) 12%,var(--card));color:var(--ink);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:700}
+.preview{border:2px dashed var(--line);border-radius:14px;padding:10px 12px}
+.pbar{height:12px;border-radius:999px;background:var(--soft);overflow:hidden;margin-top:4px}
+.pbar span{display:block;height:100%;border-radius:999px}
+.item{display:flex;align-items:center;gap:8px;min-height:48px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .t{flex:1;min-width:0;font-weight:700}
+.item .t small{display:block;color:var(--ink-soft);font-weight:600;font-size:12.5px}
+.iconbtn{width:40px;height:40px;min-height:40px;padding:0;border-radius:10px;background:transparent;color:var(--ink-soft);border:1px solid var(--line);font-size:16px;flex:none}
+.iconbtn.del{color:var(--danger);border-color:transparent}
+.form{background:var(--soft);border-radius:14px;padding:10px 12px;margin-top:8px}
+.form .btns{display:flex;gap:8px;margin-top:10px}
+.form .btns button{flex:1}
+.week{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.wk{border-radius:14px;padding:10px;background:var(--soft);text-align:center}
+.wk .n{font-family:var(--font-display);font-weight:900;font-size:17px;color:var(--c)}
+.wk .v{font-family:var(--font-display);font-weight:900;font-size:24px;font-variant-numeric:tabular-nums}
+.stars{display:inline-flex;gap:1px;vertical-align:middle}
+.stars svg{width:14px;height:14px}
+
+#confirm{position:fixed;inset:0;z-index:100;background:rgba(10,16,14,.55);display:flex;align-items:center;justify-content:center;padding:18px}
+.cbox{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
+.cbox h3{font-family:var(--font-display);font-size:18px;font-weight:900;margin-bottom:8px}
+.cbox p{font-size:15px;color:var(--ink-soft);margin-bottom:16px;white-space:pre-line}
+.cbtns{display:flex;gap:10px}
+.cbtns button{flex:1}
+.cbtns .no{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.cbtns .yes.danger{background:var(--danger);color:#fff}
+#toast{position:fixed;bottom:18px;inset-inline-start:50%;transform:translateX(50%);background:var(--ok);color:#fff;
+  padding:11px 22px;border-radius:30px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:110}
+#toast.on{opacity:1}
+#toast.bad{background:var(--danger)}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="lmedal"><svg width="72" height="72" viewBox="0 0 160 160" aria-hidden="true"><rect width="160" height="160" rx="36" fill="#2E6F8E"/><path d="M50 22l18 44h-14L36 22z" fill="#EE719E"/><path d="M64 22l16 40 16-40z" fill="#7A5FA8"/><path d="M110 22l-18 44h14l18-44z" fill="#2E7D52"/><circle cx="80" cy="96" r="38" fill="#E2A13B" stroke="#FFFFFF" stroke-width="5"/><path d="M80 80l5 10 11 1.5-8 7.5 2 11-10-5.5-10 5.5 2-11-8-7.5 11-1.5z" fill="#FFFFFF"/></svg></div>
+  <h1>נקודות</h1>
+  <label for="pass">סיסמת הורים</label>
+  <input type="password" id="pass" autocomplete="current-password" autofocus>
+  <button style="width:100%;margin-top:16px" id="loginBtn">כניסה</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<div id="panel">
+  <div class="navbar">
+    <nav class="navrow" aria-label="מעבר בין מסכים">
+      <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>לוח משפחה</a>
+      <a href="daily.html">היום</a>
+      <button class="out" id="logoutBtn">יציאה</button>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <div class="top">
+      <h1>נקודות</h1>
+      <div class="fam" id="famTop"></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" class="on" data-tab="give" aria-selected="true">נתינה</button>
+      <button role="tab" data-tab="setup" aria-selected="false">יעדים והגדרות</button>
+      <button role="tab" data-tab="hist" aria-selected="false">היסטוריה</button>
+    </div>
+
+    <!-- ===== נתינה ===== -->
+    <section id="v-give">
+      <div class="grp">למי? (אפשר כמה)</div>
+      <div class="kids" id="giveKids"></div>
+      <div id="giveActs"></div>
+      <div class="grp">משהו אחר</div>
+      <div class="card" style="padding:10px">
+        <div class="free">
+          <label for="freeWhy" class="hidden">סיבה</label>
+          <input id="freeWhy" type="text" placeholder="סיבה (למשל: עזר לסבתא)">
+          <div class="stepper"><button type="button" id="freeMinus" aria-label="פחות">−</button><span id="freeN">2</span><button type="button" id="freePlus" aria-label="יותר">+</button></div>
+          <button type="button" id="freeGive">תן</button>
+        </div>
+      </div>
+      <div class="grp">היום</div>
+      <div class="card" id="todayLog" style="padding:6px 12px"></div>
+    </section>
+
+    <!-- ===== יעדים והגדרות ===== -->
+    <section id="v-setup" class="hidden">
+      <div id="pendingBox"></div>
+
+      <div class="card">
+        <div class="row"><h2 style="margin:0">הצגה על לוח הקיוסק</h2>
+          <button class="sw" type="button" role="switch" id="swShow" aria-label="הצגת נקודות על הלוח"><span></span></button></div>
+        <div class="hint">כבוי: כל אזור הנקודות נעלם מהלוח. הצבירה ממשיכה כרגיל.</div>
+      </div>
+
+      <div class="card">
+        <h2>ילדים ויעדים אישיים</h2>
+        <div id="kidsSetup"></div>
+        <div class="hint">ילד חדש מוסיפים בלוח הבקרה ← ילדים, והוא מופיע כאן אוטומטית.</div>
+      </div>
+
+      <div class="card">
+        <h2>הצנצנת המשפחתית</h2>
+        <div id="famSetup"></div>
+      </div>
+
+      <div class="card">
+        <h2>חגיגה כשמגיעים ליעד</h2>
+        <div class="seg" id="celeMode" role="group" aria-label="אופן החגיגה">
+          <button type="button" data-v="once">פעם אחת</button>
+          <button type="button" data-v="daily">+ כל בוקר</button>
+          <button type="button" data-v="tag">רק תג בכרטיס</button>
+        </div>
+        <label>כמה זמן מסך החגיגה מוצג</label>
+        <div class="seg" id="celeSecs" role="group" aria-label="משך החגיגה">
+          <button type="button" data-v="30">חצי דקה</button>
+          <button type="button" data-v="60">דקה</button>
+          <button type="button" data-v="120">2 דקות</button>
+        </div>
+        <div class="hint" style="margin-top:8px">בכל מקרה, עד שמסמנים "מומש" נשאר תג "הגעתי ליעד!" בכרטיס של הילד. בשבת/חג לא מוצג.</div>
+      </div>
+
+      <div class="card">
+        <div class="row"><h2 style="margin:0">קטגוריות</h2><button class="link" id="catAdd">+ קטגוריה</button></div>
+        <div id="catList"></div>
+      </div>
+
+      <div class="card">
+        <div class="row"><h2 style="margin:0">רשימת מעשים</h2><button class="link" id="actAdd">+ מעשה חדש</button></div>
+        <div id="actForm"></div>
+        <div id="actList"></div>
+      </div>
+
+      <div class="card">
+        <h2>כפתורי "הכי בשימוש" במסך היום</h2>
+        <div class="seg" id="quickMode" role="group" aria-label="בחירת כפתורים">
+          <button type="button" data-v="auto">אוטומטי</button>
+          <button type="button" data-v="manual">אני בוחר</button>
+        </div>
+        <div class="hint" style="margin-top:6px" id="quickHint"></div>
+        <div class="chips" id="quickPick" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <!-- ===== עריכת יעד ===== -->
+    <section id="v-goal" class="hidden"></section>
+
+    <!-- ===== היסטוריה ===== -->
+    <section id="v-hist" class="hidden">
+      <div class="seg" id="histWeek" role="group" aria-label="שבוע" style="margin-bottom:12px">
+        <button type="button" data-v="0" class="on">השבוע</button>
+        <button type="button" data-v="1">שבוע שעבר</button>
+        <button type="button" data-v="2">לפני שבועיים</button>
+      </div>
+      <div class="card"><h2>סיכום שבועי</h2><div class="week" id="histSum"></div></div>
+      <div class="card" style="padding:6px 12px" id="histList"></div>
+    </section>
+  </div>
+</div>
+
+<div id="confirm" class="hidden" role="dialog" aria-modal="true">
+  <div class="cbox">
+    <h3 id="cTitle">אישור</h3>
+    <p id="cBody"></p>
+    <div class="cbtns"><button class="no" id="cNo">ביטול</button><button class="yes" id="cYes">אישור</button></div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script type="module">
+const CONFIG={
+  LOGIN_EMAIL:'parents@cohen.family',
+  SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
+  SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
+};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function israelNow(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return new Date(+p.year,+p.month-1,+p.day,+(p.hour==='24'?'0':p.hour),+p.minute,+p.second);
+}
+const israelIso=t=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem'}).format(new Date(t));
+const hm=t=>new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(t));
+const dm=t=>new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',day:'numeric',month:'numeric'}).format(new Date(t));
+function toast(m,bad){const t=$('toast');t.textContent=m;t.className='on'+(bad?' bad':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='',1800);}
+function ask(title,body,{danger=true,yes='אישור'}={}){
+  return new Promise(res=>{
+    $('cTitle').textContent=title; $('cBody').textContent=body||'';
+    const y=$('cYes'), n=$('cNo'); y.textContent=yes; y.className='yes'+(danger?' danger':'');
+    $('confirm').classList.remove('hidden');
+    const done=v=>{ $('confirm').classList.add('hidden'); y.onclick=null; n.onclick=null; res(v); };
+    y.onclick=()=>done(true); n.onclick=()=>done(false);
+  });
+}
+/* מצב לילה — אותם כללים בדיוק כמו בלוח */
+let NIGHT={enabled:true,startMin:22*60+30,endMin:5*60+45};
+const hhmmToMin=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());return m&&+m[1]<24&&+m[2]<60?+m[1]*60+ +m[2]:null;};
+function applyNight(){
+  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
+  const on=NIGHT.enabled&&(NIGHT.startMin>NIGHT.endMin?(mins>=NIGHT.startMin||mins<NIGHT.endMin):(mins>=NIGHT.startMin&&mins<NIGHT.endMin));
+  document.body.classList.toggle('night',on);
+}
+
+const PRIZE_ICONS={
+  icecream:['גלידה','<svg viewBox="0 0 24 24" fill="none" stroke="#C2406F" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M7.5 10.5 12 22l4.5-11.5"/></svg>'],
+  film:['סרט','<svg viewBox="0 0 24 24" fill="none" stroke="#7A5FA8" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>'],
+  game:['משחק','<svg viewBox="0 0 24 24" fill="none" stroke="#2E6F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/></svg>'],
+  pizza:['פיצה','<svg viewBox="0 0 24 24" fill="none" stroke="#C9871F" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 22 3 5c6-3 12-3 18 0z"/><circle cx="10" cy="9" r="1.2"/><circle cx="14" cy="12" r="1.2"/><circle cx="11.5" cy="15" r="1.2"/></svg>'],
+  ball:['כדור','<svg viewBox="0 0 24 24" fill="none" stroke="#2E7D52" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>'],
+  gift:['מתנה','<svg viewBox="0 0 24 24" fill="none" stroke="#9C3D0C" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="1.5"/><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1.5S9 9 12 9zM12 9c2-4 6-4 6-1.5S15 9 12 9z"/></svg>'],
+};
+const PRIZE_IDEAS=['גלידה','ערב סרט','ערב משחק עם אבא','בוחר/ת ארוחת ערב','יציאה לבד עם אמא','מדבקה'];
+const starSvg=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21.1l1.5-7L2 9.3l7-.8z" fill="${on?'#E2A13B':'#C9D3CE'}"/></svg>`;
+
+const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
+let S={kids:[],cats:[],acts:[],goals:[],events:[],settings:{}};
+let sel=new Set(), freeN=2, editingAct=null, histWeek=0;
+
+async function audit(intent,entity,action,prev,next,result){
+  try{ await db.from('audit_log').insert({intent,entity,action,previous_value:prev??null,new_value:next??null,
+    verification_result:result||'ok',source:'points.html'}); }catch(_){}
+}
+
+/* ---------- כניסה ---------- */
+$('loginBtn').onclick=async()=>{
+  const m=$('loginMsg'); m.textContent='מתחבר…'; m.className='msg';
+  const {error}=await db.auth.signInWithPassword({email:CONFIG.LOGIN_EMAIL,password:$('pass').value});
+  if(error){ m.textContent='סיסמה שגויה'; m.className='msg err'; $('pass').select(); } else start();
+};
+$('pass').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+$('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
+
+/* ---------- נתונים ---------- */
+async function loadAll(){
+  const since=new Date(Date.now()-120*86400000).toISOString();
+  const [k,c,a,g,e,st]=await Promise.all([
+    db.from('kids').select('*').order('order_index'),
+    db.from('point_categories').select('*').eq('active',true).order('order_index'),
+    db.from('point_actions').select('*').eq('active',true).order('order_index'),
+    db.from('point_goals').select('*').eq('status','active'),
+    db.from('point_events').select('*').gte('created_at',since).order('created_at',{ascending:false}),
+    db.from('settings').select('*'),
+  ]);
+  S.kids=k.data||[]; S.cats=c.data||[]; S.acts=a.data||[]; S.goals=g.data||[];
+  S.settings={}; (st.data||[]).forEach(x=>S.settings[x.key]=x.value);
+  /* אירועים: מאז היעד הוותיק ביותר (לחישוב התקדמות) + 120 יום להיסטוריה */
+  const oldest=S.goals.map(x=>x.started_at).sort()[0];
+  let events=e.data||[];
+  if(oldest && oldest<since){
+    const more=await db.from('point_events').select('*').gte('created_at',oldest).lt('created_at',since);
+    events=events.concat(more.data||[]);
+  }
+  S.events=events;
+  NIGHT={enabled:!['0','false'].includes(String(S.settings.night_mode_enabled||'').trim()),
+    startMin:hhmmToMin(S.settings.night_start)??22*60+30, endMin:hhmmToMin(S.settings.night_end)??5*60+45};
+  applyNight();
+}
+const kidsIn=()=>S.kids.filter(k=>k.points_enabled!==false);
+const goalOf=kidId=>S.goals.find(g=>kidId==null?g.kid_id==null:g.kid_id===kidId);
+function progress(g){
+  if(!g) return {sum:0,reached:false};
+  const start=new Date(g.started_at).getTime();
+  const ids=g.kid_id==null?kidsIn().map(k=>k.id):[g.kid_id];
+  let sum=g.carry_in||0;
+  for(const e of S.events) if(!e.undone_at && ids.includes(e.kid_id) && new Date(e.created_at).getTime()>=start) sum+=e.points;
+  return {sum,reached:!g.needs_setup&&sum>=g.target};
+}
+/* קצב: ממוצע נקודות ביום ב-14 הימים האחרונים */
+function pace(kidId){
+  const from=Date.now()-14*86400000;
+  const ids=kidId==null?kidsIn().map(k=>k.id):[kidId];
+  const sum=S.events.filter(e=>!e.undone_at&&ids.includes(e.kid_id)&&new Date(e.created_at).getTime()>=from).reduce((a,e)=>a+e.points,0);
+  return sum/14;
+}
+
+/* ---------- ניווט בין טאבים ---------- */
+let view='give';
+function show(v){
+  view=v;
+  ['give','setup','hist','goal'].forEach(x=>$('v-'+x).classList.toggle('hidden',x!==v));
+  document.querySelectorAll('.tabs [data-tab]').forEach(b=>{
+    const on=b.dataset.tab===v || (v==='goal'&&b.dataset.tab==='setup');
+    b.classList.toggle('on',on); b.setAttribute('aria-selected',on);
+  });
+  renderView();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.tabs [data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+function renderView(){
+  const fam=goalOf(null), fp=progress(fam);
+  $('famTop').innerHTML=fam?`צנצנת משפחתית <b>${Math.min(fp.sum,fam.target)}/${fam.target}</b>`:'';
+  if(view==='give') renderGive();
+  if(view==='setup') renderSetup();
+  if(view==='hist') renderHist();
+}
+
+/* ---------- נתינה ---------- */
+function kidLabel(k){
+  const g=goalOf(k.id), p=progress(g);
+  if(!g) return '';
+  return k.points_display==='stars'&&g.target<=20 ? `${Math.min(p.sum,g.target)}/${g.target} ★` : `${p.sum}/${g.target}`;
+}
+function actAllowed(a,kidId){ return !a.kid_ids||!a.kid_ids.length||a.kid_ids.includes(kidId); }
+function renderGive(){
+  $('giveKids').innerHTML=kidsIn().map(k=>{
+    const on=sel.has(k.id);
+    return `<button type="button" class="kidb${on?' on':''}" aria-pressed="${on}" data-k="${k.id}" style="--c:${esc(k.color)}">${esc(k.name)}<small>${kidLabel(k)}</small></button>`;
+  }).join('') || '<div class="hint">אין ילדים שמשתתפים בנקודות</div>';
+  $('giveKids').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ const id=+b.dataset.k; sel.has(id)?sel.delete(id):sel.add(id); renderGive(); });
+
+  const groups=[...S.cats.map(c=>({id:c.id,name:c.name})),{id:null,name:'ללא קטגוריה'}];
+  let html='';
+  for(const g of groups){
+    const acts=S.acts.filter(a=>(a.category_id??null)===g.id || (g.id===null && a.category_id && !S.cats.some(c=>c.id===a.category_id)));
+    if(!acts.length) continue;
+    html+=`<div class="grp">${esc(g.name)}</div><div class="acts">`+acts.map(a=>{
+      const dim=sel.size && ![...sel].some(id=>actAllowed(a,id));
+      return `<button type="button" class="act${dim?' dim':''}" data-a="${a.id}"><span>${esc(a.title)}</span><b>+${a.points}</b></button>`;
+    }).join('')+'</div>';
+  }
+  $('giveActs').innerHTML=html||'<div class="card hint">אין עדיין מעשים — מוסיפים ב"יעדים והגדרות"</div>';
+  $('giveActs').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>giveAction(+b.dataset.a));
+  $('freeN').textContent=freeN;
+  renderTodayLog();
+}
+async function insertEvents(rows,label){
+  const {data,error}=await db.from('point_events').insert(rows).select();
+  if(error) throw error;
+  S.events=[...(data||[]),...S.events];
+  await audit('give points ('+label+')','point_events','insert',null,data,'ok: '+(data||[]).length+' rows');
+  return data||[];
+}
+async function giveAction(id){
+  const a=S.acts.find(x=>x.id===id); if(!a) return;
+  if(!sel.size){ toast('בחרו ילד',true); return; }
+  const ok=[...sel].filter(k=>actAllowed(a,k));
+  if(!ok.length){ toast('המעשה הזה לא מוגדר לילדים שנבחרו',true); return; }
+  try{
+    await insertEvents(ok.map(k=>({kid_id:k,points:a.points,action_id:a.id,source:'app'})),a.title);
+    const skipped=sel.size-ok.length;
+    toast(`\u2066+${a.points}\u2069 · ${a.title}`+(skipped?` (לא ל-${skipped})`:''));
+    renderView();
+  }catch(e){ toast('השמירה נכשלה',true); console.error(e); }
+}
+$('freeMinus').onclick=()=>{ freeN=Math.max(1,freeN-1); $('freeN').textContent=freeN; };
+$('freePlus').onclick=()=>{ freeN=Math.min(20,freeN+1); $('freeN').textContent=freeN; };
+$('freeGive').onclick=async()=>{
+  const why=$('freeWhy').value.trim();
+  if(!sel.size){ toast('בחרו ילד',true); return; }
+  if(!why){ toast('כתבו סיבה',true); return; }
+  try{
+    await insertEvents([...sel].map(k=>({kid_id:k,points:freeN,reason:why,source:'app'})),why);
+    $('freeWhy').value=''; toast(`\u2066+${freeN}\u2069 · ${why}`); renderView();
+  }catch(e){ toast('השמירה נכשלה',true); }
+};
+function evLabel(e){ const a=S.acts.find(x=>x.id===e.action_id); return e.reason||(a?a.title:'נקודות'); }
+function logRow(e,withUndo){
+  const k=S.kids.find(x=>x.id===e.kid_id)||{};
+  return `<div class="logrow${e.undone_at?' undone':''}"><span><b style="color:${esc(k.color)}">${esc(k.name)}</b> · ${esc(evLabel(e))} <span class="pts">+${e.points}</span>
+    <span class="hint"> · ${hm(e.created_at)}${e.source==='chat'?' · בצ\'אט':''}</span></span>
+    ${withUndo&&!e.undone_at?`<button class="link" data-undo="${e.id}">ביטול</button>`:''}</div>`;
+}
+function renderTodayLog(){
+  const today=israelIso(Date.now());
+  const rows=S.events.filter(e=>israelIso(e.created_at)===today).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  $('todayLog').innerHTML=rows.length?rows.map(e=>logRow(e,true)).join(''):'<div class="hint" style="padding:8px 0">עוד לא ניתנו נקודות היום</div>';
+  wireUndo($('todayLog'));
+}
+function wireUndo(box){
+  box.querySelectorAll('[data-undo]').forEach(b=>b.onclick=async()=>{
+    const e=S.events.find(x=>x.id==b.dataset.undo); if(!e) return;
+    const k=S.kids.find(x=>x.id===e.kid_id)||{};
+    if(!(await ask('ביטול נקודות',`לבטל ${e.points} נקודות ל${k.name} (${evLabel(e)})?`,{yes:'ביטול הנקודות'}))) return;
+    const now=new Date().toISOString();
+    const {error}=await db.from('point_events').update({undone_at:now}).eq('id',e.id);
+    if(error){ toast('הביטול נכשל',true); return; }
+    await audit('undo points','point_events','update',e,{...e,undone_at:now},'undone');
+    e.undone_at=now; toast('בוטל'); renderView();
+  });
+}
+
+/* ---------- יעדים והגדרות ---------- */
+function setSwitch(el,on){ el.setAttribute('aria-checked',on?'true':'false'); }
+async function setSetting(key,value,label){
+  const prev=S.settings[key];
+  const {error}=await db.from('settings').upsert({key,value:String(value)});
+  if(error){ toast('לא נשמר',true); return false; }
+  S.settings[key]=String(value);
+  await audit('points setting: '+label,'settings','upsert',{key,value:prev??null},{key,value:String(value)},'ok');
+  toast('נשמר'); return true;
+}
+function goalSummary(g){
+  if(!g) return 'אין יעד';
+  if(g.needs_setup) return 'צריך לבחור יעד חדש';
+  const p=progress(g);
+  return `${Math.min(p.sum,g.target)}/${g.target} · ${esc(g.prize)}`;
+}
+function renderSetup(){
+  /* מחכה למימוש */
+  const pend=[...kidsIn().map(k=>({k,g:goalOf(k.id)})),{k:null,g:goalOf(null)}].filter(x=>x.g&&progress(x.g).reached);
+  $('pendingBox').innerHTML=pend.length?`<div class="card pending"><h2>מחכה למימוש</h2>`+pend.map(({k,g})=>{
+    const p=progress(g);
+    return `<div class="row"><span>${k?`<b style="color:${esc(k.color)}">${esc(k.name)}</b>`:'<b>המשפחה</b>'} הגיע/ה ל־${g.target} · ${esc(g.prize)}${p.sum>g.target?` <span class="hint">(<bdi>+${p.sum-g.target}</bdi> עובר ליעד הבא)</span>`:''}</span>
+      <button type="button" data-redeem="${g.id}" style="flex:none">סמן מומש</button></div>`;
+  }).join('')+`<div class="hint">אחרי הסימון: התג יורד מהלוח, והעודף עובר ליעד הבא.</div></div>`:'';
+  $('pendingBox').querySelectorAll('[data-redeem]').forEach(b=>b.onclick=()=>redeem(+b.dataset.redeem));
+
+  setSwitch($('swShow'),S.settings.points_show_kiosk!=='0');
+
+  $('kidsSetup').innerHTML=S.kids.map(k=>{
+    const g=goalOf(k.id), on=k.points_enabled!==false;
+    return `<div class="kidrow" style="--c:${esc(k.color)}">
+      <div class="row"><span class="kn">${esc(k.name)}</span>
+        <button class="sw" type="button" role="switch" aria-checked="${on}" aria-label="${esc(k.name)} משתתף/ת" data-part="${k.id}"><span></span></button></div>
+      ${on?`<div class="row"><span class="hint">תצוגה על הלוח</span>
+        <div class="seg" data-disp="${k.id}" role="group" aria-label="תצוגה"><button type="button" data-v="numbers" class="${k.points_display!=='stars'?'on':''}">מספרים</button><button type="button" data-v="stars" class="${k.points_display==='stars'?'on':''}">כוכבים</button></div></div>
+      <div class="row"><span class="gs">${goalSummary(g)}</span><button class="link" data-goal="${k.id}">${g?'עריכת יעד':'הגדרת יעד'}</button></div>`:''}
+    </div>`;
+  }).join('');
+  $('kidsSetup').querySelectorAll('[data-part]').forEach(b=>b.onclick=async()=>{
+    const k=S.kids.find(x=>x.id==b.dataset.part), on=k.points_enabled===false;
+    if(!(await ask(on?'הוספה לנקודות':'הוצאה מהנקודות',`${on?'לצרף':'להוציא'} את ${k.name} ${on?'ל':'מ'}נקודות? ${on?'':'הנקודות שנצברו נשמרות.'}`,{danger:!on,yes:'אישור'}))) return;
+    const {error}=await db.from('kids').update({points_enabled:on}).eq('id',k.id);
+    if(error){ toast('לא נשמר',true); return; }
+    await audit('points participation','kids','update',{id:k.id,points_enabled:!on},{id:k.id,points_enabled:on});
+    k.points_enabled=on; sel.delete(k.id); toast('נשמר'); renderView();
+  });
+  $('kidsSetup').querySelectorAll('[data-disp] button').forEach(b=>b.onclick=async()=>{
+    const id=+b.parentElement.dataset.disp, v=b.dataset.v, k=S.kids.find(x=>x.id===id);
+    if(k.points_display===v) return;
+    if(!(await ask('שינוי תצוגה',`להציג את ${k.name} על הלוח ב${v==='stars'?'כוכבים':'מספרים'}?`,{danger:false,yes:'שינוי'}))) return;
+    const {error}=await db.from('kids').update({points_display:v}).eq('id',id);
+    if(error){ toast('לא נשמר',true); return; }
+    await audit('points display','kids','update',{id,points_display:k.points_display},{id,points_display:v});
+    k.points_display=v; toast('נשמר'); renderView();
+  });
+  $('kidsSetup').querySelectorAll('[data-goal]').forEach(b=>b.onclick=()=>openGoal(+b.dataset.goal));
+
+  const fam=goalOf(null);
+  $('famSetup').innerHTML=`<div class="row"><span class="gs">${goalSummary(fam)}</span><button class="link" id="famEdit">${fam?'עריכת יעד':'הגדרת יעד'}</button></div>`;
+  $('famEdit').onclick=()=>openGoal(null);
+
+  const mode=S.settings.points_celebration||'once', secs=S.settings.points_celebration_seconds||'60';
+  $('celeMode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===mode));
+  $('celeSecs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===String(secs)));
+
+  renderCats(); renderActs(); renderQuick();
+}
+$('swShow').onclick=async()=>{
+  const on=S.settings.points_show_kiosk==='0';
+  if(!(await ask(on?'הצגה על הלוח':'הסתרה מהלוח',on?'להציג שוב את הנקודות על לוח הקיוסק?':'להסתיר את כל אזור הנקודות מהלוח? הצבירה ממשיכה.',{danger:!on,yes:on?'הצגה':'הסתרה'}))) return;
+  if(await setSetting('points_show_kiosk',on?'1':'0','show on kiosk')) renderSetup();
+};
+$('celeMode').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ if(await setSetting('points_celebration',b.dataset.v,'celebration mode')) renderSetup(); });
+$('celeSecs').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ if(await setSetting('points_celebration_seconds',b.dataset.v,'celebration seconds')) renderSetup(); });
+
+/* מימוש: היעד נסגר, ונפתח יעד חדש שמתחיל עכשיו עם העודף */
+async function redeem(goalId){
+  const g=S.goals.find(x=>x.id===goalId); if(!g) return;
+  const k=g.kid_id==null?null:S.kids.find(x=>x.id===g.kid_id);
+  const p=progress(g), surplus=Math.max(0,p.sum-g.target);
+  if(!(await ask('סימון מומש',`${k?k.name:'המשפחה'} קיבל/ה את הפרס "${g.prize}"?${surplus?`\n${surplus} נקודות עודפות יעברו ליעד הבא.`:''}`,{danger:false,yes:'מומש'}))) return;
+  const now=new Date().toISOString();
+  const {error:e1}=await db.from('point_goals').update({status:'redeemed',redeemed_at:now}).eq('id',g.id);
+  if(e1){ toast('לא נשמר',true); return; }
+  const next={kid_id:g.kid_id,target:g.target,prize:g.after_redeem==='repeat'?g.prize:'',prize_icon:g.after_redeem==='repeat'?g.prize_icon:null,
+    carry_in:surplus,started_at:now,after_redeem:g.after_redeem,needs_setup:g.after_redeem!=='repeat'};
+  const {data,error:e2}=await db.from('point_goals').insert(next).select().single();
+  if(e2){ toast('היעד הבא לא נוצר',true); console.error(e2); }
+  await audit('redeem goal','point_goals','update+insert',g,{redeemed:g.id,next:data||null},e2?'next goal failed':'ok');
+  S.goals=S.goals.filter(x=>x.id!==g.id); if(data) S.goals.push(data);
+  toast('מומש!'); renderView();
+  if(data&&data.needs_setup) openGoal(g.kid_id);
+}
+
+/* ---------- עריכת יעד ---------- */
+let GE=null;
+function openGoal(kidId){
+  const g=goalOf(kidId), k=kidId==null?null:S.kids.find(x=>x.id===kidId);
+  GE={kidId,k,g,target:g?g.target:(k&&k.points_display==='stars'?10:40),prize:g?g.prize:'',icon:g?g.prize_icon:null,after:g?g.after_redeem:'repeat',other:false};
+  if(![10,20,30,40,50,100,150].includes(GE.target)) GE.other=true;
+  show('goal'); renderGoal();
+}
+function renderGoal(){
+  const {k,g}=GE, color=k?k.color:'#E2A13B', p=progress(g), sum=g?p.sum:0;
+  const presets=k?[10,20,30,40,50]:[100,150,200];
+  const rate=pace(GE.kidId), togo=Math.max(0,GE.target-sum);
+  const est=rate>0?`בקצב של ${k?esc(k.name):'כל המשפחה'} בשבועיים האחרונים (בערך ${rate.toFixed(1).replace('.0','')} נקודות ביום) — <b>בערך ${Math.max(1,Math.ceil(togo/rate))} ימים</b>.`
+    :'עוד אין מספיק נקודות כדי להעריך זמן — אפשר לשנות את היעד בכל רגע.';
+  $('v-goal').innerHTML=`
+    <div class="row" style="margin-bottom:8px"><button class="iconbtn" id="geBack" aria-label="חזרה ליעדים והגדרות" style="border:0">›</button>
+      <h1 style="flex:1">${k?'יעד אישי — <span style="color:'+esc(color)+'">'+esc(k.name)+'</span>':'הצנצנת המשפחתית'}</h1></div>
+    <div class="card preview"><div class="hint" style="font-weight:800">ככה זה ייראה על הלוח</div>
+      <div class="row" style="min-height:0;font-weight:700"><span>★ ${sum} / ${GE.target}</span><span class="hint">${GE.prize?`עוד ${togo} ל${esc(GE.prize)}`:''}</span></div>
+      <div class="pbar"><span style="width:${Math.min(100,Math.round(sum/GE.target*100))}%;background:${esc(color)}"></span></div></div>
+    <div class="card"><h2>1. כמה נקודות?</h2>
+      <div class="chips">${presets.map(n=>`<button type="button" class="chip${!GE.other&&GE.target===n?' on':''}" data-t="${n}">${n}</button>`).join('')}
+        <button type="button" class="chip${GE.other?' on':''}" data-t="other">אחר…</button></div>
+      ${GE.other?`<input type="number" id="geOther" min="1" max="1000" value="${GE.target}" style="margin-top:8px" aria-label="מספר נקודות">`:''}
+      <div class="est" style="margin-top:10px">${est}</div></div>
+    <div class="card"><h2>2. מה הפרס?</h2>
+      <input type="text" id="gePrize" value="${esc(GE.prize)}" placeholder="למשל: ערב סרט" aria-label="שם הפרס">
+      <div class="chips" style="margin-top:8px">${PRIZE_IDEAS.map(t=>`<button type="button" class="chip" data-p="${esc(t)}">${esc(t)}</button>`).join('')}</div></div>
+    <div class="card"><h2>3. ציור לפרס <span class="hint">(מופיע בחגיגה)</span></h2>
+      <div class="icons">${Object.entries(PRIZE_ICONS).map(([id,[name,svg]])=>`<button type="button" class="ico${GE.icon===id?' on':''}" data-i="${id}" aria-label="${name}" aria-pressed="${GE.icon===id}">${svg}</button>`).join('')}</div></div>
+    <div class="card"><h2>4. אחרי שהפרס מומש</h2>
+      <div class="seg" id="geAfter"><button type="button" data-v="repeat" class="${GE.after==='repeat'?'on':''}">אותו יעד שוב</button><button type="button" data-v="choose" class="${GE.after==='choose'?'on':''}">לבחור יעד חדש</button></div>
+      <div class="hint" style="margin-top:6px">נקודות עודפות (למשל 43 מתוך 40) עוברות תמיד ליעד הבא.</div></div>
+    <button type="button" id="geSave" style="width:100%">שמירת היעד</button>`;
+  $('geBack').onclick=()=>show('setup');
+  $('v-goal').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ if(b.dataset.t==='other'){GE.other=true;} else {GE.other=false;GE.target=+b.dataset.t;} GE.prize=$('gePrize').value; renderGoal(); });
+  if($('geOther')) $('geOther').oninput=e=>{ const v=parseInt(e.target.value,10); if(v>0) GE.target=v; };
+  $('gePrize').oninput=e=>{ GE.prize=e.target.value; };
+  $('v-goal').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ GE.prize=b.dataset.p; renderGoal(); });
+  $('v-goal').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ GE.icon=GE.icon===b.dataset.i?null:b.dataset.i; GE.prize=$('gePrize').value; renderGoal(); });
+  $('geAfter').querySelectorAll('button').forEach(b=>b.onclick=()=>{ GE.after=b.dataset.v; GE.prize=$('gePrize').value; renderGoal(); });
+  $('geSave').onclick=saveGoal;
+}
+async function saveGoal(){
+  GE.prize=$('gePrize').value.trim();
+  if(!(GE.target>0&&GE.target<=1000)){ toast('מספר נקודות לא תקין',true); return; }
+  if(!GE.prize){ toast('כתבו מה הפרס',true); return; }
+  if(!(await ask('שמירת יעד',`${GE.k?GE.k.name:'המשפחה'}: ${GE.target} נקודות — ${GE.prize}`,{danger:false,yes:'שמירה'}))) return;
+  const upd={target:GE.target,prize:GE.prize,prize_icon:GE.icon,after_redeem:GE.after,needs_setup:false};
+  let res;
+  if(GE.g) res=await db.from('point_goals').update(upd).eq('id',GE.g.id).select().single();
+  else res=await db.from('point_goals').insert({...upd,kid_id:GE.kidId}).select().single();
+  if(res.error||!res.data){ toast('לא נשמר',true); console.error(res.error); return; }
+  await audit(GE.g?'edit goal':'create goal','point_goals',GE.g?'update':'insert',GE.g||null,res.data);
+  S.goals=S.goals.filter(x=>x.id!==res.data.id).concat(res.data);
+  toast('היעד נשמר'); show('setup');
+}
+
+/* ---------- קטגוריות ---------- */
+function renderCats(){
+  $('catList').innerHTML=S.cats.map((c,i)=>`<div class="item"><span class="t">${esc(c.name)}<small>${S.acts.filter(a=>a.category_id===c.id).length} מעשים</small></span>
+    <button class="iconbtn" data-up="${c.id}" aria-label="למעלה" ${i===0?'disabled':''}>▲</button>
+    <button class="iconbtn" data-ren="${c.id}" aria-label="שינוי שם">&#9998;</button>
+    <button class="iconbtn del" data-del="${c.id}" aria-label="מחיקה">&#128465;</button></div>`).join('')||'<div class="hint">אין קטגוריות</div>';
+  $('catList').querySelectorAll('[data-ren]').forEach(b=>b.onclick=async()=>{
+    const c=S.cats.find(x=>x.id==b.dataset.ren); const name=prompt('שם הקטגוריה',c.name); if(!name||!name.trim()||name.trim()===c.name) return;
+    if(!(await ask('שינוי שם',`לשנות את "${c.name}" ל"${name.trim()}"?`,{danger:false,yes:'שמירה'}))) return;
+    const {error}=await db.from('point_categories').update({name:name.trim()}).eq('id',c.id);
+    if(error){ toast('לא נשמר',true); return; }
+    await audit('rename category','point_categories','update',c,{...c,name:name.trim()}); c.name=name.trim(); toast('נשמר'); renderSetup();
+  });
+  $('catList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const c=S.cats.find(x=>x.id==b.dataset.del);
+    if(!(await ask('מחיקת קטגוריה',`למחוק את "${c.name}"? המעשים שבה יישארו, תחת "ללא קטגוריה".`,{yes:'מחיקה'}))) return;
+    const {error}=await db.from('point_categories').update({active:false}).eq('id',c.id);
+    if(error){ toast('לא נשמר',true); return; }
+    await db.from('point_actions').update({category_id:null}).eq('category_id',c.id);
+    await audit('delete category','point_categories','deactivate',c,null);
+    S.acts.forEach(a=>{ if(a.category_id===c.id) a.category_id=null; });
+    S.cats=S.cats.filter(x=>x.id!==c.id); toast('נמחק'); renderSetup();
+  });
+  $('catList').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>moveItem('point_categories',S.cats,+b.dataset.up));
+}
+$('catAdd').onclick=async()=>{
+  const name=prompt('שם הקטגוריה החדשה'); if(!name||!name.trim()) return;
+  const {data,error}=await db.from('point_categories').insert({name:name.trim(),order_index:S.cats.length+1}).select().single();
+  if(error){ toast('לא נשמר',true); return; }
+  await audit('add category','point_categories','insert',null,data); S.cats.push(data); toast('נוסף'); renderSetup();
+};
+/* הזזה למעלה: מחליפים order_index עם הקודם ושומרים את שניהם */
+async function moveItem(table,list,id){
+  const i=list.findIndex(x=>x.id===id); if(i<=0) return;
+  const a=list[i], b=list[i-1];
+  list.forEach((x,j)=>x.order_index=j+1);
+  [a.order_index,b.order_index]=[b.order_index,a.order_index];
+  const r1=await db.from(table).update({order_index:a.order_index}).eq('id',a.id);
+  const r2=await db.from(table).update({order_index:b.order_index}).eq('id',b.id);
+  if(r1.error||r2.error){ toast('לא נשמר',true); return; }
+  list.sort((x,y)=>x.order_index-y.order_index); renderSetup();
+}
+
+/* ---------- מעשים ---------- */
+function renderActs(){
+  const catName=id=>(S.cats.find(c=>c.id===id)||{}).name||'ללא קטגוריה';
+  $('actList').innerHTML=S.acts.map((a,i)=>{
+    const who=a.kid_ids&&a.kid_ids.length?a.kid_ids.map(id=>(S.kids.find(k=>k.id===id)||{}).name).filter(Boolean).join(', '):'כולם';
+    return `<div class="item"><span class="t">${esc(a.title)}<small>${esc(catName(a.category_id))} · ${esc(who)}</small></span>
+      <span class="pv">+${a.points}</span>
+      <button class="iconbtn" data-up="${a.id}" aria-label="למעלה" ${i===0?'disabled':''}>▲</button>
+      <button class="iconbtn" data-edit="${a.id}" aria-label="עריכה">&#9998;</button>
+      <button class="iconbtn del" data-del="${a.id}" aria-label="מחיקה">&#128465;</button></div>`;
+  }).join('')||'<div class="hint">אין מעשים</div>';
+  $('actList').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{ editingAct=S.acts.find(x=>x.id==b.dataset.edit); renderActForm(); });
+  $('actList').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>moveItem('point_actions',S.acts,+b.dataset.up));
+  $('actList').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const a=S.acts.find(x=>x.id==b.dataset.del);
+    if(!(await ask('מחיקת מעשה',`למחוק את "${a.title}" מהרשימה? נקודות שכבר ניתנו עליו נשמרות.`,{yes:'מחיקה'}))) return;
+    const {error}=await db.from('point_actions').update({active:false}).eq('id',a.id);
+    if(error){ toast('לא נשמר',true); return; }
+    await audit('delete action','point_actions','deactivate',a,null);
+    S.acts=S.acts.filter(x=>x.id!==a.id); toast('נמחק'); renderSetup();
+  });
+  renderActForm();
+}
+$('actAdd').onclick=()=>{ editingAct={id:null,title:'',points:1,category_id:S.cats[0]?S.cats[0].id:null,kid_ids:null}; renderActForm(); };
+function renderActForm(){
+  const a=editingAct; if(!a){ $('actForm').innerHTML=''; return; }
+  const kidSel=new Set(a.kid_ids||[]);
+  $('actForm').innerHTML=`<div class="form">
+    <label for="afTitle">שם המעשה</label><input id="afTitle" value="${esc(a.title)}" placeholder="למשל: שיעורי בית בלי תזכורת">
+    <label>כמה נקודות</label><div class="chips">${[1,2,3,5].map(n=>`<button type="button" class="chip${a.points===n?' on':''}" data-pt="${n}"><bdi>+${n}</bdi></button>`).join('')}</div>
+    <label for="afCat">קטגוריה</label><select id="afCat">${S.cats.map(c=>`<option value="${c.id}"${a.category_id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}<option value=""${!a.category_id?' selected':''}>ללא קטגוריה</option></select>
+    <label>למי זה מתאים</label><div class="chips">
+      <button type="button" class="chip${!kidSel.size?' on':''}" data-kall="1">כולם</button>
+      ${kidsIn().map(k=>`<button type="button" class="chip${kidSel.has(k.id)?' on':''}" data-kid="${k.id}">${esc(k.name)}</button>`).join('')}</div>
+    <div class="btns"><button type="button" id="afSave">${a.id?'שמירת השינויים':'הוספה'}</button><button type="button" class="ghost" id="afCancel">ביטול</button></div></div>`;
+  const keep=()=>{ a.title=$('afTitle').value; a.category_id=$('afCat').value?+$('afCat').value:null; };
+  $('actForm').querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{ keep(); a.points=+b.dataset.pt; renderActForm(); });
+  $('actForm').querySelector('[data-kall]').onclick=()=>{ keep(); a.kid_ids=null; renderActForm(); };
+  $('actForm').querySelectorAll('[data-kid]').forEach(b=>b.onclick=()=>{ keep(); const id=+b.dataset.kid; const s=new Set(a.kid_ids||[]); s.has(id)?s.delete(id):s.add(id); a.kid_ids=s.size?[...s]:null; renderActForm(); });
+  $('afCancel').onclick=()=>{ editingAct=null; renderActForm(); };
+  $('afSave').onclick=async()=>{
+    keep(); a.title=a.title.trim();
+    if(!a.title){ toast('כתבו שם',true); return; }
+    const row={title:a.title,points:a.points,category_id:a.category_id,kid_ids:a.kid_ids};
+    if(a.id){
+      if(!(await ask('עדכון מעשה',`לשמור את השינויים ב"${a.title}"?`,{danger:false,yes:'שמירה'}))) return;
+      const old=S.acts.find(x=>x.id===a.id);
+      const {data,error}=await db.from('point_actions').update(row).eq('id',a.id).select().single();
+      if(error){ toast('לא נשמר',true); return; }
+      await audit('edit action','point_actions','update',old,data);
+      S.acts=S.acts.map(x=>x.id===data.id?data:x);
+    }else{
+      const {data,error}=await db.from('point_actions').insert({...row,order_index:S.acts.length+1}).select().single();
+      if(error){ toast('לא נשמר',true); return; }
+      await audit('add action','point_actions','insert',null,data); S.acts.push(data);
+    }
+    editingAct=null; toast('נשמר'); renderSetup();
+  };
+}
+
+/* ---------- "הכי בשימוש" במסך היום ---------- */
+function quickIds(){ try{ const v=JSON.parse(S.settings.points_quick_actions||'[]'); return Array.isArray(v)?v:[]; }catch(_){ return []; } }
+function renderQuick(){
+  const ids=quickIds(), manual=ids.length>0;
+  $('quickMode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',(b.dataset.v==='manual')===manual));
+  $('quickHint').textContent=manual?'בחרו עד 4 מעשים':'4 המעשים שניתנו הכי הרבה בחודשיים האחרונים';
+  $('quickPick').innerHTML=manual?S.acts.map(a=>`<button type="button" class="chip${ids.includes(a.id)?' on':''}" data-q="${a.id}">${esc(a.title)}</button>`).join(''):'';
+  $('quickPick').querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{
+    let cur=quickIds(); const id=+b.dataset.q;
+    if(cur.includes(id)){ if(cur.length===1){ toast('לפחות מעשה אחד — או "אוטומטי"',true); return; } cur=cur.filter(x=>x!==id); }
+    else{ if(cur.length>=4){ toast('עד 4 מעשים',true); return; } cur.push(id); }
+    if(await setSetting('points_quick_actions',JSON.stringify(cur),'quick actions')) renderQuick();
+  });
+}
+$('quickMode').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+  const manual=b.dataset.v==='manual';
+  if(manual===(quickIds().length>0)) return;
+  const val=manual?JSON.stringify(S.acts.slice(0,4).map(a=>a.id)):'';
+  if(await setSetting('points_quick_actions',val,'quick actions mode')) renderQuick();
+});
+
+/* ---------- היסטוריה ---------- */
+function weekStart(back){
+  const n=israelNow(); n.setHours(0,0,0,0); n.setDate(n.getDate()-n.getDay()-7*back); return n;   // יום ראשון
+}
+function renderHist(){
+  $('histWeek').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.v===histWeek));
+  const a=weekStart(histWeek), b=new Date(a); b.setDate(b.getDate()+7);
+  /* a/b הם "שעון קיר ישראלי" (נבנו מ-israelNow) — לוקחים את חלקי התאריך כמו שהם */
+  const wall=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const isoA=wall(a), isoB=wall(b);
+  const rows=S.events.filter(e=>{ const d=israelIso(e.created_at); return d>=isoA&&d<isoB; }).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+  $('histSum').innerHTML=kidsIn().map(k=>{
+    const sum=rows.filter(e=>e.kid_id===k.id&&!e.undone_at).reduce((s,e)=>s+e.points,0);
+    return `<div class="wk" style="--c:${esc(k.color)}"><div class="n">${esc(k.name)}</div><div class="v">${sum}</div></div>`;
+  }).join('');
+  let html='', lastDay='';
+  for(const e of rows){
+    const d=israelIso(e.created_at);
+    if(d!==lastDay){ lastDay=d; html+=`<div class="grp">${new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',weekday:'long'}).format(new Date(e.created_at))} ${dm(e.created_at)}</div>`; }
+    html+=logRow(e,true);
+  }
+  $('histList').innerHTML=html||'<div class="hint" style="padding:8px 0">אין נקודות בשבוע הזה</div>';
+  wireUndo($('histList'));
+}
+$('histWeek').querySelectorAll('button').forEach(b=>b.onclick=()=>{ histWeek=+b.dataset.v; renderHist(); });
+
+/* ---------- הפעלה ---------- */
+async function start(){
+  $('login').style.display='none'; $('panel').style.display='block';
+  await loadAll();
+  show('give');
+  setInterval(applyNight,10000);
+  /* רענון שקט כל דקה — אם הורה אחר נתן נקודות מטלפון אחר */
+  setInterval(async()=>{ if($('confirm').classList.contains('hidden') && view!=='goal' && !editingAct){ await loadAll(); renderView(); } },60000);
+}
+const {data:{session}}=await db.auth.getSession();
+if(session) start();
+
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>

@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>היום — לוח המשפחה</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F2F4F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="היום">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<style>
+/* ============================================================
+   טוקנים משותפים — זהים ללוח הבית (index.html).
+   כל שינוי כאן צריך לקרות גם שם ולהפך.
+   ============================================================ */
+@font-face{font-family:'Rubik';src:url('fonts/rubik-var.woff2') format('woff2-variations');
+  font-weight:300 900;font-display:swap}
+@font-face{font-family:'Assistant';src:url('fonts/assistant-var.woff2') format('woff2-variations');
+  font-weight:300 800;font-display:swap}
+
+:root{
+  --bg:#F2F4F2; --bg-warm:#F5F1E6;
+  --ink:#16211E; --ink-soft:#606E69; --ink-faint:#5F6D67;
+  --line:#E3E8E4; --card:#FFFFFF;
+  --kid1:#2E6F8E; --kid2:#7A5FA8; --kid3:#2E8B72;
+  --alert:#9C6B1F; --alert-bg:#F6EFE2;
+  --ok:#2E7D52; --danger:#A33;
+  --kid-ink:#1C2620;
+  --font-display:'Rubik',Arial,Helvetica,sans-serif;
+  --font-body:'Assistant',Arial,Helvetica,sans-serif;
+  --tap:48px;                 /* יעד מגע מינימלי בכל הממשק */
+  --soft:#F1F4F1;
+}
+body.night{
+  --bg:#111A17; --bg-warm:#141E1A;
+  --ink:#E8EDEA; --ink-soft:#8DA09A; --ink-faint:#8A9691;
+  --line:#28332F; --card:#1A2420;
+  --alert:#D8A857; --alert-bg:#2A2214;
+  --ok:#5AA87C; --danger:#E08585;
+  --kid-ink:#E8EDEA;
+  --soft:#1C2622;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);
+  font-size:16px;line-height:1.5;padding-bottom:40px;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:620px;margin:0 auto;padding:14px}
+
+h1{font-family:var(--font-display);font-size:24px;font-weight:900;line-height:1.2}
+h2{font-family:var(--font-display);font-size:18px;font-weight:900}
+.datesub{color:var(--ink-soft);font-size:14px}
+
+input,select,textarea{width:100%;min-height:var(--tap);padding:12px 13px;
+  border:1px solid var(--line);border-radius:12px;font-family:var(--font-body);
+  font-size:16px;background:var(--card);color:var(--ink)}
+/* קלטי תאריך: מרנדרים נייטיב ומוגבלים לקופסה. כפיית direction/מרכוז
+   גרמה להם לחרוג מהמסגרת ולהיראות לא מיושרים מול שאר השדות. */
+input[type="date"],input[type="time"],input[type="datetime-local"]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;max-width:100%;min-width:0;box-sizing:border-box;text-align:start}
+input:focus,textarea:focus{outline:2px solid var(--kid1);outline-offset:-1px}
+label{display:block;font-size:13px;font-weight:700;color:var(--ink-soft);margin:12px 0 5px}
+
+button{font-family:var(--font-body);font-size:16px;font-weight:700;
+  min-height:var(--tap);padding:12px 18px;border:none;border-radius:12px;
+  background:var(--ink);color:var(--bg);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+
+/* --- כניסה --- */
+#login{max-width:360px;margin:12vh auto;background:var(--card);
+  border:1px solid var(--line);border-radius:16px;padding:26px}
+#login h1{text-align:center;margin-bottom:18px}
+.msg{font-size:14px;margin-top:12px;text-align:center;min-height:20px}
+.msg.err{color:var(--danger)}
+
+#panel{display:none}
+
+/* --- ניווט דביק בראש הדף (סעיף 6א) --- */
+.navbar{position:sticky;top:0;z-index:40;background:var(--bg);
+  border-bottom:1px solid var(--line);padding:8px 0 10px;margin-bottom:14px}
+.navrow{display:flex;gap:8px;max-width:620px;margin:0 auto;padding:0 14px}
+.navrow a,.navrow button{flex:1;min-height:44px;padding:10px 8px;border-radius:12px;
+  font-size:15px;font-weight:700;text-align:center;text-decoration:none;
+  display:flex;align-items:center;justify-content:center}
+.navrow a{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.navrow a.here{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.navrow button.out{flex:0 0 auto;background:transparent;color:var(--ink-soft);
+  border:1px solid var(--line);font-size:14px;padding:10px 14px}
+
+.topbar{margin-bottom:14px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:16px;margin-bottom:12px}
+.card h2{margin-bottom:12px}
+
+/* --- חולצה לבנה: שני לחצנים ריבועיים (סעיף 6ב) --- */
+.shirthead{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.shirthead svg{height:46px;width:auto;flex-shrink:0}
+.shirtstate{font-size:16px;font-weight:900}
+.shirtstate.on{color:var(--alert)}
+.shirtstate.off{color:var(--ink-soft)}
+.sqrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sqbtn{aspect-ratio:1/1;min-height:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;border-radius:16px;
+  background:transparent;color:var(--ink-soft);border:2px solid var(--line);
+  font-family:var(--font-display);font-size:19px;font-weight:900;padding:8px}
+.sqbtn .sub{font-family:var(--font-body);font-size:12.5px;font-weight:700;
+  line-height:1.25;text-align:center}
+.sqbtn svg{height:30px;width:auto}
+.sqbtn svg path{fill:none;stroke:currentColor;stroke-width:6;stroke-linejoin:round}
+/* מצב נבחר זהה בכל הממשק — מילוי דיו מלא, בדיוק כמו כפתורי התפוגה */
+.sqbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.sqbtn.on svg path{fill:var(--bg);stroke:var(--bg)}
+
+/* --- אוכל --- */
+.foodrow{position:relative;margin-bottom:14px}
+.foodrow .kn{font-family:var(--font-display);font-weight:900;font-size:16px;
+  display:block;margin-bottom:5px}
+.foodinput{display:flex;gap:8px;align-items:center}
+.foodinput input{flex:1;min-width:0}
+/* פותח את כל המאגר — כשאין רעיון ורוצים לראות רשימה, לא רק להשלים */
+.foodinput .openlist{flex:0 0 auto;width:var(--tap);min-height:var(--tap);padding:0;
+  background:transparent;color:var(--ink-soft);border:1px solid var(--line);
+  border-radius:12px;font-size:15px;font-weight:900;line-height:1}
+.foodinput .openlist.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.sugg .sh{font-size:12px;font-weight:700;color:var(--ink-soft);padding:8px 13px 4px}
+.recur{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);
+  white-space:nowrap;margin:6px 0 0;font-weight:700}
+.recur input{width:auto;min-height:0}
+/* הצעות מהמאגר — נפתחות תוך כדי הקלדה, אף פעם לא חוסמות כתיבה חופשית */
+.sugg{position:absolute;inset-inline:0;top:100%;z-index:30;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;margin-top:4px;max-height:230px;overflow-y:auto;
+  box-shadow:0 6px 18px rgba(0,0,0,.10)}
+.sugg.hidden{display:none}
+.sugg button{display:block;width:100%;text-align:start;background:transparent;
+  color:var(--ink);border:0;border-bottom:1px solid var(--line);border-radius:0;
+  font-weight:600;min-height:44px;padding:10px 13px}
+.sugg button:last-child{border-bottom:0}
+.warn{font-size:13px;padding:8px 11px;border-radius:9px;margin:6px 0 0;
+  background:var(--alert-bg);color:var(--alert);font-weight:700}
+.warn.block{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+
+/* --- הערה לילדים: 4 כפתורי תפוגה (סעיף 6ו) --- */
+.expwrap{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.expbtn{min-height:44px;padding:10px 8px;font-size:14px;border-radius:12px;
+  background:transparent;color:var(--ink-soft);border:2px solid var(--line);font-weight:700}
+.expbtn.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.expcustom{margin-top:8px}
+.expcustom.hidden{display:none}
+.expnow{font-size:13px;color:var(--ink-soft);margin-top:8px}
+.hint{font-size:13px;color:var(--ink-soft)}
+/* --- תצוגה מקדימה של הודעת הכיסוי (זהה ב-daily ו-control) --- */
+.cvprev{margin-top:10px;border:1px solid var(--line);border-radius:14px;
+  background:var(--soft);padding:14px 16px;text-align:center}
+.cvprev.hidden{display:none}
+.cvprev .pvlabel{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:9px}
+.cvprev .covertitle{font-family:var(--font-display);font-size:17px;font-weight:800;
+  line-height:1.3;margin-bottom:8px;color:var(--ink)}
+.cvprev .covermsg{font-family:var(--font-display);font-size:16px;font-weight:700;
+  line-height:1.45;white-space:pre-line;color:var(--ink)}
+.cvprev .coverlist{list-style:none;margin:0;padding:0;text-align:right;display:inline-block}
+.cvprev .coverlist li{font-size:14px;font-weight:600;line-height:1.8;color:var(--ink);
+  padding-inline-start:15px;position:relative}
+.cvprev .coverlist li::before{content:"\2022";position:absolute;inset-inline-start:0;
+  color:var(--ink-soft);font-weight:900}
+
+/* --- הערה מכסה: אותם פקדים כמו בבקרה המלאה --- */
+.checkrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:5px}
+.chk{display:inline-flex;align-items:center;gap:7px;padding:11px 14px;min-height:44px;
+  border:1px solid var(--line);border-radius:12px;background:var(--card);
+  font-weight:700;font-size:14px;cursor:pointer;margin:0}
+.chk.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chk input{width:auto;min-height:0;margin:0}
+.dateitem{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;
+  margin-bottom:8px;background:var(--soft);font-size:14px}
+.dateitem .sp{flex:1;color:var(--ink-soft);min-width:0}
+.dateitem button{min-height:40px;padding:8px 13px;font-size:14px;
+  background:var(--danger);color:#fff}
+
+
+/* ===== הערה מכסה: בורר טווח בלוח שנה, היקף כיסוי, ועריכה =====
+   הרכיב הזה זהה ב-control.html וב-daily.html. כל שינוי כאן צריך לקרות בשניהם. */
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.calhead .navb{width:36px;height:36px;min-height:36px;border-radius:9px;
+  border:1px solid var(--line);background:var(--card);font-size:16px;
+  color:var(--ink-soft);padding:0}
+.calhead .mon{font-family:var(--font-display);font-weight:900;font-size:15px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
+.calgrid .dow{text-align:center;font-size:11px;font-weight:800;
+  color:var(--ink-soft);padding-bottom:4px}
+.day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink)}
+.day.pad{visibility:hidden;cursor:default}
+.day.today{box-shadow:inset 0 0 0 1.5px var(--ink-soft)}
+.day.inrange{background:var(--soft);border-radius:0}
+.day.picked{background:var(--ink);color:var(--bg)}
+/* פינות הטווח חייבות להיות לוגיות ולא פיזיות: בעמוד RTL תאריך ההתחלה
+   יושב מימין, ולכן הצד המעוגל שלו הוא inline-start (=ימין), והצד החד
+   פונה פנימה אל תאריך הסיום. border-radius קבוע היה הופך את זה. */
+.day.rangestart{border-start-start-radius:9px;border-end-start-radius:9px;
+  border-start-end-radius:0;border-end-end-radius:0}
+.day.rangeend{border-start-end-radius:9px;border-end-end-radius:9px;
+  border-start-start-radius:0;border-end-start-radius:0}
+.selsummary{background:var(--soft);border-radius:12px;padding:12px 14px;
+  font-family:var(--font-display);font-weight:800;font-size:14.5px;
+  text-align:center;margin-bottom:16px}
+/* רק המספר עצמו מבודד ל-LTR כדי ש-25/8 לא יתהפך ל-8/25.
+   הטקסט סביבו ("מ- ... עד ...") נשאר עברית רגילה, וכך ברור מה ההתחלה. */
+.dnum{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.selsummary .sub{font-family:var(--font-body);font-weight:600;font-size:12.5px;
+  color:var(--ink-soft);margin-top:2px}
+.scopelabel{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--soft);
+  border-radius:12px;padding:3px;margin-bottom:14px}
+.seg button{border:none;background:transparent;border-radius:9px;min-height:40px;
+  font-family:var(--font-display);font-weight:800;font-size:13.5px;
+  color:var(--ink-soft);padding:0}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.fullfields textarea{width:100%;min-height:84px;resize:vertical;line-height:1.4;
+  font-family:var(--font-body);font-size:15px}
+.fullfields{display:none;border-top:1px dashed var(--line);padding-top:14px}
+.fullfields.on{display:block}
+.imgpick{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--line);
+  border-radius:12px;padding:12px;margin-bottom:12px;cursor:pointer;
+  color:var(--ink-soft);font-size:13.5px;font-weight:700}
+.imgpick .ic{width:38px;height:38px;border-radius:9px;background:var(--soft);
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.imgpick img{width:38px;height:38px;border-radius:9px;object-fit:cover;flex-shrink:0}
+.ovitem{background:var(--soft);border-radius:12px;padding:12px 14px;
+  display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ovitem .range{font-family:var(--font-display);font-weight:900;font-size:14px;
+  white-space:nowrap}
+.ovitem .txt{flex:1;min-width:0;color:var(--ink-soft);font-size:13.5px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ovbadge{font-size:11px;font-weight:800;padding:3px 8px;border-radius:100px;
+  white-space:nowrap;flex-shrink:0}
+.ovbadge.sched{background:var(--line);color:var(--ink-soft)}
+.ovbadge.full{background:var(--alert-bg);color:var(--alert)}
+.iconbtn{width:36px;height:36px;min-height:36px;border-radius:9px;
+  border:1px solid var(--line);background:var(--card);display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;font-size:15px;padding:0}
+.iconbtn.del{color:var(--danger);border-color:transparent;background:transparent}
+/* הפריט שנמצא כרגע בעריכה מסומן, כדי שיהיה ברור מה נטען לטופס */
+.ovitem.editing{outline:2px solid var(--ink);background:var(--card)}
+.editrow{background:var(--card);border:1.5px dashed var(--line);border-radius:12px;
+  padding:12px;margin:-4px 0 8px}
+.editactions{display:flex;gap:8px;margin-top:8px}
+.editactions button{flex:1;min-height:40px;border-radius:10px;font-weight:800;
+  font-size:13.5px;border:1px solid var(--line);background:transparent;color:var(--ink-soft)}
+.editactions .savee{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* --- חלון אישור (סעיף 9) --- */
+#confirm{position:fixed;inset:0;z-index:100;background:rgba(10,16,14,.55);
+  display:flex;align-items:center;justify-content:center;padding:18px}
+#confirm.hidden{display:none}
+.cbox{background:var(--card);border-radius:16px;padding:20px;max-width:380px;width:100%}
+.cbox h3{font-family:var(--font-display);font-size:18px;font-weight:900;margin-bottom:8px}
+.cbox p{font-size:15px;color:var(--ink-soft);margin-bottom:16px;white-space:pre-line}
+.cbtns{display:flex;gap:10px}
+.cbtns button{flex:1}
+.cbtns .no{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+.cbtns .yes.danger{background:var(--danger);color:#fff}
+
+#toast{position:fixed;bottom:18px;inset-inline-start:50%;transform:translateX(50%);
+  background:var(--ok);color:#fff;padding:11px 22px;border-radius:30px;
+  font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:110}
+#toast.on{opacity:1}
+#toast.bad{background:var(--danger)}
+
+@media(max-width:700px){
+  .expwrap{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>כניסת הורים</h1>
+  <label>סיסמה</label>
+  <input type="password" id="pass" autocomplete="current-password" autofocus>
+  <button style="width:100%;margin-top:16px" id="loginBtn">כניסה</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<div id="panel">
+  <div class="navbar">
+    <div class="navrow">
+      <a href="index.html">לוח משפחה</a>
+      <a href="daily.html" class="here">היום</a>
+      <a href="control.html">בקרה מלאה</a>
+      <button class="out" id="logoutBtn">יציאה</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <h1 id="dayTitle">—</h1>
+      <div class="datesub" id="dateSub">—</div>
+    </div>
+
+    <!-- חולצה לבנה -->
+    <div class="card">
+      <h2>חולצה לבנה</h2>
+      <div class="shirthead">
+        <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
+                   C66 6 62 16 50 16 C38 16 34 6 34 6 Z"
+                fill="#FFFFFF" stroke="#2A2A2E" stroke-width="3.5" stroke-linejoin="round"/>
+        </svg>
+        <div class="shirtstate" id="shirtState">—</div>
+      </div>
+      <div class="sqrow">
+        <button class="sqbtn" id="sqToday">
+          <svg viewBox="0 0 100 92" aria-hidden="true"><path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"/></svg>
+          <span id="sqTodayDay">היום</span><span class="sub" id="sqTodaySub">—</span></button>
+        <button class="sqbtn" id="sqTomorrow">
+          <svg viewBox="0 0 100 92" aria-hidden="true"><path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"/></svg>
+          <span id="sqTomorrowDay">מחר</span><span class="sub" id="sqTomorrowSub">—</span></button>
+      </div>
+    </div>
+
+    <!-- ארוחת עשר -->
+    <div class="card">
+      <h2>ארוחת עשר</h2>
+      <label>לאיזה יום</label>
+      <input type="date" id="foodDate">
+      <div id="foodRows" style="margin-top:14px"></div>
+      <button style="width:100%;margin-top:6px" id="foodSave">שמירה</button>
+    </div>
+
+    <!-- הערה לילדים -->
+    <div class="card">
+      <h2>הערה לילדים</h2>
+      <textarea id="noteText" rows="2" placeholder="מוצגת בראש המסך בבית"></textarea>
+      <label>עד מתי מוצגת</label>
+      <div class="expwrap">
+        <button class="expbtn" data-exp="noon">עד 12:00</button>
+        <button class="expbtn" data-exp="eod">עד סוף היום</button>
+        <button class="expbtn" data-exp="custom">תאריך ושעה</button>
+        <button class="expbtn" data-exp="never">ללא הגבלה</button>
+      </div>
+      <div class="expcustom hidden" id="expCustom">
+        <input type="datetime-local" id="expAt">
+      </div>
+      <div class="expnow" id="expNow"></div>
+      <button style="width:100%;margin-top:12px" id="noteSave">שמירה</button>
+    </div>
+
+    <!-- הערה שמכסה את מערכת השעות -->
+    <div class="card">
+      <h2>הערה שמכסה את מערכת השעות</h2>
+      <div class="datesub" style="margin-bottom:10px">לחיצה על יום אחד = תאריך בודד. לחיצה על יום שני סוגרת את כל הטווח.</div>
+
+      <div class="calhead">
+        <button type="button" class="navb" id="ovPrevM">&lsaquo;</button>
+        <div class="mon" id="ovMonLabel">&nbsp;</div>
+        <button type="button" class="navb" id="ovNextM">&rsaquo;</button>
+      </div>
+      <div class="calgrid" id="ovDowRow"></div>
+      <div class="calgrid" id="ovCalGrid"></div>
+
+      <div class="selsummary" id="ovSelSummary">
+        <div id="ovSelMain">בחרו תאריך התחלה</div>
+        <div class="sub" id="ovSelSub">&nbsp;</div>
+      </div>
+
+      <div class="scopelabel">מה מתכסה</div>
+      <div class="seg">
+        <button type="button" class="on" id="ovScopeSched">מערכת שעות</button>
+        <button type="button" id="ovScopeFull">כל הלוח</button>
+      </div>
+
+      <div id="ovSchedFields">
+        <label>למי</label>
+        <div class="checkrow" id="ovKids"></div>
+        <label>הטקסט שיוצג במקום מערכת השעות</label>
+        <input type="text" id="ovNote" placeholder="חופש">
+      </div>
+
+      <div class="fullfields" id="ovFullFields">
+        <div class="hint" style="margin-bottom:12px">כיסוי מלא תמיד לכל המשפחה יחד. אפשר טקסט, תמונה, או שניהם.</div>
+        <div class="imgpick" id="ovImgPick">
+          <div class="ic">&#128444;&#65039;</div>
+          <div id="ovImgLabel">הוספת תמונה (רשות)</div>
+        </div>
+        <input type="file" accept="image/*" id="ovImgFile" style="display:none">
+        <label>טקסט (רשות)</label>
+        <textarea id="ovFullNote" rows="4" placeholder="מה להביא ליום הראשון:&#10;חולצת תלבושת&#10;קלמר מאובזר&#10;ארוחת עשר ובקבוק מים"></textarea>
+        <div class="hint" style="margin-top:6px">שורה שנגמרת בנקודתיים תוצג ככותרת, וכל שורה אחריה כפריט ברשימה. בלי נקודתיים — הודעה גדולה רגילה. אין צורך להקליד תבליטים.</div>
+        <div class="cvprev hidden" id="ovFullPreview">
+          <div class="pvlabel">כך זה ייראה על הלוח</div>
+          <div id="ovFullPreviewBody"></div>
+        </div>
+      </div>
+
+      <button style="width:100%;margin-top:14px" id="ovAdd">הוספה</button>
+      <button style="width:100%;margin-top:8px;display:none" class="ghost" id="ovCancel">ביטול העריכה</button>
+      <div id="ovList" style="margin-top:18px"></div>
+
+    </div>
+  </div>
+</div>
+
+<div id="confirm" class="hidden">
+  <div class="cbox">
+    <h3 id="cTitle">אישור</h3>
+    <p id="cBody"></p>
+    <div class="cbtns">
+      <button class="no" id="cNo">ביטול</button>
+      <button class="yes" id="cYes">אישור</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+const CONFIG={
+  LOGIN_EMAIL:'parents@cohen.family',
+  SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
+  SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
+  SWITCH_HOUR:12,
+};
+const DAYS=['א','ב','ג','ד','ה','ו','ש'];
+const DAY_FULL={'א':'ראשון','ב':'שני','ג':'שלישי','ד':'רביעי','ה':'חמישי','ו':'שישי','ש':'שבת'};
+const $=id=>document.getElementById(id);
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fmt=s=>{const[y,m,d]=s.split('-');return `${d}/${m}/${y}`};
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* שעון ישראל — הפאנל נפתח גם מחו״ל או ממכשיר עם אזור זמן שגוי */
+function israelNow(){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',
+    month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})
+    .formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return new Date(+p.year,+p.month-1,+p.day,+(p.hour==='24'?'0':p.hour),+p.minute,+p.second);
+}
+
+function toast(m,bad){const t=$('toast');t.textContent=m;t.className='on'+(bad?' bad':'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',1800);}
+
+/* ---------- חלון אישור אחיד (סעיף 9) ---------- */
+function ask(title,body,{danger=true,yes='אישור'}={}){
+  return new Promise(res=>{
+    $('cTitle').textContent=title;
+    $('cBody').textContent=body||'';
+    const y=$('cYes'), n=$('cNo');
+    y.textContent=yes;
+    y.className='yes'+(danger?' danger':'');
+    $('confirm').classList.remove('hidden');
+    const done=v=>{ $('confirm').classList.add('hidden'); y.onclick=null; n.onclick=null; res(v); };
+    y.onclick=()=>done(true); n.onclick=()=>done(false);
+  });
+}
+
+/* ---------- מצב לילה — אותם כללים בדיוק כמו בלוח ---------- */
+const NIGHT_DEFAULTS={enabled:true,startMin:22*60+30,endMin:5*60+45};
+let NIGHT={...NIGHT_DEFAULTS};
+function hhmmToMin(v){
+  const m=/^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());
+  if(!m) return null;
+  const h=+m[1], mi=+m[2];
+  if(h>23||mi>59) return null;
+  return h*60+mi;
+}
+function applyNightSettings(st){
+  const g=k=>st[k]==null?'':String(st[k]).trim();
+  const en=g('night_mode_enabled'), a=hhmmToMin(g('night_start')), b=hhmmToMin(g('night_end'));
+  NIGHT={
+    enabled: en==='' ? NIGHT_DEFAULTS.enabled : !(en==='0'||en==='false'),
+    startMin: a===null?NIGHT_DEFAULTS.startMin:a,
+    endMin:   b===null?NIGHT_DEFAULTS.endMin:b,
+  };
+  applyNightMode();
+}
+function isNightNow(){
+  if(!NIGHT.enabled) return false;
+  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
+  return NIGHT.startMin>NIGHT.endMin
+    ? (mins>=NIGHT.startMin || mins<NIGHT.endMin)
+    : (mins>=NIGHT.startMin && mins<NIGHT.endMin);
+}
+function applyNightMode(){ document.body.classList.toggle('night', isNightNow()); }
+
+const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
+
+let S={kids:[],foods:[],restrictions:[],meals:[],shirts:[],rules:[],overrides:[],settings:{}};
+
+/* ---------- כניסה ---------- */
+$('loginBtn').onclick=async()=>{
+  const m=$('loginMsg'); m.textContent='מתחבר…'; m.className='msg';
+  const {error}=await db.auth.signInWithPassword({
+    email:CONFIG.LOGIN_EMAIL,password:$('pass').value});
+  if(error){ m.textContent='סיסמה שגויה'; m.className='msg err'; $('pass').select(); }
+  else start();
+};
+$('pass').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+$('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
+
+/* ---------- היום המוצג ---------- */
+function shown(){
+  const now=israelNow(), d=new Date(now);
+  const tm=now.getHours()>=CONFIG.SWITCH_HOUR;
+  if(tm) d.setDate(d.getDate()+1);
+  return {date:d,isTomorrow:tm};
+}
+
+/* ---------- חולצה לבנה ---------- */
+function shirtReason(date){
+  const one=S.shirts.find(s=>s.date===iso(date));
+  if(one) return one.reason;
+  const act=S.rules.filter(r=>r.active!==false);
+  const wd=act.find(r=>r.rule_type==='weekday'&&r.weekday===date.getDay());
+  if(wd) return wd.reason;
+  const rc=act.find(r=>r.rule_type==='rosh_chodesh');
+  if(rc){
+    const n=parseInt(new Intl.DateTimeFormat('en-u-ca-hebrew-nu-latn',{day:'numeric'}).format(date),10);
+    if(n===1||n===30) return rc.reason;
+  }
+  return null;
+}
+/* הבחנה חשובה: סימון ידני ניתן לביטול, כלל קבוע לא — הוא נערך בבקרה המלאה */
+function manualShirt(date){ return S.shirts.find(s=>s.date===iso(date))||null; }
+
+function renderShirt(){
+  const t=israelNow(); const tm=new Date(t); tm.setDate(tm.getDate()+1);
+  [['sqToday',t,'היום'],['sqTomorrow',tm,'מחר']].forEach(([id,d,word])=>{
+    const btn=$(id), sub=$(id+'Sub'), dayEl=$(id+'Day');
+    const r=shirtReason(d), man=manualShirt(d);
+    btn.classList.toggle('on', !!r);
+    /* שם היום האמיתי, לא רק "היום"/"מחר" — כדי שיהיה ברור על מה לוחצים */
+    if(dayEl) dayEl.textContent = `${word} — יום ${DAY_FULL[DAYS[d.getDay()]]}`;
+    sub.textContent = r ? (man?r:r+' (כלל קבוע)') : 'לא נדרשת';
+  });
+  const {date,isTomorrow}=shown();
+  const r=shirtReason(date);
+  const el=$('shirtState');
+  el.textContent = r ? `${isTomorrow?'מחר':'היום'} — ${r}` : `${isTomorrow?'מחר':'היום'} — לא נדרשת`;
+  el.className='shirtstate '+(r?'on':'off');
+}
+
+async function toggleShirt(d,labelHe){
+  const s=iso(d);
+  const man=manualShirt(d);
+  if(man){
+    /* ביטול סימון ידני הוא פעולה הפיכה בלחיצה אחת — בלי דיאלוג אישור */
+    try{
+      await db.from('white_shirt').delete().eq('id',man.id);
+      S.shirts=S.shirts.filter(x=>x.id!==man.id);
+      renderShirt(); toast('הסימון בוטל');
+    }catch(e){ toast('הפעולה נכשלה',true); }
+    return;
+  }
+  if(shirtReason(d)){
+    await ask('כלל קבוע',
+      `${labelHe} נדרשת חולצה לבנה לפי כלל קבוע (${shirtReason(d)}), ולא לפי סימון ידני.\n`+
+      'אפשר לשנות או לבטל את הכלל בבקרה המלאה, בטאב "חולצה לבנה".',
+      {danger:false,yes:'הבנתי'});
+    return;
+  }
+  try{
+    const {data}=await db.from('white_shirt').insert({date:s,reason:'חולצה לבנה'}).select().single();
+    if(data){ S.shirts.push(data); renderShirt(); toast('סומן'); }
+  }catch(e){ toast('הפעולה נכשלה',true); }
+}
+$('sqToday').onclick=()=>toggleShirt(israelNow(),'היום');
+$('sqTomorrow').onclick=()=>{const d=israelNow();d.setDate(d.getDate()+1);toggleShirt(d,'מחר');};
+
+/* ---------- ארוחת עשר ---------- */
+function mealFor(kid,dateStr,weekday){
+  const ok=S.meals.filter(m=>m.status!=='rejected');
+  return ok.find(m=>m.kid===kid&&m.date===dateStr)
+      || ok.find(m=>m.kid===kid&&m.is_recurring&&m.weekday===weekday)
+      || null;
+}
+function matchFood(text){
+  const t=(text||'').trim();
+  if(!t) return null;
+  return S.foods.find(f=>f.active!==false && f.name===t) || null;
+}
+/* הצעות: התאמת תת-מחרוזת, עד 5, ורק כשיש מה להציע. הקלדה חופשית תמיד גוברת. */
+function suggestFor(text){
+  const t=(text||'').trim();
+  if(!t) return [];
+  const pool=S.foods.filter(f=>f.active!==false);
+  if(pool.some(f=>f.name===t)) return [];       // כבר בדיוק על מנה קיימת — אין מה להציע
+  return pool.filter(f=>f.name.includes(t)).slice(0,5);
+}
+
+function renderFood(){
+  const dateStr=$('foodDate').value;
+  if(!dateStr) return;
+  const wd=DAYS[new Date(dateStr+'T12:00:00').getDay()];
+  const kids=S.kids.filter(k=>k.show_food!==false);
+
+  $('foodRows').innerHTML = kids.length ? kids.map(k=>{
+    const cur=mealFor(k.name,dateStr,wd);
+    const val = cur ? (cur.food_type_id ? (S.foods.find(f=>f.id===cur.food_type_id)||{}).name||'' : (cur.custom_text||'')) : '';
+    const rec = cur ? cur.is_recurring : false;
+    return `<div class="foodrow" data-kid="${esc(k.name)}">
+      <span class="kn" style="color:${esc(k.color||'')}">${esc(k.name)}</span>
+      <div class="foodinput">
+        <input data-f="pick" placeholder="הקלידו או פתחו את הרשימה…" autocomplete="off"
+               value="${esc(val)}">
+        <button type="button" class="openlist" data-f="open"
+                aria-label="פתיחת רשימת המאכלים">▾</button>
+      </div>
+      <div class="sugg hidden" data-f="sugg"></div>
+      <label class="recur"><input type="checkbox" data-f="rec" ${rec?'checked':''}> קבוע בכל יום ${DAY_FULL[wd]}</label>
+      <div data-f="warn"></div>
+    </div>`;
+  }).join('') : '<div class="datesub">אין ילדים עם תצוגת אוכל</div>';
+
+  $('foodRows').querySelectorAll('[data-kid]').forEach(row=>{
+    const inp=row.querySelector('[data-f="pick"]');
+    const box=row.querySelector('[data-f="sugg"]');
+    const opn=row.querySelector('[data-f="open"]');
+    inp.oninput=()=>{ row._all=false; renderSugg(row); checkWarn(row); };
+    /* לא נסגר ב-blur: במגע, האצבע שנוחתת על הרשימה כדי לגלול מוציאה פוקוס
+       מהשדה — וסגירה כאן הרגה את הגלילה. הסגירה עברה ללחיצה מחוץ לשורה. */
+    inp.onfocus=()=>{ row._all=false; renderSugg(row); };
+    opn.onclick=()=>{
+      if(!box.classList.contains('hidden') && row._all){ closeSugg(row); return; }
+      row._all=true; renderSugg(row);           /* כל המאגר, בלי קשר למה שהוקלד */
+    };
+    checkWarn(row);
+  });
+}
+
+function closeSugg(row){
+  row._all=false;
+  row.querySelector('[data-f="sugg"]').classList.add('hidden');
+  row.querySelector('[data-f="open"]').classList.remove('on');
+}
+
+/* סגירה בלחיצה מחוץ לשורה — נרשם פעם אחת, שורד רינדור מחדש של השורות */
+document.addEventListener('pointerdown',e=>{
+  document.querySelectorAll('.foodrow').forEach(row=>{
+    if(!row.contains(e.target)) closeSugg(row);
+  });
+},true);
+
+function renderSugg(row){
+  const inp=row.querySelector('[data-f="pick"]');
+  const box=row.querySelector('[data-f="sugg"]');
+  const opn=row.querySelector('[data-f="open"]');
+  /* שני מצבים: רשימה מלאה (לחיצה על ▾) או הצעות לפי מה שהוקלד */
+  const full=!!row._all;
+  const list=full ? S.foods.filter(f=>f.active!==false) : suggestFor(inp.value);
+  opn.classList.toggle('on',full);
+  if(!list.length){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  box.innerHTML=(full?'<div class="sh">כל המאכלים במאגר</div>':'')+
+    list.map(f=>`<button type="button" data-name="${esc(f.name)}">${esc(f.name)}</button>`).join('');
+  box.classList.remove('hidden');
+  box.querySelectorAll('button[data-name]').forEach(b=>{
+    b.onmousedown=e=>e.preventDefault();   /* שלא יסגור דרך blur לפני הקליק */
+    b.onclick=()=>{ inp.value=b.dataset.name; closeSugg(row); checkWarn(row); };
+  });
+}
+
+function checkWarn(row){
+  const kid=row.dataset.kid;
+  const text=row.querySelector('[data-f="pick"]').value;
+  const box=row.querySelector('[data-f="warn"]');
+  box.innerHTML='';
+  const f=matchFood(text);
+  if(!f) return;
+  const msgs=[];
+  S.restrictions.filter(r=>r.kid===kid&&r.active!==false)
+    .filter(r=>(f.tags||[]).includes(r.tag))
+    .forEach(r=>msgs.push({txt:`אסור ל${kid}: ${r.tag}${r.reason?' — '+r.reason:''}`,block:true}));
+  if(!f.in_stock)      msgs.push({txt:'חסר בבית',block:false});
+  if(f.needs_approval) msgs.push({txt:'דורש אישור הורים',block:false});
+  if(f.less_healthy)   msgs.push({txt:'פחות בריא',block:false});
+  box.innerHTML=msgs.map(m=>`<div class="warn ${m.block?'block':''}">${esc(m.txt)}</div>`).join('');
+}
+
+$('foodDate').onchange=renderFood;
+
+$('foodSave').onclick=async()=>{
+  const dateStr=$('foodDate').value;
+  if(!dateStr){ toast('בחרו תאריך',true); return; }
+  const wd=DAYS[new Date(dateStr+'T12:00:00').getDay()];
+
+  /* שינוי שדורס רשומה קיימת = עריכה, ולכן מבקש אישור אחד מרוכז */
+  const pending=[];
+  for(const row of $('foodRows').querySelectorAll('[data-kid]')){
+    const kid=row.dataset.kid;
+    const text=row.querySelector('[data-f="pick"]').value.trim();
+    const rec=row.querySelector('[data-f="rec"]').checked;
+    if(!text) continue;
+    const existing = rec
+      ? S.meals.find(m=>m.kid===kid&&m.is_recurring&&m.weekday===wd)
+      : S.meals.find(m=>m.kid===kid&&m.date===dateStr);
+    const prev = existing
+      ? (existing.food_type_id ? (S.foods.find(f=>f.id===existing.food_type_id)||{}).name||'' : (existing.custom_text||''))
+      : '';
+    pending.push({kid,text,rec,existing,changed: !!existing && prev!==text, prev});
+  }
+  if(!pending.length){ toast('אין מה לשמור',true); return; }
+
+  const edits=pending.filter(p=>p.changed);
+  if(edits.length){
+    const ok=await ask('אישור עדכון',
+      edits.map(p=>`${p.kid}: ${p.prev||'—'} ← ${p.text}`).join('\n'),
+      {danger:false,yes:'עדכון'});
+    if(!ok) return;
+  }
+
+  let n=0;
+  for(const p of pending){
+    const matched=matchFood(p.text);
+    const rec_data={
+      kid:p.kid, food_type_id: matched?matched.id:null,
+      custom_text: matched?null:p.text,
+      is_recurring:p.rec,
+      date: p.rec?null:dateStr,
+      weekday: p.rec?wd:null,
+      requested_by:'parent', status:'approved'
+    };
+    try{
+      if(p.existing){
+        await db.from('meals').update(rec_data).eq('id',p.existing.id);
+        Object.assign(p.existing,rec_data);
+      }else{
+        const {data}=await db.from('meals').insert(rec_data).select().single();
+        if(data) S.meals.push(data);
+      }
+      n++;
+    }catch(e){ console.error(e); }
+  }
+  toast(n?`נשמרו ${n}`:'השמירה נכשלה', !n);
+  renderFood();
+};
+
+/* ---------- הערה לילדים ---------- */
+let expMode='never';
+function pad(n){ return String(n).padStart(2,'0'); }
+function localStamp(d){ return iso(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+function expiryValue(){
+  const n=israelNow();
+  if(expMode==='never')  return '';
+  if(expMode==='noon'){
+    const u=new Date(n); u.setHours(12,0,0,0);
+    if(n.getHours()>=12) u.setDate(u.getDate()+1);   // 12:00 הבא, לא זה שחלף
+    return localStamp(u);
+  }
+  if(expMode==='eod'){
+    const u=new Date(n); u.setHours(23,59,0,0);
+    return localStamp(u);
+  }
+  return $('expAt').value || '';                      // custom
+}
+function describeExpiry(v){
+  if(!v) return 'ההערה תישאר עד שתוחלף';
+  const m=/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(v);
+  return m ? `תיעלם ב-${fmt(m[1])} בשעה ${m[2]}:${m[3]}` : `תיעלם אחרי ${fmt(v)}`;
+}
+function setExpMode(mode,{silent=false}={}){
+  expMode=mode;
+  document.querySelectorAll('.expbtn').forEach(b=>b.classList.toggle('on',b.dataset.exp===mode));
+  $('expCustom').classList.toggle('hidden',mode!=='custom');
+  if(!silent) $('expNow').textContent=describeExpiry(expiryValue());
+}
+document.querySelectorAll('.expbtn').forEach(b=>b.onclick=()=>setExpMode(b.dataset.exp));
+$('expAt').onchange=()=>$('expNow').textContent=describeExpiry(expiryValue());
+
+$('noteSave').onclick=async()=>{
+  const v=$('noteText').value.trim();
+  const until=expiryValue();
+  if(expMode==='custom' && !until){ toast('בחרו תאריך ושעה',true); return; }
+
+  const had=(S.settings.parent_note||'').trim();
+  if(had && had!==v){
+    const ok=await ask('אישור עדכון',
+      v ? `ההערה הקיימת תוחלף:\n${had}\n←\n${v}` : `ההערה "${had}" תימחק`,
+      {danger:!v, yes:v?'עדכון':'מחיקה'});
+    if(!ok) return;
+  }
+  try{
+    await db.from('settings').upsert({key:'parent_note',value:v});
+    await db.from('settings').upsert({key:'parent_note_until',value:until});
+    S.settings.parent_note=v; S.settings.parent_note_until=until;
+    $('expNow').textContent=describeExpiry(until);
+    toast(v?'נשמר':'ההערה נמחקה');
+  }catch(e){ toast('השמירה נכשלה',true); }
+};
+
+/* ---------- הערה שמכסה את מערכת השעות ---------- */
+function renderOvKids(){
+  $('ovKids').innerHTML =
+    `<label class="chk"><input type="checkbox" data-ovall> כל הילדים</label>` +
+    S.kids.filter(k=>k.show_schedule!==false).map(k=>
+      `<label class="chk"><input type="checkbox" data-ovkid value="${esc(k.name)}">
+        <span style="color:${esc(k.color||'')}">${esc(k.name)}</span></label>`).join('');
+
+  const all=$('ovKids').querySelector('[data-ovall]');
+  $('ovKids').querySelectorAll('input').forEach(i=>{
+    i.onchange=()=>{
+      i.closest('.chk').classList.toggle('on',i.checked);
+      if(i===all && i.checked){
+        /* "כל הילדים" ובחירה נקודתית סותרות — מנקים את הנקודתיות */
+        $('ovKids').querySelectorAll('[data-ovkid]').forEach(x=>{
+          x.checked=false; x.closest('.chk').classList.remove('on'); });
+      }
+      if(i!==all && i.checked && all.checked){
+        all.checked=false; all.closest('.chk').classList.remove('on');
+      }
+    };
+  });
+}
+
+
+function ovSetState(arr){ S.overrides=arr; }
+
+/* ============================================================
+   הערה מכסה — בורר טווח בלוח שנה, היקף כיסוי, ועריכה.
+   זהה ב-control.html וב-daily.html. שינוי כאן צריך לקרות בשניהם.
+
+   מודל הנתונים: כל יום בטווח נשמר כשורה נפרדת ב-schedule_overrides,
+   וכל השורות שנוצרו מאותה בחירה חולקות group_id. הרשימה והעריכה
+   עובדות על הקבוצה, לא על שורה בודדת.
+   ============================================================ */
+const OV_DOW=['א','ב','ג','ד','ה','ו','ש'];
+const OV_MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי',
+  'אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const OV_BUCKET='photos';
+
+let ovView=null;          /* {y,m} החודש המוצג */
+let ovStart=null, ovEnd=null;   /* מחרוזות ISO */
+let ovScope='schedule';
+let ovImage=null;         /* url של תמונה שהועלתה */
+let ovEditGroup=null;     /* group_id בעריכה, או null */
+
+function ovIso(y,m,d){
+  return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function ovDM(isoStr){ const p=isoStr.split('-'); return (+p[2])+'/'+(+p[1]); }
+function ovDMY(isoStr){ const p=isoStr.split('-'); return (+p[2])+'/'+(+p[1])+'/'+p[0]; }
+function ovDaysBetween(a,b){
+  return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000);
+}
+/* כל התאריכים בטווח, כולל הקצוות — נבנה ב-UTC כדי שלא יזוז ביום */
+function ovRangeDates(a,b){
+  const out=[]; const n=ovDaysBetween(a,b);
+  for(let i=0;i<=n;i++){
+    const t=new Date(Date.parse(a+'T00:00:00Z')+i*86400000);
+    out.push(t.toISOString().slice(0,10));
+  }
+  return out;
+}
+function ovTodayIso(){ return iso(israelNow()); }
+
+function ovRenderCal(){
+  if(!ovView){ const n=israelNow(); ovView={y:n.getFullYear(),m:n.getMonth()}; }
+  const P='ov';
+  if(!$(P+'CalGrid')) return;
+  $(P+'DowRow').innerHTML=OV_DOW.map(d=>'<div class="dow">'+d+'</div>').join('');
+  $(P+'MonLabel').textContent=OV_MONTHS[ovView.m]+' '+ovView.y;
+
+  const startDow=new Date(ovView.y,ovView.m,1).getDay();
+  const dim=new Date(ovView.y,ovView.m+1,0).getDate();
+  const cells=[];
+  for(let i=0;i<startDow;i++) cells.push(null);
+  for(let d=1;d<=dim;d++) cells.push(d);
+
+  const today=ovTodayIso();
+  const lo=(ovStart&&ovEnd)?(ovStart<=ovEnd?ovStart:ovEnd):null;
+  const hi=(ovStart&&ovEnd)?(ovStart<=ovEnd?ovEnd:ovStart):null;
+
+  $(P+'CalGrid').innerHTML=cells.map(d=>{
+    if(!d) return '<div class="day pad"></div>';
+    const dISO=ovIso(ovView.y,ovView.m,d);
+    let cls='day';
+    if(dISO===today) cls+=' today';
+    if(lo&&hi){
+      if(dISO===lo) cls+=' picked rangestart';
+      else if(dISO===hi) cls+=' picked rangeend';
+      else if(dISO>lo&&dISO<hi) cls+=' inrange';
+    } else if(ovStart&&dISO===ovStart) cls+=' picked';
+    return '<div class="'+cls+'" data-d="'+dISO+'">'+d+'</div>';
+  }).join('');
+
+  $(P+'CalGrid').querySelectorAll('.day:not(.pad)').forEach(el=>{
+    el.onclick=()=>ovPick(el.dataset.d);
+  });
+  ovRenderSummary();
+}
+
+/* לחיצה ראשונה = תאריך בודד. לחיצה שנייה = סוגרת טווח (גם אחורה).
+   לחיצה שלישית מתחילה בחירה חדשה. */
+function ovPick(dISO){
+  if(!ovStart || (ovStart&&ovEnd)){ ovStart=dISO; ovEnd=null; }
+  else if(dISO===ovStart){ ovEnd=dISO; }
+  else if(dISO<ovStart){ ovEnd=ovStart; ovStart=dISO; }
+  else { ovEnd=dISO; }
+  ovRenderCal();
+}
+
+function ovRenderSummary(){
+  const P='ov';
+  const main=$(P+'SelMain'), sub=$(P+'SelSub'), btn=$(P+'Add');
+  if(!main) return;
+  if(!ovStart){
+    main.textContent='בחרו תאריך התחלה';
+    sub.innerHTML='&nbsp;';
+    btn.disabled=true;
+  }else if(!ovEnd){
+    main.innerHTML='<span class="dnum">'+ovDMY(ovStart)+'</span> — יום בודד';
+    sub.textContent='אפשר ללחוץ עוד יום כדי לפתוח טווח';
+    btn.disabled=false;
+  }else{
+    const lo=ovStart<=ovEnd?ovStart:ovEnd, hi=ovStart<=ovEnd?ovEnd:ovStart;
+    /* "מ- ... עד ..." — המילים קובעות מה ההתחלה ומה הסוף, בלי תלות בכיוון הכתיבה */
+    main.innerHTML='מ-<span class="dnum">'+ovDMY(lo)+'</span> עד <span class="dnum">'+ovDMY(hi)+'</span>';
+    sub.textContent=(ovDaysBetween(lo,hi)+1)+' ימים';
+    btn.disabled=false;
+  }
+}
+
+function ovSetScope(sc){
+  const P='ov';
+  ovScope=sc;
+  $(P+'ScopeSched').classList.toggle('on',sc==='schedule');
+  $(P+'ScopeFull').classList.toggle('on',sc==='full');
+  $(P+'SchedFields').style.display = sc==='schedule' ? 'block' : 'none';
+  $(P+'FullFields').classList.toggle('on',sc==='full');
+}
+
+function ovSetImage(url,name){
+  const P='ov';
+  ovImage=url||null;
+  const lab=$(P+'ImgLabel'), box=$(P+'ImgPick');
+  if(!lab) return;
+  const ic=box.querySelector('.ic,img');
+  if(url){
+    lab.textContent=(name||'תמונה')+' — לחיצה להחלפה';
+    if(ic) ic.outerHTML='<img src="'+url+'" alt="">';
+  }else{
+    lab.textContent='הוספת תמונה (רשות)';
+    if(ic) ic.outerHTML='<div class="ic">&#128444;&#65039;</div>';
+  }
+}
+
+function ovResetForm(){
+  const P='ov';
+  ovStart=null; ovEnd=null; ovEditGroup=null;
+  ovSetScope('schedule');
+  ovSetImage(null);
+  if($(P+'Note')) $(P+'Note').value='';
+  if($(P+'FullNote')) $(P+'FullNote').value='';
+  if(typeof renderCoverPreview==='function') renderCoverPreview();
+  const kidsBox=$(P+'Kids');
+  if(kidsBox) kidsBox.querySelectorAll('input').forEach(i=>{
+    i.checked=false; i.closest('.chk').classList.remove('on'); });
+  $(P+'Add').textContent='הוספה';
+  const cancel=$(P+'Cancel'); if(cancel) cancel.style.display='none';
+  document.querySelectorAll('.ovitem.editing').forEach(e=>e.classList.remove('editing'));
+  ovRenderCal();
+}
+
+/* ---- קיבוץ שורות לפי group_id, כדי שטווח יופיע כשורה אחת ---- */
+function ovGroups(){
+  const rows=S.overrides.slice();
+  const by={};
+  rows.forEach(r=>{
+    const g=r.group_id||('single:'+r.id);
+    (by[g]=by[g]||[]).push(r);
+  });
+  return Object.keys(by).map(g=>{
+    const list=by[g].slice().sort((a,b)=>a.date.localeCompare(b.date));
+    const kids=[...new Set(list.map(r=>r.kid).filter(Boolean))];
+    return {
+      group_id:g, rows:list,
+      from:list[0].date, to:list[list.length-1].date,
+      note:list[0].note, scope:list[0].scope||'schedule',
+      image_url:list[0].image_url||null,
+      kids
+    };
+  }).sort((a,b)=>a.from.localeCompare(b.from));
+}
+
+function ovRenderList(){
+  const P='ov';
+  const box=$(P+'List'); if(!box) return;
+  const today=ovTodayIso();
+  /* מציגים קבוצה כל עוד היום האחרון שלה עוד לא עבר */
+  const groups=ovGroups().filter(g=>g.to>=today);
+  if(!groups.length){
+    box.innerHTML='<div class="hint">אין הערות מכסות</div>';
+    return;
+  }
+  box.innerHTML=groups.map(g=>{
+    const range = g.from===g.to
+      ? '<span class="dnum">'+ovDM(g.from)+'</span>'
+      : 'מ-<span class="dnum">'+ovDM(g.from)+'</span> עד <span class="dnum">'+ovDM(g.to)+'</span>';
+    const badge = g.scope==='full'
+      ? '<span class="ovbadge full">כל הלוח</span>'
+      : '<span class="ovbadge sched">מערכת שעות</span>';
+    const who = g.scope==='full' ? '' :
+      (g.kids.length ? esc(g.kids.join(', '))+' · ' : 'כל הילדים · ');
+    const pic = g.image_url ? '&#128444;&#65039; ' : '';
+    const txt = esc(g.note||'חופש');
+    return '<div class="ovitem" data-g="'+esc(g.group_id)+'">'+badge+
+      '<div class="range">'+range+'</div>'+
+      '<div class="txt">'+who+pic+txt+'</div>'+
+      '<button type="button" class="iconbtn" title="עריכה" aria-label="עריכה" data-edit="'+esc(g.group_id)+'">&#9998;</button>'+
+      '<button type="button" class="iconbtn del" data-del="'+esc(g.group_id)+'">&#128465;</button>'+
+      '</div>';
+  }).join('');
+
+  if(ovEditGroup) box.querySelectorAll('.ovitem').forEach(e=>
+    e.classList.toggle('editing', e.dataset.g===ovEditGroup));
+  box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>ovStartEdit(b.dataset.edit));
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>ovDelete(b.dataset.del));
+}
+
+/* עריכה: טוענים את הקבוצה חזרה לטופס. שמירה מוחקת את הישן וכותבת מחדש —
+   כך שינוי טווח (הארכה/קיצור) עובד בלי לוגיקת diff נפרדת. */
+function ovStartEdit(gid){
+  const P='ov';
+  const g=ovGroups().find(x=>x.group_id===gid); if(!g) return;
+  ovEditGroup=gid;
+  ovStart=g.from; ovEnd=(g.to!==g.from)?g.to:null;
+  ovView={y:+g.from.slice(0,4), m:(+g.from.slice(5,7))-1};
+  ovSetScope(g.scope);
+  if(g.scope==='full'){
+    $(P+'FullNote').value=g.note||'';
+    if(typeof renderCoverPreview==='function') renderCoverPreview();
+    ovSetImage(g.image_url,'תמונה קיימת');
+  }else{
+    $(P+'Note').value=g.note||'';
+    const kidsBox=$(P+'Kids');
+    kidsBox.querySelectorAll('input').forEach(i=>{
+      const on = i.hasAttribute('data-ovall') ? !g.kids.length
+               : g.kids.includes(i.value);
+      i.checked=on; i.closest('.chk').classList.toggle('on',on);
+    });
+  }
+  $(P+'Add').textContent='שמירת השינויים';
+  const cancel=$(P+'Cancel'); if(cancel) cancel.style.display='block';
+  document.querySelectorAll('.ovitem').forEach(e=>
+    e.classList.toggle('editing', e.dataset.g===gid));
+  ovRenderCal();
+  $(P+'MonLabel').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+async function ovDelete(gid){
+  const g=ovGroups().find(x=>x.group_id===gid); if(!g) return;
+  const range = g.from===g.to ? ovDM(g.from) : 'מ-'+ovDM(g.from)+' עד '+ovDM(g.to);
+  const ok=await ask('מחיקת הערה',
+    'למחוק את ההערה של '+range+(g.note?' — '+g.note:'')+'?',{yes:'מחיקה'});
+  if(!ok) return;
+  try{
+    const ids=g.rows.map(r=>r.id);
+    await db.from('schedule_overrides').delete().in('id',ids);
+    ovSetState(S.overrides.filter(o=>!ids.includes(o.id)));
+    if(ovEditGroup===gid) ovResetForm();
+    ovRenderList(); toast('נמחק');
+  }catch(e){ toast('המחיקה נכשלה',true); }
+}
+
+async function ovSubmit(){
+  const P='ov';
+  if(!ovStart){ toast('בחרו תאריך',true); return; }
+  const lo=ovEnd?(ovStart<=ovEnd?ovStart:ovEnd):ovStart;
+  const hi=ovEnd?(ovStart<=ovEnd?ovEnd:ovStart):ovStart;
+  const dates=ovRangeDates(lo,hi);
+
+  let rows;
+  if(ovScope==='full'){
+    const note=$(P+'FullNote').value.trim()||null;
+    if(!note && !ovImage){ toast('הוסיפו טקסט או תמונה',true); return; }
+    rows=dates.map(d=>({date:d,kid:null,note,scope:'full',image_url:ovImage}));
+  }else{
+    const note=$(P+'Note').value.trim()||null;
+    const kidsBox=$(P+'Kids');
+    const all=kidsBox.querySelector('[data-ovall]').checked;
+    const picked=[...kidsBox.querySelectorAll('[data-ovkid]:checked')].map(i=>i.value);
+    if(!all && !picked.length){ toast('בחרו למי ההערה',true); return; }
+    rows=[];
+    dates.forEach(d=>{
+      if(all) rows.push({date:d,kid:null,note,scope:'schedule',image_url:null});
+      else picked.forEach(k=>rows.push({date:d,kid:k,note,scope:'schedule',image_url:null}));
+    });
+  }
+
+  const gid = (self.crypto&&crypto.randomUUID) ? crypto.randomUUID()
+            : 'g'+Date.now()+Math.random().toString(16).slice(2);
+  rows.forEach(r=>r.group_id=gid);
+
+  try{
+    /* עריכה = מחיקה וכתיבה מחדש, כדי ששינוי טווח יעבוד בלי diff */
+    if(ovEditGroup){
+      const old=ovGroups().find(x=>x.group_id===ovEditGroup);
+      if(old){
+        const ids=old.rows.map(r=>r.id);
+        await db.from('schedule_overrides').delete().in('id',ids);
+        ovSetState(S.overrides.filter(o=>!ids.includes(o.id)));
+      }
+    }
+    const {data,error}=await db.from('schedule_overrides').insert(rows).select();
+    if(error) throw error;
+    S.overrides.push(...(data||[]));
+    const wasEdit=!!ovEditGroup;
+    ovResetForm();
+    ovRenderList();
+    toast(wasEdit?'עודכן':'נוסף');
+  }catch(e){ toast('השמירה נכשלה',true); console.error(e); }
+}
+
+async function ovUploadImage(file){
+  if(!file) return;
+  const name='cover-'+Date.now()+'-'+file.name.replace(/[^\w.\-]/g,'_');
+  try{
+    const {error}=await db.storage.from(OV_BUCKET).upload(name,file,{contentType:file.type});
+    if(error) throw error;
+    const url=db.storage.from(OV_BUCKET).getPublicUrl(name).data.publicUrl;
+    ovSetImage(url,file.name);
+    toast('התמונה הועלתה');
+  }catch(e){ toast('העלאת התמונה נכשלה',true); console.error(e); }
+}
+
+function ovWire(){
+  const P='ov';
+  if(!$(P+'CalGrid')) return;
+  $(P+'PrevM').onclick=()=>{ ovView.m--; if(ovView.m<0){ovView.m=11;ovView.y--;} ovRenderCal(); };
+  $(P+'NextM').onclick=()=>{ ovView.m++; if(ovView.m>11){ovView.m=0;ovView.y++;} ovRenderCal(); };
+  $(P+'ScopeSched').onclick=()=>ovSetScope('schedule');
+  $(P+'ScopeFull').onclick=()=>ovSetScope('full');
+  $(P+'ImgPick').onclick=()=>$(P+'ImgFile').click();
+  $(P+'ImgFile').onchange=e=>ovUploadImage(e.target.files[0]);
+  $(P+'Add').onclick=ovSubmit;
+  /* יציאה מעריכה בלי לשמור — הטופס חוזר להוספה רגילה */
+  if($(P+'Cancel')) $(P+'Cancel').onclick=()=>{ ovResetForm(); ovRenderList(); };
+  ovSetScope('schedule');
+  ovRenderCal();
+}
+
+/* ---------- הפעלה ---------- */
+async function start(){
+  $('login').style.display='none';
+  $('panel').style.display='block';
+
+  const [k,f,r,m,w,ru,st,ov]=await Promise.all([
+    db.from('kids').select('*').order('order_index'),
+    db.from('food_types').select('*').order('name'),
+    db.from('kid_restrictions').select('*'),
+    db.from('meals').select('*'),
+    db.from('white_shirt').select('*'),
+    db.from('white_shirt_rules').select('*'),
+    db.from('settings').select('*'),
+    db.from('schedule_overrides').select('*'),
+  ]);
+  S.kids=k.data||[]; S.foods=f.data||[]; S.restrictions=r.data||[];
+  S.meals=m.data||[]; S.shirts=w.data||[]; S.rules=ru.data||[]; S.overrides=ov.data||[];
+  S.settings={}; (st.data||[]).forEach(x=>S.settings[x.key]=x.value);
+
+  applyNightSettings(S.settings);
+  setInterval(applyNightMode,10000);
+
+  const {date,isTomorrow}=shown();
+  $('dayTitle').textContent=(isTomorrow?'מחר · יום ':'היום · יום ')+DAY_FULL[DAYS[date.getDay()]];
+  $('dateSub').textContent=fmt(iso(date));
+  $('foodDate').value=iso(date);
+
+  $('noteText').value=S.settings.parent_note||'';
+  const until=String(S.settings.parent_note_until||'').trim();
+  if(!until) setExpMode('never');
+  else { setExpMode('custom',{silent:true}); $('expAt').value=until.slice(0,16); }
+  $('expNow').textContent=describeExpiry(until);
+
+  renderShirt();
+  renderFood();
+  renderOvKids();
+  ovWire();
+  ovRenderList();
+}
+
+const {data:{session}}=await db.auth.getSession();
+if(session) start();
+
+/* ---- תצוגה מקדימה של הודעת הכיסוי ----
+   אותו כלל פירוק בדיוק כמו בלוח (index.html) — כל שינוי כאן חייב לקרות גם שם. */
+function parseCoverNote(raw){
+  const text=String(raw==null?'':raw).replace(/\r/g,'').trim();
+  if(!text) return {kind:'empty'};
+  const lines=text.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(lines.length>1 && /:$/.test(lines[0])){
+    const items=lines.slice(1).map(s=>s.replace(/^[-\u2013\u2022*]\s*/,'')).filter(Boolean);
+    if(items.length) return {kind:'list',title:lines[0],items:items};
+  }
+  return {kind:'text',text:lines.join('\n')};
+}
+
+function renderCoverPreview(){
+  const box=$('ovFullPreview'), body=$('ovFullPreviewBody'), ta=$('ovFullNote');
+  if(!box||!body||!ta) return;
+  const p=parseCoverNote(ta.value);
+  body.textContent='';
+  if(p.kind==='empty'){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  if(p.kind==='text'){
+    const d=document.createElement('div');
+    d.className='covermsg'; d.textContent=p.text;
+    body.appendChild(d);
+    return;
+  }
+  const h=document.createElement('div');
+  h.className='covertitle'; h.textContent=p.title;
+  body.appendChild(h);
+  const ul=document.createElement('ul');
+  ul.className='coverlist';
+  p.items.forEach(function(t){
+    const li=document.createElement('li');
+    li.textContent=t;
+    ul.appendChild(li);
+  });
+  body.appendChild(ul);
+}
+if($('ovFullNote')) $('ovFullNote').addEventListener('input',renderCoverPreview);
+
+</script>
+</body>
+</html>
