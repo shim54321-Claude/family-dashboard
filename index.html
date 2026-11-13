@@ -284,18 +284,19 @@ body.night{--wx-hot:#E59A62;--wx-cold:#8FB4E0}
 .fcday.focus .dl{background:var(--ink);color:var(--bg);padding:0 1vw;border-radius:999px}
 .fcday .dd{font-size:1.3rem;color:var(--ink-soft);font-weight:600;font-variant-numeric:tabular-nums}
 .fcday .ic{font-size:2.6rem;line-height:1.1}
-.fcchart{position:relative;height:15rem}
+.fcchart{position:relative;height:13rem}
 .fcchart svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .fcchart path{fill:none;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .fcchart path.dash{stroke-dasharray:2 9;opacity:.6}
 .fcpt{position:absolute;transform:translate(50%,-50%);width:1.3rem;height:1.3rem;border-radius:50%;
   border:.25rem solid var(--card);box-sizing:content-box}
-.fcpt.big{width:1.7rem;height:1.7rem}
+.fcpt.big{width:2rem;height:2rem}
 .fcpt.past,.fclbl.past{opacity:.55}
-.fclbl{position:absolute;transform:translateX(50%);font-family:var(--font-display);font-weight:800;
-  font-size:2.1rem;line-height:1;white-space:nowrap;direction:ltr}
-.fclbl.lo{font-size:1.75rem}
-.fclbl.big{font-size:2.6rem}
+.fclbl{position:absolute;transform:translate(50%,calc(-100% - .7rem));font-family:var(--font-display);font-weight:800;
+  font-size:2rem;line-height:1;white-space:nowrap;direction:ltr}
+.fclbl.lo{font-size:1.7rem;transform:translate(50%,.8rem)}
+.fclbl.big{font-size:4.6rem;font-weight:900}
+.fclbl.lo.big{font-size:3.4rem}
 .fcrow{position:relative;display:grid;grid-template-columns:repeat(var(--fcn,5),minmax(0,1fr));
   justify-items:center;align-items:center;padding:.25rem 0}
 .wxchip{display:inline-flex;align-items:center;gap:.35rem;font-size:1.8rem;font-weight:900;line-height:1.2;
@@ -585,6 +586,82 @@ body.shabbat.night .sbart svg{opacity:.2}
   #gotoControl{display:block}
   #gotoPoints{display:flex}
 }
+
+/* ---- שורת מזג אוויר קומפקטית + קצר/ארוך בולט (13.11.2026, מוקאפ שאושר) ----
+   מסך רחב בלבד: בלי שורת סיכום/מקרא ובלי שורת חיצים לכל יום — התג של
+   היום המודגש יושב בפינת העמודה שלו. בטלפון (max-aspect-ratio:1/1) נשאר כמו קודם. */
+@media (min-aspect-ratio:1/1){
+  .fc{padding:.5rem .7vw;gap:0}
+  .fchead,#fcdelta{display:none}
+  .fcbg>div.focus{background:color-mix(in srgb,var(--wx-cold) 9%,var(--card));
+    border:.3rem solid var(--wx-cold);box-shadow:none}
+  .fcday{flex-direction:row;justify-content:center;gap:.5vw;padding-top:.6rem;min-height:3.4rem}
+  .fcday .dl{font-size:1.9rem}
+  .fcday .dd{display:none}
+  .fcday .ic{font-size:1.9rem;line-height:1}
+  .fcday.focus{justify-content:space-between;padding:.7rem .8vw 0}
+  .fcday.focus .dl{font-size:1.8rem}
+  .fcday.focus .ic{display:none}
+  .fdelta{font-size:1.6rem;padding:.15rem .9rem}
+  .fdelta svg{width:1.7rem;height:1.7rem}
+  .fdelta.big{font-size:1.6rem}
+  #fcwear{padding:.2rem 0 .7rem}
+}
+.fdelta{display:none}
+@media (min-aspect-ratio:1/1){.fdelta{display:inline-flex}}
+.wear.sl{font-family:var(--font-display);font-weight:800;font-size:2rem;padding:.15rem 1.1rem;border-radius:1rem}
+.wear.sl .wi{font-size:1.9rem}
+.wear.sl.short{background:#FFE9C7;color:#7A4300}
+.wear.sl.long{background:#D6E6FA;color:#0C447C}
+.wear.sl.big{font-size:3.6rem;font-weight:900;padding:.1rem 2rem;border-radius:1.3rem;color:#FFFFFF}
+.wear.sl.big .wi{font-size:3.2rem}
+.wear.sl.big.long{background:#1F5FA8}
+.wear.sl.big.short{background:#B4561C}
+.wear.sl .wr{font-size:.85em}
+.wear.sl.severe{box-shadow:0 0 0 .3rem var(--alert)}
+
+/* ---- צנצנת קטנה יותר (13.11.2026) ---- */
+@media (min-aspect-ratio:1/1){
+  .ptcard{width:10.5vw;padding:.7rem .6vw;gap:.2rem}
+  .ptcard .pth{font-size:1.45rem}
+  .ptcard svg.jar{height:6rem}
+  .ptcard .ptn{font-size:2.2rem}
+  .ptcard .ptp{font-size:1.25rem}
+  .ptextra{margin-top:.2rem;padding-top:.4rem;gap:.5rem}
+  .ptcard .ptkid .xn{font-size:1.6rem}
+  .ptcard .ptkid .xv{font-size:1.4rem}
+  .ptcard .ptkid .xs{font-size:1.2rem}
+  .ptcard .ptkid .stars svg{width:1.45rem;height:1.45rem}
+}
+
+/* ---- מערכת שעות והודעה על כל המסך — כתב גדול יותר (13.11.2026) ---- */
+@media (min-aspect-ratio:1/1){
+  .kidname{font-size:3.4rem;line-height:1.15}
+  .kidgrade{font-size:1.8rem}
+  .kidem{font-size:1.9rem;width:3rem;height:3rem}
+  .endchip{font-size:1.9rem}
+  .endchip .ev{color:var(--ink);font-weight:800}
+  .ltime{font-size:2.6rem;font-weight:700;color:var(--ink);min-width:7rem}
+  .lsubj{font-size:3rem}
+  .lem{font-size:2.2rem}
+  .lesson{padding:.45rem 0}
+  .covermsg,.covertitle{font-size:4.9rem}
+  .coverlist li{font-size:3.3rem;padding-inline-start:2.4rem}
+  .covertext.long .covertitle{font-size:3.9rem}
+  .covertext.long .coverlist li{font-size:2.7rem}
+  #fullcover.withimg .covermsg,#fullcover.withimg .covertitle{font-size:3.4rem}
+  #fullcover.withimg .coverlist li{font-size:2.6rem}
+}
+/* טלפון: הצ'יפ קצר/ארוך מציג גם מילה (הכלל הישן הסתיר את .wt) */
+@media (max-aspect-ratio:1/1){
+  .wear.sl .wt{display:inline}
+  .wear.sl,.wear.sl.big{font-size:12px;padding:1px 6px;flex-direction:row;gap:2px}
+  .wear.sl.big.long{color:#FFFFFF}.wear.sl.big.short{color:#FFFFFF}
+  .wear.sl .wi,.wear.sl.big .wi{font-size:13px}
+  .wear.sl .wsep{display:none}
+  .wbase{visibility:hidden}
+  .fclbl.big,.fclbl.lo.big{font-size:17px}
+}
 </style>
 </head>
 <body class="kiosk">
@@ -704,6 +781,7 @@ const CONFIG = {
   SWITCH_HOUR:12, REFRESH_MIN:1,
   SHABBAT_START_HOUR:12,        // מסך שבת/חג נכנס ב-12:00 בערב שבת/חג
   RAIN_ALERT_PCT:30,            // אחוז סיכוי לגשם שמעליו מוצגת התראה
+  SHORT_FROM:26,                // מקסימום יומי (מעוגל) שממנו כותבים "קצר"; מתחתיו "ארוך" (13.11.2026)
 };
 
 let KIDS=[];   // נטען מטבלת kids
@@ -1584,6 +1662,12 @@ function clothingFor(max){
   if(t>=12) return {icon:'🧥🧣',   text:'קריר — מעיל קל'};
   return          {icon:'🧥🧤🧣', text:'קר — מעיל חם'};
 }
+/* קצר/ארוך ללוח הראשי (13.11.2026) — לפי המקסימום היומי המעוגל בלבד */
+function sleeveFor(max){
+  return Math.round(max)>=CONFIG.SHORT_FROM
+    ? {cls:'short',icon:'👕',text:'קצר'}
+    : {cls:'long', icon:'🧥',text:'ארוך'};
+}
 function rainSuffix(p){
   return (p!==null && p!==undefined && p>=CONFIG.RAIN_ALERT_PCT)
     ? ` · ☂️ ${Math.round(p)}%` : '';
@@ -1646,16 +1730,23 @@ function renderForecast(){
   /* שורת הימים */
   $('fcdays').innerHTML=cols.map((c,i)=>{
     const d=new Date(c.iso+'T12:00:00');
+    let badge='';
+    if(i===f && f>0){                         // תג השינוי של היום המודגש — בפינת העמודה
+      const pv=cols[f-1], dd=wxDelta(pv,c), a=Math.abs(dd);
+      const than=pv.rel===-1?'מאתמול':pv.rel===0?'מהיום':'';
+      badge = a<=1 ? `<span class="wxchip same fdelta">= <span class="w">כמו ${pv.rel===-1?'אתמול':'היום'}</span></span>`
+        : `<span class="wxchip fdelta ${a>=4?'big':(dd>0?'up':'down')}">${dd>0?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span><span class="w"> ${than}</span></span>`;
+    }
     return `<div class="fcday${c.rel<0?' past':''}${i===f?' focus':''}">`+
       `<span class="dl">${wxDayLabel(c.iso,c.rel)}</span>`+
       `<span class="dd">${d.getDate()}/${d.getMonth()+1}</span>`+
-      `<span class="ic">${WCODE[c.code]||'🌡️'}</span></div>`;
+      `<span class="ic">${WCODE[c.code]||'🌡️'}</span>${badge}</div>`;
   }).join('');
 
   /* גרף: שני קווים חלקים, אתמול מקווקו. y באחוזים מגובה האזור */
   const all=cols.flatMap(c=>[c.max,c.min]);
   const hi=Math.max(...all), lo=Math.min(...all), span=Math.max(1,hi-lo);
-  const yOf=t=>28+(hi-t)/span*44;           // 28%..72% — מקום למספרים מעל ומתחת
+  const yOf=t=>40+(hi-t)/span*32;           // 40%..72% — מקום למספרים הגדולים של היום המודגש
   const xOf=i=>(i+.5)/n*100;                // אחוז מימין
   const svgX=i=>1000-xOf(i)*10;
   const pathFor=(key,a,b)=>{
@@ -1679,8 +1770,8 @@ function renderForecast(){
     const x=xOf(i).toFixed(2);
     marks+=`<div class="fcpt${cls}" style="right:${x}%;top:${yOf(c.max).toFixed(2)}%;background:var(--wx-hot)"></div>`;
     marks+=`<div class="fcpt${cls}" style="right:${x}%;top:${yOf(c.min).toFixed(2)}%;background:var(--wx-cold)"></div>`;
-    marks+=`<div class="fclbl${cls}" style="right:${x}%;top:calc(${yOf(c.max).toFixed(2)}% - 3.3rem);color:var(--wx-hot)">${Math.round(c.max)}°</div>`;
-    marks+=`<div class="fclbl lo${cls}" style="right:${x}%;top:calc(${yOf(c.min).toFixed(2)}% + 1.2rem);color:var(--wx-cold)">${Math.round(c.min)}°</div>`;
+    marks+=`<div class="fclbl hi${cls}" style="right:${x}%;top:${yOf(c.max).toFixed(2)}%;color:var(--wx-hot)">${Math.round(c.max)}°</div>`;
+    marks+=`<div class="fclbl lo${cls}" style="right:${x}%;top:${yOf(c.min).toFixed(2)}%;color:var(--wx-cold)">${Math.round(c.min)}°</div>`;
   });
   $('fcchart').innerHTML=svg+marks;
 
@@ -1695,13 +1786,13 @@ function renderForecast(){
   }).join('');
 
   /* בגדים + מטרייה לכל יום מהיום והלאה (אותם כללים כמו בכרטיסים הקודמים) */
-  $('fcwear').innerHTML=cols.map(c=>{
-    if(c.rel<0) return '<span></span>';
-    const w=clothingFor(c.max);
+  $('fcwear').innerHTML=cols.map((c,i)=>{
+    if(c.rel<0) return '<span class="fcbase wbase">נקודת השוואה</span>';
+    const w=sleeveFor(c.max);
     const rain=(c.rain!==null && c.rain>=CONFIG.RAIN_ALERT_PCT)?`<b class="wr">☂️ ${Math.round(c.rain)}%</b>`:'';
     const sev=SEVERE.includes(c.code);
-    return `<span class="wear${sev?' severe':''}"><span class="wi">${sev?'⚠️':''}${w.icon}</span>`+
-      `<span class="wt">${w.text}</span>${rain?(`<span class="wt"> · </span>`+rain):''}</span>`;
+    return `<span class="wear sl ${w.cls}${i===f?' big':''}${sev?' severe':''}"><span class="wi">${sev?'⚠️':''}${w.icon}</span>`+
+      `<span class="wt">${w.text}</span>${rain?(`<span class="wsep"> · </span>`+rain):''}</span>`;
   }).join('');
 
   /* משפט הסיכום — בשפה של ילדים */
@@ -1721,7 +1812,7 @@ function renderForecast(){
     const d=wxDelta(cols[j-1],cols[j]);
     if(Math.abs(d)>=4){ s2=`· ${wxDayPhrase(cols[j].iso,cols[j].rel)} ${d>0?'מתחמם':'מתקרר'} ל־${Math.round(cols[j].max)}°`; break; }
   }
-  const fw=clothingFor(fc.max);
+  const fw=sleeveFor(fc.max);
   const fr=(fc.rain!==null && fc.rain>=CONFIG.RAIN_ALERT_PCT)?` · ☂️ ${Math.round(fc.rain)}%`:'';
   $('fcsum').innerHTML=`<span class="s1">${s1}</span>${chip}${s2?`<span class="s2">${s2}</span>`:''}`+
     `<span class="s3">${fw.icon} ${fw.text}${fr}</span>`;
