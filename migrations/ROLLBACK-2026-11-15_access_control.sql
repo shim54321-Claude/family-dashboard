@@ -91,6 +91,7 @@ drop function if exists public.fd_require_parent();
 drop function if exists public.fd_touch_login();
 drop function if exists public.fd_access_info();
 drop function if exists public.fd_device_request(text,text);
+drop function if exists public.fd_device_status(text);
 drop function if exists public.fd_can_read();
 drop function if exists public.fd_device_ok();
 drop function if exists public.fd_is_parent();

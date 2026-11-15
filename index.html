@@ -2413,10 +2413,21 @@ async function sessionViewer(){
   return null;
 }
 /* מחליט מאיזה חיבור לקרוא, והאם להציג נעילה */
+/* מכשיר חדש מבקש קוד רק אחרי שהלוח פתוח כמה שניות — כך בוטים ותצוגות מקדימות של קישורים
+   (שנכנסים ויוצאים מיד) לא תופסים מקום בתור ולא מקפיצים בקשות אצל ההורים */
+const ACC_BOOT=Date.now(), ACC_REQUEST_DELAY_MS=15000;
 async function ensureAccess(){
   if(!rawDb) return ACCESS;
+  /* הורה/ילד מחובר באותו דפדפן — לא מבקשים קוד מכשיר בכלל */
+  const s0=await sessionViewer();
+  if(s0){ ACCESS={mode:'session',info:null}; db=s0; saveAccessMode('session'); return ACCESS; }
   let r;
-  try{ r=await rawDb.rpc('fd_device_request',{p_token:DEV_TOKEN,p_ua:String(navigator.userAgent||'').slice(0,200)}); }
+  const fresh=(Date.now()-ACC_BOOT)<ACC_REQUEST_DELAY_MS;
+  try{
+    if(fresh){
+      r=await rawDb.rpc('fd_device_status',{p_token:DEV_TOKEN});   /* בודק בלי ליצור בקשה */
+    }else r=await rawDb.rpc('fd_device_request',{p_token:DEV_TOKEN,p_ua:String(navigator.userAgent||'').slice(0,200)});
+  }
   catch(e){ r={error:e}; }
   if(r.error){
     if(isNetErr(r.error)){
@@ -2431,17 +2442,14 @@ async function ensureAccess(){
   }
   const info=r.data||{};
   if(info.status==='approved'){ ACCESS={mode:'device',info}; db=HEADER_BLOCKED?rawDb:devDb; }
-  else{
-    const s=await sessionViewer();
-    if(s){ ACCESS={mode:'session',info}; db=s; }
-    else if(info.locked===false){ ACCESS={mode:'open',info}; db=rawDb; }
-    else{ ACCESS={mode:'locked',info}; db=null; }
-  }
+  else if(info.locked===false){ ACCESS={mode:'open',info}; db=rawDb; }
+  else{ ACCESS={mode:'locked',info}; db=null; }
   saveAccessMode(ACCESS.mode);
   return ACCESS;
 }
 function isLockedView(){ return ACCESS.mode==='locked' || (ACCESS.mode==='offline' && ACCESS.prev==='locked'); }
 function needsAccessPoll(){
+  if(ACCESS.info && ACCESS.info.status==='rejected') return false;   /* נדחה: לא מציקים, בודקים רק ברענון הרגיל */
   if(isLockedView()) return true;
   return ACCESS.mode==='open' && ACCESS.info && ACCESS.info.status!=='approved';
 }
@@ -2472,6 +2480,11 @@ function renderAccessUi(){
       text='פתחו בטלפון את ״היום״, הבקרה או הנקודות, ובדקו שהקוד זהה. לוחצים אשר והלוח נפתח לבד.';
       $('lkcode').textContent=info.code||'----';
       const rem=accRemaining(); foot=rem!=null?('הקוד מתחלף לבד בעוד '+fmtMmSs(rem)):'';
+    }else if(info.status==='rejected'){
+      title='הבקשה נדחתה';
+      text='הורה דחה את הבקשה של המכשיר הזה. אפשר לנסות שוב בעוד שעה.';
+    }else if(info.status==='waiting'){
+      text='מכין קוד לאישור…';
     }else{
       text='בודק…';
     }
@@ -2482,7 +2495,7 @@ function renderAccessUi(){
     bar.classList.remove('on');
   }else{
     lock.classList.remove('on');
-    if(ACCESS.mode==='open' && ACCESS.info && ACCESS.info.status!=='approved' && DEV_STORAGE){
+    if(ACCESS.mode==='open' && ACCESS.info && (ACCESS.info.status==='pending'||ACCESS.info.status==='busy') && DEV_STORAGE){
       bar.textContent='';
       const t=document.createElement('span');
       if(info.status==='pending'){

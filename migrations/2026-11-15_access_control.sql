@@ -141,6 +141,10 @@ begin
       where id = d.id and (last_seen is null or last_seen < now() - interval '5 minutes');
     return json_build_object('status','approved','locked',lk,'name',d.name);
   end if;
+  -- נדחה ע"י הורה: לא מבקשים שוב שעה שלמה (כדי שהבקשה לא תקפוץ שוב ושוב)
+  if found and d.status = 'rejected' and d.created_at > now() - interval '1 hour' then
+    return json_build_object('status','rejected','locked',lk);
+  end if;
   if found and d.status = 'pending' and d.expires_at > now() then
     return json_build_object('status','pending','code',d.pair_code,'expires_at',d.expires_at,'locked',lk);
   end if;
