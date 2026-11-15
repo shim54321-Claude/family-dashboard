@@ -284,7 +284,7 @@ body.night{--wx-hot:#E59A62;--wx-cold:#8FB4E0}
 .fcday.focus .dl{background:var(--ink);color:var(--bg);padding:0 1vw;border-radius:999px}
 .fcday .dd{font-size:1.3rem;color:var(--ink-soft);font-weight:600;font-variant-numeric:tabular-nums}
 .fcday .ic{font-size:2.6rem;line-height:1.1}
-.fcchart{position:relative;height:13rem}
+.fcchart{position:relative;height:14.5rem}
 .fcchart svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .fcchart path{fill:none;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .fcchart path.dash{stroke-dasharray:2 9;opacity:.6}
@@ -620,6 +620,17 @@ body.shabbat.night .sbart svg{opacity:.2}
 .wear.sl .wr{font-size:.85em}
 .wear.sl.severe{box-shadow:0 0 0 .3rem var(--alert)}
 
+/* ---- טיפות גשם ביום המודגש (15.11.2026) — מאחורי המספרים ---- */
+.fcbg>div.focus.rainy{position:relative;overflow:hidden;
+  background:color-mix(in srgb,#4A6E96 28%,var(--card))}
+.drops{position:absolute;inset:0;pointer-events:none}
+.drops i{position:absolute;top:-3.5rem;width:1.9rem;height:2.6rem;opacity:.85;
+  animation-name:rainfall;animation-timing-function:linear;animation-iteration-count:infinite}
+.drops svg{width:100%;height:100%;display:block}
+#fcchart,#fcdays,#fcwear{position:relative;z-index:1}
+.fcwrap-rain .fclbl.big{text-shadow:0 0 .5rem #D3DDE8,0 0 .5rem #D3DDE8,0 0 1rem #D3DDE8}
+@keyframes rainfall{from{transform:translateY(0)}to{transform:translateY(30rem)}}
+@media (prefers-reduced-motion:reduce){.drops i{animation:none;top:auto}}
 /* ---- צנצנת קטנה יותר (13.11.2026) ---- */
 @media (min-aspect-ratio:1/1){
   .ptcard{width:10.5vw;padding:.7rem .6vw;gap:.2rem}
@@ -780,6 +791,7 @@ const CONFIG = {
   LAT:32.0702, LON:35.0542, TIMEZONE:'Asia/Jerusalem',
   SWITCH_HOUR:12, REFRESH_MIN:1,
   SHABBAT_START_HOUR:12,        // מסך שבת/חג נכנס ב-12:00 בערב שבת/חג
+  RAIN_DROPS_PCT:50,            // מעל אחוז זה (או גשם בינוני ומעלה) — טיפות יורדות ביום המודגש (15.11.2026)
   RAIN_ALERT_PCT:30,            // אחוז סיכוי לגשם שמעליו מוצגת התראה
   SHORT_FROM:26,                // מקסימום יומי (מעוגל) שממנו כותבים "קצר"; מתחתיו "ארוך" (13.11.2026)
 };
@@ -1662,6 +1674,21 @@ function clothingFor(max){
   if(t>=12) return {icon:'🧥🧣',   text:'קריר — מעיל קל'};
   return          {icon:'🧥🧤🧣', text:'קר — מעיל חם'};
 }
+/* טיפות גשם ביום המודגש (15.11.2026): סיכוי ≥ RAIN_DROPS_PCT, או גשם בינוני ומעלה
+   (גשם 63/65, גשם קפוא 67, ממטרים 81/82, סופת רעמים 95/96/99) */
+const HEAVY_RAIN=[63,65,67,81,82,95,96,99];
+function isRainyDay(c){
+  return (c.rain!==null && c.rain>=CONFIG.RAIN_DROPS_PCT) || HEAVY_RAIN.includes(c.code);
+}
+const DROP_SVG='<svg viewBox="0 0 22 30"><path d="M11 1C11 1 2 13 2 19a9 9 0 0 0 18 0C20 13 11 1 11 1Z" fill="#2F6BB0"/><ellipse cx="7.5" cy="19" rx="2" ry="3.5" fill="#fff" opacity=".7"/></svg>';
+function rainDrops(){
+  let h='<span class="drops" aria-hidden="true">';
+  for(let i=0;i<20;i++){
+    const x=(i*37+11)%92+2, dur=(3.2+((i*7)%10)/6).toFixed(2), del=(-((i*13)%40)/10).toFixed(2);
+    h+=`<i style="right:${x}%;animation-duration:${dur}s;animation-delay:${del}s">${DROP_SVG}</i>`;
+  }
+  return h+'</span>';
+}
 /* קצר/ארוך ללוח הראשי (13.11.2026) — לפי המקסימום היומי המעוגל בלבד */
 function sleeveFor(max){
   return Math.round(max)>=CONFIG.SHORT_FROM
@@ -1725,7 +1752,11 @@ function renderForecast(){
   let f=cols.findIndex(c=>c.rel===focusRel); if(f<0) f=todayIdx;
 
   /* רקע: אתמול מקווקו, היום/מחר המודגש — כרטיס לבן */
-  $('fcbg').innerHTML=cols.map((c,i)=>`<div class="${c.rel<0?'past':''}${i===f?' focus':''}"></div>`).join('');
+  $('fc').classList.toggle('fcwrap-rain', isRainyDay(cols[f]));
+  $('fcbg').innerHTML=cols.map((c,i)=>{
+    const wet = i===f && isRainyDay(c);
+    return `<div class="${c.rel<0?'past':''}${i===f?' focus':''}${wet?' rainy':''}">${wet?rainDrops():''}</div>`;
+  }).join('');
 
   /* שורת הימים */
   $('fcdays').innerHTML=cols.map((c,i)=>{
@@ -1746,7 +1777,7 @@ function renderForecast(){
   /* גרף: שני קווים חלקים, אתמול מקווקו. y באחוזים מגובה האזור */
   const all=cols.flatMap(c=>[c.max,c.min]);
   const hi=Math.max(...all), lo=Math.min(...all), span=Math.max(1,hi-lo);
-  const yOf=t=>40+(hi-t)/span*32;           // 40%..72% — מקום למספרים הגדולים של היום המודגש
+  const yOf=t=>38+(hi-t)/span*30;           // 40%..72% — מקום למספרים הגדולים של היום המודגש
   const xOf=i=>(i+.5)/n*100;                // אחוז מימין
   const svgX=i=>1000-xOf(i)*10;
   const pathFor=(key,a,b)=>{
