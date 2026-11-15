@@ -517,19 +517,13 @@ function isNightNow(){
 function applyNightMode(){ document.body.classList.toggle('night', isNightNow()); }
 
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+const ACC=await import('./access.js');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 
 let S={kids:[],foods:[],restrictions:[],meals:[],shirts:[],rules:[],overrides:[],settings:{}};
 
 /* ---------- כניסה ---------- */
-$('loginBtn').onclick=async()=>{
-  const m=$('loginMsg'); m.textContent='מתחבר…'; m.className='msg';
-  const {error}=await db.auth.signInWithPassword({
-    email:CONFIG.LOGIN_EMAIL,password:$('pass').value});
-  if(error){ m.textContent='סיסמה שגויה'; m.className='msg err'; $('pass').select(); }
-  else start();
-};
-$('pass').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+/* הכניסה (גוגל / קוד למייל / סיסמה ישנה) מנוהלת ב-access.js */
 $('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
 
 /* ---------- היום המוצג ---------- */
@@ -1307,8 +1301,7 @@ async function start(){
   qpInit().catch(e=>console.warn("points unavailable",e));
 }
 
-const {data:{session}}=await db.auth.getSession();
-if(session) start();
+await ACC.parentGate({db,start,legacyEmail:CONFIG.LOGIN_EMAIL});
 
 /* ---- תצוגה מקדימה של הודעת הכיסוי ----
    אותו כלל פירוק בדיוק כמו בלוח (index.html) — כל שינוי כאן חייב לקרות גם שם. */

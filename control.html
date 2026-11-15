@@ -453,6 +453,7 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
     <button class="tab" data-p="food">אוכל</button>
     <button class="tab" data-p="kids">ילדים</button>
     <button class="tab" data-p="display">תצוגה</button>
+    <button class="tab" data-p="access">מכשירים וגישה</button>
   </div>
 
   <!-- מערכת שעות -->
@@ -847,6 +848,9 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
   </div>
 
   <!-- תצוגה -->
+  <!-- מכשירים וגישה (קוד גישה, 15.11.2026) — נבנה ע"י access.js -->
+  <div class="page" id="p-access"><div id="accAdmin"></div></div>
+
   <div class="page" id="p-display">
     <div class="card">
       <h2>מצב לילה</h2>
@@ -899,6 +903,7 @@ const CONFIG={
 let KIDS=[];   // נטען מטבלת kids
 const $=id=>document.getElementById(id);
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+const ACC=await import('./access.js');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 
 let state={kids:[],locations:[],photos:[],wsRules:[],overrides:[],foods:[],restrictions:[],weeklyMeals:[],periods:[],schedule:[],chugim:[],shirts:[],vac:[],settings:{},zmanim:[],manualWins:[],schoolCal:[],prayers:[]};
@@ -1012,15 +1017,7 @@ $('nmSave').onclick=async()=>{
 /* ============================================================
    כניסה
    ============================================================ */
-$('loginBtn').onclick=async()=>{
-  const msg=$('loginMsg'); msg.textContent='מתחבר…'; msg.className='msg';
-  const {error}=await db.auth.signInWithPassword({
-    email:CONFIG.LOGIN_EMAIL, password:$('pass').value
-  });
-  if(error){ msg.textContent='סיסמה שגויה'; msg.className='msg err'; $('pass').select(); }
-  else start();
-};
-$('pass').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+/* הכניסה (גוגל / קוד למייל / סיסמה ישנה) מנוהלת ב-access.js */
 $('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
 
 /* ============================================================
@@ -3259,6 +3256,7 @@ async function start(){
   $('login').style.display='none';
   $('panel').style.display='block';
   await loadAll();
+  ACC.mountAccessAdmin(db,$('accAdmin')).catch(e=>console.warn('access admin',e));
   photosCleanupOnce(state.settings).catch(()=>{});
   await cleanupOldPrayers();
   await seedShabbatTemplateIfMissing();
@@ -3280,8 +3278,7 @@ async function start(){
   $('vacOn').checked=state.settings.vacation_mode==='true';
 }
 
-const {data:{session}}=await db.auth.getSession();
-if(session) start();
+await ACC.parentGate({db,start,legacyEmail:CONFIG.LOGIN_EMAIL});
 
 /* רישום כאפליקציה (PWA) */
 if('serviceWorker' in navigator){

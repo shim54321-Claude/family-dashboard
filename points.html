@@ -336,6 +336,7 @@ const PRIZE_IDEAS=['גלידה','ערב סרט','ערב משחק עם אבא','�
 const starSvg=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21.1l1.5-7L2 9.3l7-.8z" fill="${on?'#E2A13B':'#C9D3CE'}"/></svg>`;
 
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+const ACC=await import('./access.js');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 let S={kids:[],cats:[],acts:[],goals:[],events:[],settings:{}};
 let sel=new Set(), freeN=2, editingAct=null, histWeek=0;
@@ -346,12 +347,7 @@ async function audit(intent,entity,action,prev,next,result){
 }
 
 /* ---------- כניסה ---------- */
-$('loginBtn').onclick=async()=>{
-  const m=$('loginMsg'); m.textContent='מתחבר…'; m.className='msg';
-  const {error}=await db.auth.signInWithPassword({email:CONFIG.LOGIN_EMAIL,password:$('pass').value});
-  if(error){ m.textContent='סיסמה שגויה'; m.className='msg err'; $('pass').select(); } else start();
-};
-$('pass').onkeydown=e=>{ if(e.key==='Enter') $('loginBtn').click(); };
+/* הכניסה (גוגל / קוד למייל / סיסמה ישנה) מנוהלת ב-access.js */
 $('logoutBtn').onclick=async()=>{ await db.auth.signOut(); location.reload(); };
 
 /* ---------- נתונים ---------- */
@@ -831,8 +827,7 @@ async function start(){
   /* רענון שקט כל דקה — אם הורה אחר נתן נקודות מטלפון אחר */
   setInterval(async()=>{ if($('confirm').classList.contains('hidden') && view!=='goal' && !editingAct){ await loadAll(); renderView(); } },60000);
 }
-const {data:{session}}=await db.auth.getSession();
-if(session) start();
+await ACC.parentGate({db,start,legacyEmail:CONFIG.LOGIN_EMAIL});
 
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>

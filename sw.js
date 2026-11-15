@@ -1,7 +1,7 @@
 /* Service Worker — מאפשר פתיחה כאפליקציה והצגה מהירה */
-const CACHE = 'family-dashboard-v2';   /* v2 (10.11.2026): נוספו daily, points והאייקונים שלהם */
+const CACHE = 'family-dashboard-v3';   /* v3 (15.11.2026): קוד גישה — access.js */
 const SHELL = ['./', './index.html', './control.html', './daily.html', './points.html',
-               './manifest.json', './points.webmanifest',
+               './access.js', './manifest.json', './points.webmanifest',
                './icon-192.png', './icon-512.png', './medal-180.png', './medal-192.png', './medal-512.png',
                './fonts/rubik-var.woff2', './fonts/assistant-var.woff2'];
 
