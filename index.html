@@ -719,7 +719,18 @@ body.shabbat.night .sbart svg{opacity:.2}
    סבב 16.11.2026 (מוקאפ שאושר): מזג אוויר אתמול/היום/מחר,
    "היום קיבלתי ⭐" לכל ילד, מסך נקודות מלא, הדגשות וחוגים גדולים יותר
    ============================================================ */
-.ptcard,.ptstrip{display:none!important}
+.ptstrip{display:none!important}
+/* 16.11 סבב 3: הצנצנת = משבצת קטנה קבועה בפינה השמאלית, בגובה השורה */
+@media (min-aspect-ratio:1/1){
+  .ptcard{height:21rem;box-sizing:border-box;justify-content:center;position:relative;flex:0 0 10.5vw}
+  .ptcard.withx{justify-content:flex-start}
+  .ptcard.withx svg.jar{height:4.6rem}
+  .ptcard.withx .ptextra{margin-top:.1rem;padding-top:.3rem}
+  .kids4{visibility:visible}
+}
+.ptcard.glow{animation:k4glow 2s ease-in-out infinite}
+.ptcard .k4fx{left:50%;top:2.2rem}
+.k4space{flex:1;min-height:0}
 /* --- מזג אוויר: אתמול (אפור מפוספס) · היום (רחב) · מחר (צר) --- */
 .wx3{flex:0 0 44vw;display:flex;gap:.55vw;height:21rem;align-items:stretch;min-width:0}
 .wx3.hidden{display:none}
@@ -941,7 +952,6 @@ body.night .pscol .psd b{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
   <div class="toprow" id="toprow">
     <section class="wx3 hidden" id="fc" aria-label="מזג אוויר"></section>
     <section class="kids4 hidden" id="kids4" aria-label="היום קיבלתי"></section>
-    <section class="ptcard hidden" id="ptcard" aria-label="נקודות משפחתיות"></section>
     <div class="shirtbox" id="shirtbox">
       <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
@@ -953,6 +963,7 @@ body.night .pscol .psd b{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
       <div class="shirtcap">חולצה לבנה</div>
       <div class="shirtreason" id="shirtreason"></div>
     </div>
+    <section class="ptcard hidden" id="ptcard" aria-label="הצנצנת המשפחתית"></section>
   </div>
 
   <div class="notes">
@@ -2373,31 +2384,55 @@ function partOn(part){
   return PSC.partState(part,PTS.raw||{},nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')}).on;
 }
 let K4_SIG='';
-function kids4Tick(){ const sig=partOn('boxes')+'|'+partOn('jar'); if(sig!==K4_SIG) renderKids4(); }
+function kids4Tick(){ const sig=partOn('boxes')+'|'+partOn('jar'); if(sig!==K4_SIG){ renderKids4(); renderJarCard(); } }
 function renderKids4(){
   const box=$('kids4');
-  const showBoxes=partOn('boxes'), showJar=partOn('jar');
-  K4_SIG=showBoxes+'|'+showJar;
-  if(!PTS.show || document.body.classList.contains('shabbat') || (!showBoxes && !showJar)){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const showBoxes=partOn('boxes');
+  K4_SIG=showBoxes+'|'+partOn('jar');
+  if(!PTS.show || document.body.classList.contains('shabbat')){ box.classList.add('hidden'); box.innerHTML=''; return; }
   const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
-  const fam=showJar?goalOf(null):null;
-  if(!(showBoxes&&kids.length) && !fam){ box.classList.add('hidden'); box.innerHTML=''; return; }
-  let h='';
-  if(showBoxes && kids.length) h+=`<div class="k4grid" style="--k4n:${kids.length}">${kids.map(k4Box).join('')}</div>`;
-  else h+=`<div class="k4space" aria-hidden="true"></div>`;   /* מקום פנוי לשימוש עתידי */
-  if(fam){
-    const p=goalProgress(fam), reached=p.reached&&!fam.needs_setup, fx=goalFx({...p,reached});
-    const pct=fam.needs_setup?0:Math.min(100,Math.round(p.sum/fam.target*100));
-    h+=`<div class="k4jar${fx.glow?' glow':''}"><span class="jl">הצנצנת המשפחתית</span>`+
-      `<div class="k4bar"><i style="width:${pct}%"></i>${fx.sparks?sparksHtml():''}</div>`+
-      `<span class="jn">${Math.min(p.sum,fam.target)} / ${fam.target}</span>`+
-      `<span class="jp">${reached?'הגענו! ':''}${esc(fam.prize||'')}</span></div>`;
-  }
-  box.innerHTML=h;
+  /* מחוץ לשעות: המקום נשאר ריק — שום דבר לא זז ולא מתרחב */
+  box.innerHTML=(showBoxes && kids.length)
+    ? `<div class="k4grid" style="--k4n:${kids.length}">${kids.map(k4Box).join('')}</div>`
+    : `<div class="k4space" aria-hidden="true"></div>`;
   box.classList.remove('hidden');
 }
+/* הצנצנת המשפחתית — משבצת קטנה בפינה. מחוץ לשעות המשבצות, ילד בלי כרטיס מערכת (שהם) מופיע מתחתיה כמו פעם */
+let PT_CARD_NAMES=[];
+function renderJarCard(){
+  const box=$('ptcard');
+  if(!PTS.show || !partOn('jar')){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const fam=goalOf(null);
+  let html='', glow=false;
+  if(fam){
+    const p=goalProgress(fam), frac=Math.min(1,p.sum/fam.target);
+    const reached=p.reached&&!fam.needs_setup, fx=goalFx({...p,reached});
+    glow=fx.glow;
+    const fillTop=(124-100*frac).toFixed(1);   // גובה המילוי בצנצנת (24=מלאה, 124=ריקה)
+    html+=`<div class="pth">הצנצנת המשפחתית</div>
+      <svg class="jar" viewBox="0 0 104 128" role="img" aria-label="${p.sum} מתוך ${fam.target}">
+        <defs><clipPath id="jarclip"><path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z"/></clipPath></defs>
+        <rect x="30" y="4" width="44" height="12" rx="4" fill="#C9D3CE"/>
+        <path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z" fill="#F4F6F5"/>
+        <rect class="jarfill" x="0" y="${fillTop}" width="104" height="128" fill="#E2A13B" clip-path="url(#jarclip)"/>
+        <path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z" fill="none" stroke="#9AA8A2" stroke-width="3"/>
+      </svg>
+      <div class="ptn">${Math.min(p.sum,fam.target)} / ${fam.target}</div>
+      ${reached?`<div class="ptdone">הגענו ליעד! ${esc(fam.prize)}</div>`:`<div class="ptp">${esc(fam.prize)}</div>`}
+      ${fx.sparks?sparksHtml():''}`;
+  }
+  let extra=false;
+  if(!partOn('boxes') && PT_CARD_NAMES.length){
+    const others=PTS.kids.filter(k=>k.points_enabled!==false && !PT_CARD_NAMES.includes(k.name) && goalOf(k.id));
+    if(others.length){ html+='<div class="ptextra">'+others.map(ptKidHtml).join('')+'</div>'; extra=true; }
+  }
+  box.innerHTML=html;
+  box.classList.toggle('withx',extra);
+  box.classList.toggle('glow',glow);
+  box.classList.toggle('hidden',!html);
+}
 /* נשמר בשם הישן — render() קורא לו */
-function renderPointsCard(){ $('ptcard').classList.add('hidden'); $('ptstrip').classList.add('hidden'); renderKids4(); }
+function renderPointsCard(cardKidNames){ PT_CARD_NAMES=cardKidNames||[]; $('ptstrip').classList.add('hidden'); renderKids4(); renderJarCard(); }
 
 /* ============================================================
    מסך הנקודות המלא (16.11.2026) — מכסה את כל הלוח רק כשמפעילים:

@@ -1,0 +1,3018 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>לוח המשפחה</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FBF8F3">
+<!-- הלוח מנהל בעצמו מצב יום/לילה. "only light" אוסר על הדפדפן (WebView של ה-TV Stick)
+     להחשיך את הדף בעצמו — זה מה שגרם לרקע הסגול-כהה בקיוסק (15.10.2026) -->
+<meta name="color-scheme" content="only light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="לוח המשפחה">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<style>
+/* ============================================================
+   פונטים מאוחסנים מקומית — Rubik (Display) + Assistant (Body)
+   הועלו ל-/fonts/ בריפו על-ידי שים (ראה הוראות ההעלאה שנשלחו איתו)
+   ============================================================ */
+@font-face{font-family:'Rubik';src:url('fonts/rubik-var.woff2') format('woff2-variations');
+  font-weight:300 900;font-display:swap}
+@font-face{font-family:'Assistant';src:url('fonts/assistant-var.woff2') format('woff2-variations');
+  font-weight:200 800;font-display:swap}
+
+/* ============================================================
+   קובץ הגדרות מרכזי — "לוח שקט" (סבב עיצוב אוגוסט 2026)
+   --k = מקדם קנה מידה. נקבע אוטומטית כדי שהדף תמיד ייכנס במסך.
+   כל הגדלים ברם (rem) = יחידת גובה מסך × המקדם.
+   ============================================================ */
+:root{
+  --k:1;
+  --bg:#F2F4F2; --bg-warm:#F5F1E6;
+  --ink:#16211E; --ink-soft:#606E69; --ink-faint:#5F6D67;
+  --line:#E3E8E4; --card:#FFFFFF;
+
+  /* צבעי הילדים מגיעים מטבלת kids בסופאבייס (עמודות color/bg) —
+     המשתנים כאן משמשים כברירת מחדל בלבד אם שדה ריק */
+  --kid1:#2E6F8E; --kid1-bg:#EAF1F4;   /* איתמר — כחול */
+  --kid2:#7A5FA8; --kid2-bg:#F1EEF7;   /* עדי — סגול */
+  --kid3:#2E8B72; --kid3-bg:#EAF5F1;   /* ענבר — ירוק */
+
+  --alert:#9C6B1F; --alert-bg:#F6EFE2;
+  --break-bg:#EEF1EE;
+  --kid-ink:#1C2620;   /* טקסט על משטח בצבע הילד — הפוך במצב לילה */
+
+  --font-display:'Rubik',Arial,Helvetica,sans-serif;
+  --font-body:'Assistant',Arial,Helvetica,sans-serif;
+}
+/* ---- מצב לילה: 22:30–05:45, מוגדר קבוע כרגע (ראו הערה בהוראות) ---- */
+body.night{
+  --bg:#111A17; --bg-warm:#141E1A;
+  --ink:#E8EDEA; --ink-soft:#8DA09A; --ink-faint:#8A9691;
+  --line:#28332F; --card:#1A2420;
+  --alert:#D8A857; --alert-bg:#2A2214;
+  --break-bg:#1C2622;
+  /* --kid1/2/3 stay constant — kid color/bg come from Supabase (one value,
+     no day/night variant yet), so the per-kid table cells are deliberately
+     pinned below rather than following the --ink flip. */
+}
+body.night{--kid-ink:#E8EDEA}
+/* משטחי הילדים מגיעים מסופאבייס בגוון בהיר יחיד. במצב לילה מחליפים אותם
+   במשטח כהה שנגזר מאותו צבע ילד, כדי שכל הטקסט מעליהם יישאר קריא. */
+body.night .kidcard{background:color-mix(in srgb, var(--c) 16%, #111A17)}
+/* צבע ילד כטקסט על רקע כהה — תמיד מבהירים, אחרת הוא יורד מתחת ל-4.5:1 */
+body.night .kidname,body.night .chent .k{color:color-mix(in srgb, var(--c) 45%, #FFFFFF)}
+body.night .kidcard .mealchip{background:color-mix(in srgb, var(--c) 10%, #0C1512)}
+body.night .lesson.now{background:color-mix(in srgb, var(--c) 60%, #FFFFFF)}
+body.night .lesson.now .lsubj,body.night .lesson.now .ltime{color:#111A17}
+:root{color-scheme:only light}
+html{font-size:calc(1vh * var(--k))}
+*{margin:0;padding:0;box-sizing:border-box}
+body{height:100vh;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:var(--font-body);-webkit-user-select:none;user-select:none}
+body.kiosk *{pointer-events:none!important}
+body.kiosk{cursor:none}
+
+#app{min-height:100vh;display:flex;flex-direction:column;padding:1.8rem 2vw;gap:1.2rem}
+
+/* א. תאריך */
+.datebar{display:flex;align-items:baseline;justify-content:space-between;
+  padding-bottom:.8rem;border-bottom:2px solid var(--line);flex-shrink:0}
+.dayname{font-family:var(--font-display);font-size:4.2rem;font-weight:900;line-height:1.15}
+.datecol{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.hebdate{font-family:var(--font-display);font-size:3.8rem;font-weight:700}
+.gregdate{font-size:2rem;color:var(--ink-soft);margin-top:.2rem}
+.clock{font-size:4.2rem;font-weight:900;font-family:var(--font-display);
+  color:var(--ink-soft);direction:ltr;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* ב. מזג אוויר + חולצה */
+.toprow{display:flex;gap:.9vw;flex-shrink:0;align-items:stretch;justify-content:flex-start}
+.weather{display:flex;gap:.8vw;flex:0 0 auto}
+.wcard{background:transparent;border:1px solid var(--line);border-radius:1.4rem;
+  padding:.8rem 1.1vw;flex:0 1 15vw;min-width:9.5vw;display:flex;flex-direction:column;justify-content:center;gap:.15rem}
+.wlabel{font-size:1.4rem;font-weight:700;color:var(--ink-soft)}
+.wmain{display:flex;align-items:center;gap:.8vw}
+.wicon{font-size:2.4rem;line-height:1}
+.wtemp{font-size:2.8rem;font-weight:800;font-family:var(--font-display);font-variant-numeric:tabular-nums}
+.wrange{font-size:1.3rem;color:var(--ink-soft)}
+.wtip{font-size:1.4rem;font-weight:500;color:var(--alert);margin-top:.1rem}
+.wtip.wrain{font-weight:700}
+
+/* חולצה לבנה, מזג אוויר פעיל, ופריט "הבא" בשבת — כולם משתמשים באותה
+   שפת הדגשה אחת: גלולת דיו. אין צבע accent שני על הלוח (מלבד --alert,
+   ששמור בלעדית לאזהרת מזג אוויר קיצוני ב-.wtip). */
+.shirtbox{background:var(--card);border:.4rem solid var(--ink);border-radius:1.4rem;
+  padding:1rem 1.8vw;display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:.3rem;box-shadow:0 0 0 .25rem var(--bg), 0 .4rem 1.6rem rgba(0,0,0,.14)}
+.wcard .wtemp,.wcard .wicon{color:var(--ink-soft)}
+.wcard.wnow{background:var(--card);border-color:transparent;box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.wcard.wnow .wtemp{color:var(--ink)}
+.shirtbox.on{display:flex}
+.shirtbox.pulse{animation:shirtPulse 2s ease-in-out infinite}
+@keyframes shirtPulse{
+  0%,100%{border-color:var(--ink);box-shadow:0 0 0 .25rem var(--bg), 0 .4rem 1.6rem rgba(0,0,0,.14)}
+  50%{border-color:color-mix(in srgb, var(--ink) 45%, var(--bg));
+      box-shadow:0 0 0 .25rem var(--bg), 0 0 0 .55rem color-mix(in srgb, var(--ink) 10%, transparent), 0 .4rem 1.6rem rgba(0,0,0,.14)}
+}
+@media (prefers-reduced-motion:reduce){.shirtbox.pulse{animation:none}}
+.shirtbox svg{height:9.5rem;width:auto;filter:drop-shadow(0 .15rem .4rem rgba(0,0,0,.18))}
+.shirtcap{font-size:2rem;font-weight:900;color:var(--ink);white-space:nowrap;letter-spacing:-.01em}
+.shirtreason{font-size:1.6rem;font-weight:700;color:var(--ink-soft);opacity:.85;white-space:nowrap}
+
+/* ג+ד. הערות */
+.notes{flex-shrink:0;display:flex;flex-direction:column;gap:.5rem}
+.note{font-size:2.1rem;font-weight:500;padding:.7rem 1.2vw;background:var(--card);
+  border:1px solid var(--line);border-radius:1.4rem;box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.note.hidden{display:none}
+.note.bold{background:var(--ink);
+  color:var(--bg);font-weight:900;font-size:2.6rem}
+.note-shirt{background:var(--card);
+  color:var(--ink);font-weight:700}
+
+/* ה. מערכת שעות — כרטיס לכל ילד */
+.schedwrap{flex-shrink:0;display:flex;flex-direction:column;gap:.5rem}
+.schedhead{display:flex;align-items:baseline;gap:1vw;flex-wrap:wrap}
+.schedtitle{display:flex;align-items:baseline;gap:.6vw;line-height:1.2}
+.schedtitle .sublabel{font-family:var(--font-body);font-size:1.9rem;font-weight:700;color:var(--ink-soft)}
+.schedtitle .sysdash{color:var(--ink-faint);font-size:1.7rem}
+.schedtitle .sysday{font-family:var(--font-display);font-size:2.6rem;font-weight:900}
+.schednote{font-size:1.6rem;color:var(--ink-soft)}
+.schednote.hidden{display:none}
+/* הערת "אין חיבור" — מוצגת כשהלוח מציג נתונים אחרונים שנשמרו */
+.stalenote{font-size:1.5rem;color:var(--alert);font-weight:700}
+.stalenote.hidden{display:none}
+@media (max-aspect-ratio:1/1){ .stalenote{font-size:12px} }
+
+.kidcards{display:grid;grid-template-columns:repeat(var(--kidcols,3),1fr);gap:1vw;align-items:stretch}
+.kidcard{position:relative;border-radius:1.6rem;padding:1rem 1.6vw .9rem 1.2vw;
+  background:var(--cbg);display:flex;flex-direction:column;overflow:hidden}
+.kidcard::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;
+  width:.45rem;background:var(--c)}
+.kidhead{display:flex;align-items:baseline;gap:.6vw;margin-bottom:.4rem}
+.kidname{font-family:var(--font-display);font-size:2.6rem;font-weight:900;color:var(--c);line-height:1}
+.kidgrade{font-size:1.5rem;font-weight:600;color:var(--ink-soft)}
+.kidem{font-size:1.5rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;
+  width:2.4rem;height:2.4rem;border-radius:999px;flex:none;
+  border:1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background:color-mix(in srgb, var(--c) 12%, transparent)}
+/* שעת סיום היום — שקטה בפינת הכרטיס, לא מתחרה בשם הילד */
+.endchip{margin-inline-start:auto;display:flex;align-items:baseline;gap:.35rem;
+  font-size:1.3rem;line-height:1;white-space:nowrap}
+.endchip .el{color:var(--ink-soft);font-weight:600}
+.endchip .ev{font-family:var(--font-display);font-weight:700;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;direction:ltr}
+.endchip.early .el,.endchip.early .ev{color:var(--alert)}
+.lessons{display:flex;flex-direction:column;margin-bottom:.8rem}
+.lesson{display:flex;align-items:center;gap:.7vw;padding:.55rem 0;
+  border-bottom:1px solid color-mix(in srgb, var(--c) 22%, transparent);color:var(--kid-ink)}
+.lesson:last-child{border-bottom:0}
+.ltime{font-family:var(--font-display);font-size:1.6rem;font-weight:500;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;min-width:4.2rem;direction:ltr;text-align:start}
+.lsubj{font-size:2.1rem;font-weight:600}
+.lem{font-size:1.6rem;opacity:.55}
+.lesson.now{background:var(--ink);border-radius:999px;padding:.55rem 1.1vw;
+  margin:.15rem -1.1vw;border-bottom:0}
+.lesson.now .lsubj,.lesson.now .ltime{color:var(--bg)}
+.lesson.now .lem{opacity:.9}
+.lesson.past .lsubj,.lesson.past .ltime{color:var(--ink-soft);font-weight:500}
+.lesson.first{border:1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius:999px;padding:.5rem 1.1vw;margin:.15rem -1.1vw}
+.ltag{font-size:1.3rem;color:var(--ink-soft);font-weight:600;margin-inline-start:auto}
+.brk-a{display:flex;justify-content:center;align-items:center;padding:.35rem 0;
+  border-top:1px solid color-mix(in srgb, var(--c) 20%, transparent);
+  border-bottom:1px solid color-mix(in srgb, var(--c) 20%, transparent)}
+.brk-a span{font-size:1.15rem;font-weight:600;color:var(--ink-faint);
+  letter-spacing:.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nosched{font-size:1.7rem;color:var(--ink-faint);padding:.6rem 0}
+.mealchip{margin-top:auto;display:flex;align-items:baseline;gap:.7vw;background:var(--card);
+  border-radius:1.1rem;padding:.55rem 1vw}
+.mealchip .ml{font-size:1.35rem;color:var(--ink-soft);font-weight:700;white-space:nowrap}
+.mealchip .mv{font-size:1.8rem;font-weight:600;color:var(--kid-ink)}
+.mealchip .fx{display:block;font-size:1.35rem;color:var(--ink-soft);font-weight:500}
+/* כיסוי מלא — תופס את מקום מערכת השעות, מתחת להערת ההורים. */
+#fullcover{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2vh;min-height:0;padding:2vh 2vw}
+#fullcover.hidden{display:none}
+#fullcover img{max-width:100%;max-height:62vh;object-fit:contain;
+  border-radius:1.6rem;box-shadow:0 .6rem 2rem rgba(0,0,0,.14)}
+/* טקסט הכיסוי — שלוש צורות: הודעה חופשית, כותרת+רשימה, או כיתוב לתמונה.
+   השורה הראשונה נחשבת כותרת רק אם היא נגמרת בנקודתיים ויש שורות אחריה. */
+.covertext{font-family:var(--font-display);color:var(--ink);text-align:center;
+  max-width:90%;display:flex;flex-direction:column;align-items:center;gap:1.2rem}
+.covertext:empty{display:none}
+.covermsg{font-size:3.4rem;font-weight:900;line-height:1.25;white-space:pre-line}
+.covertitle{font-size:3.4rem;font-weight:900;line-height:1.2}
+.coverlist{list-style:none;margin:0;padding:0;text-align:right;display:inline-block}
+.coverlist li{font-size:2.3rem;font-weight:700;line-height:1.7;
+  padding-inline-start:1.7rem;position:relative}
+.coverlist li::before{content:"\2022";position:absolute;inset-inline-start:0;
+  color:var(--ink-soft);font-weight:900}
+/* רשימה ארוכה מתכווצת מעט כדי להישאר קריאה בלי להיחתך */
+.covertext.long .covertitle{font-size:2.7rem}
+.covertext.long .coverlist li{font-size:1.9rem;line-height:1.55}
+/* כשיש גם תמונה וגם טקסט — הטקסט משמש ככיתוב ולא מתחרה בתמונה */
+#fullcover.withimg .covermsg,#fullcover.withimg .covertitle{font-size:2.4rem}
+#fullcover.withimg .coverlist li{font-size:1.8rem}
+#fullcover.withimg img{max-height:46vh}
+@media (max-width:860px){
+  #fullcover img{max-height:44vh}
+  .covermsg,.covertitle{font-size:26px}
+  .coverlist li{font-size:19px;padding-inline-start:14px}
+  .covertext.long .covertitle{font-size:22px}
+  .covertext.long .coverlist li{font-size:17px}
+  #fullcover.withimg .covermsg,#fullcover.withimg .covertitle{font-size:21px}
+  #fullcover.withimg .coverlist li{font-size:16px}
+}
+.dayoff{font-family:var(--font-display);font-size:3.4rem;font-weight:900;color:var(--ink);
+  text-align:center;padding:2rem 0;background:var(--card);border-radius:1.6rem}
+.dayoff.small{font-size:2.2rem;padding:1.2rem 0;background:transparent}
+
+/* ו. חוגים */
+.chugim{flex-shrink:0;background:var(--card);border:1px solid var(--line);
+  border-radius:1.4rem;padding:.8rem 1.2vw;box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.chugim.hidden{display:none}
+.chtitle{font-size:1.9rem;font-weight:700;margin-bottom:.5rem;color:var(--ink-soft)}
+/* לוח חוגים שבועי — עמודה לכל יום */
+table.chweek{width:100%;border-collapse:collapse;table-layout:fixed}
+table.chweek th{font-size:1.5rem;font-weight:700;color:var(--ink-soft);
+  padding:.35rem .3vw;text-align:center;border-bottom:1px solid var(--line)}
+table.chweek th span{display:inline-block;padding:.2rem .9vw;border-radius:999px}
+table.chweek td{padding:.4rem .3vw;vertical-align:top;text-align:center}
+/* קווי הפרדה בין הימים */
+table.chweek th+th,table.chweek td+td{border-inline-start:1px solid color-mix(in srgb, var(--line) 60%, transparent)}
+/* היום הנוכחי — מחצות עד חצות */
+table.chweek th.chnow{background:transparent}
+table.chweek th.chnow span{background:var(--ink);color:var(--bg)}
+table.chweek td.chnow{background:var(--card);border-radius:0 0 1.1rem 1.1rem}
+.chent{font-size:1.65rem;line-height:1.25;margin-bottom:.4rem}
+.chent .t{font-weight:900;direction:ltr;display:inline-block;margin-inline-end:.3rem}
+.chent .k{font-weight:900;color:var(--c,var(--ink))}
+.chent .a{color:var(--ink-soft)}
+.chent .loc{color:var(--ink-faint);font-size:.9em;margin-inline-start:.2em}
+.chempty{font-size:1.4rem;color:var(--ink-faint)}
+
+.datetext{display:contents}
+
+/* ז. רצועת תחזית — אתמול + היום + 3 ימים (הוחלפה בה התמונה המשפחתית, 10.11.2026)
+   עמודות ב-grid; הקווים ב-SVG נמתח (viewBox 1000×100), הנקודות והמספרים
+   ב-HTML עם left באחוזים — כך שום עיגול/טקסט לא נמתח בשום רוחב מסך. */
+:root{--wx-hot:#B4561C;--wx-cold:#2F5F96;--wx-chip-up:#B4561C;--wx-chip-down:#2F5F96;--wx-chip-big:#9C3D0C}
+body.night{--wx-hot:#E59A62;--wx-cold:#8FB4E0}
+.fc{flex:1 1 auto;min-width:0;background:color-mix(in srgb,var(--card) 40%,var(--bg));
+  border:1px solid var(--line);border-radius:1.6rem;padding:.8rem .9vw;
+  display:flex;flex-direction:column;gap:.35rem}
+.fc.hidden{display:none}
+.fchead{display:flex;justify-content:space-between;align-items:center;gap:1vw;padding:0 .5vw}
+.fcsum{display:flex;align-items:center;gap:.7vw;flex-wrap:wrap;min-width:0}
+.fcsum .s1{font-family:var(--font-display);font-size:2.2rem;font-weight:800;white-space:nowrap}
+.fcsum .s2{font-size:1.8rem;color:var(--ink-soft);font-weight:600;white-space:nowrap}
+.fcsum .s3{display:none}
+.fcleg{display:flex;gap:1vw;font-size:1.4rem;color:var(--ink-soft);font-weight:600;white-space:nowrap}
+.fcleg i{display:inline-block;width:2rem;height:.3rem;border-radius:2px;margin-inline-end:.4rem;vertical-align:middle}
+.fcbody{position:relative}
+.fcgrid{display:grid;grid-template-columns:repeat(var(--fcn,5),minmax(0,1fr))}
+.fcbg{position:absolute;inset:0}
+.fcbg>div.past{background:repeating-linear-gradient(135deg,transparent 0 .9rem,color-mix(in srgb,var(--ink) 3%,transparent) .9rem 1.8rem);border-radius:1.2rem}
+.fcbg>div.focus{background:var(--card);border-radius:1.2rem;box-shadow:0 1px 4px rgba(22,33,30,.08)}
+.fcday{position:relative;display:flex;flex-direction:column;align-items:center;gap:.2rem;padding-top:.5rem}
+.fcday.past{opacity:.55}
+.fcday .dl{font-family:var(--font-display);font-size:2rem;font-weight:800;line-height:1.15;white-space:nowrap}
+.fcday.focus .dl{background:var(--ink);color:var(--bg);padding:0 1vw;border-radius:999px}
+.fcday .dd{font-size:1.3rem;color:var(--ink-soft);font-weight:600;font-variant-numeric:tabular-nums}
+.fcday .ic{font-size:2.6rem;line-height:1.1}
+.fcchart{position:relative;height:14.5rem}
+.fcchart svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.fcchart path{fill:none;stroke-width:4;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.fcchart path.dash{stroke-dasharray:2 9;opacity:.6}
+.fcpt{position:absolute;transform:translate(50%,-50%);width:1.3rem;height:1.3rem;border-radius:50%;
+  border:.25rem solid var(--card);box-sizing:content-box}
+.fcpt.big{width:2rem;height:2rem}
+.fcpt.past,.fclbl.past{opacity:.55}
+.fclbl{position:absolute;transform:translate(50%,calc(-100% - .7rem));font-family:var(--font-display);font-weight:800;
+  font-size:2rem;line-height:1;white-space:nowrap;direction:ltr}
+.fclbl.lo{font-size:1.7rem;transform:translate(50%,.8rem)}
+.fclbl.big{font-size:4.6rem;font-weight:900}
+.fclbl.lo.big{font-size:3.4rem}
+.fcrow{position:relative;display:grid;grid-template-columns:repeat(var(--fcn,5),minmax(0,1fr));
+  justify-items:center;align-items:center;padding:.25rem 0}
+.wxchip{display:inline-flex;align-items:center;gap:.35rem;font-size:1.8rem;font-weight:900;line-height:1.2;
+  padding:.25rem 1.1rem;border-radius:999px;white-space:nowrap;color:#FFFFFF}
+.wxchip svg{width:2rem;height:2rem}
+.wxchip.up{background:var(--wx-chip-up)}
+.wxchip.down{background:var(--wx-chip-down)}
+.wxchip.big{background:var(--wx-chip-big);font-size:2rem;box-shadow:0 0 0 .35rem color-mix(in srgb,var(--wx-chip-big) 22%,transparent)}
+.wxchip.same{background:var(--card);color:var(--ink-soft);border:2px solid var(--line)}
+.wxchip .n{direction:ltr;font-variant-numeric:tabular-nums}
+.fcbase{font-size:1.3rem;color:var(--ink-soft);font-weight:600;opacity:.75}
+.wear{display:inline-flex;align-items:center;gap:.4rem;font-size:1.55rem;font-weight:700;color:var(--alert);
+  white-space:nowrap;line-height:1.2;padding:.15rem .7rem;border-radius:999px}
+.wear .wi{font-size:1.9rem}
+.wear b{font-weight:900}
+.wear.severe{background:var(--alert-bg);font-weight:900}
+
+/* ח. נקודות — צנצנת משפחתית בשורה העליונה + פס בכל כרטיס ילד */
+.ptcard{flex:0 0 auto;width:15vw;background:var(--card);border-radius:1.6rem;padding:1rem .9vw;
+  display:flex;flex-direction:column;align-items:center;gap:.35rem;box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.ptcard.hidden{display:none}
+.ptcard .pth{font-family:var(--font-display);font-size:1.8rem;font-weight:800;text-align:center}
+.ptcard svg.jar{height:11rem;width:auto}
+.ptcard .ptn{font-family:var(--font-display);font-size:2.8rem;font-weight:900;direction:ltr;font-variant-numeric:tabular-nums}
+.ptcard .ptp{font-size:1.5rem;color:var(--ink-soft);font-weight:700;text-align:center;line-height:1.25}
+.ptcard .ptdone{font-size:1.5rem;font-weight:900;color:var(--alert);text-align:center}
+.ptextra{width:100%;border-top:1px solid var(--line);margin-top:.4rem;padding-top:.7rem;display:flex;flex-direction:column;gap:.9rem}
+/* ילד בתוך כרטיס הצנצנת / ברצועת הנקודות — שם גדול, ערך, פס או כוכבים, ושורת "עוד X" */
+.ptkid{display:flex;flex-direction:column;gap:.35rem;width:100%}
+.ptkid .pkh{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw}
+.ptkid .xn{font-family:var(--font-display);font-size:2.1rem;font-weight:900;color:var(--c);line-height:1.1}
+.ptkid .xv{font-family:var(--font-display);font-size:1.8rem;font-weight:800;direction:ltr;font-variant-numeric:tabular-nums}
+.ptkid .xs{font-size:1.5rem;color:var(--ink-soft);font-weight:700;line-height:1.25}
+.ptkid .xs.done{color:#9C6B1F;font-weight:900}
+.ptkid .stars{justify-content:flex-start}
+.ptkid .stars svg{width:2.1rem;height:2.1rem}
+/* רצועת נקודות — כשאין כרטיסי ילדים (יום חופש / הודעה על כל המסך) */
+.ptstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(18vw,1fr));gap:1vw;flex-shrink:0}
+.ptstrip.hidden{display:none}
+.ptstrip .ptkid{background:var(--card);border-radius:1.6rem;padding:1.2rem 1.4vw;border-top:.5rem solid var(--c);
+  box-shadow:0 1px 3px rgba(22,33,30,.06)}
+.ptstrip .ptkid .xn{font-size:2.6rem}
+.stars{display:flex;flex-wrap:wrap;justify-content:center;gap:.15rem;direction:rtl}
+.stars svg{width:1.6rem;height:1.6rem}
+.kpts{margin-top:.6rem;display:flex;flex-direction:column;gap:.35rem}
+.kpts .kpt{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw;font-size:1.5rem;font-weight:700;color:var(--ink-soft)}
+.kpts .kpt b{color:var(--kid-ink);font-variant-numeric:tabular-nums}
+.kpts .kpt .togo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kbar{height:1.3rem;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,var(--card));overflow:hidden}
+.kbar>span{display:block;height:100%;border-radius:999px;background:var(--c)}
+.kidcard.reached{box-shadow:0 0 0 .4rem #F3D9A8,0 .6rem 2rem rgba(201,135,31,.25)}
+.kidcard.reached .kbar{background:#F6EEDD}
+.kidcard.reached .kbar>span{background:repeating-linear-gradient(135deg,#E2A13B 0 1.2rem,#EDB85A 1.2rem 2.4rem)}
+.kidcard.reached .kpt .togo{color:#9C6B1F;font-weight:900}
+.goaltag{display:inline-flex;align-items:center;gap:.4rem;background:#E2A13B;color:#16211E;border-radius:999px;
+  padding:.2rem 1rem .2rem .6rem;font-family:var(--font-display);font-size:1.5rem;font-weight:900;white-space:nowrap}
+.goaltag svg{width:2rem;height:2rem}
+body.shabbat .ptcard,body.shabbat .kpts,body.shabbat .ptstrip,body.shabbat #gotoPoints{display:none!important}
+
+/* חגיגה — מסך מלא פעם אחת כשילד מגיע ליעד */
+#celebrate{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+  background:rgba(22,33,30,.55)}
+#celebrate.hidden{display:none}
+#celebrate .cbox{background:#FFFFFF;color:#16211E;border-radius:3rem;padding:4rem 4.4vw 3.4rem;
+  display:flex;flex-direction:column;align-items:center;gap:1.2rem;border-top:1rem solid var(--c);
+  box-shadow:0 2rem 6rem rgba(0,0,0,.25);max-width:60vw;text-align:center}
+#celebrate .cbig{font-family:var(--font-display);font-size:6rem;font-weight:900;color:var(--c);line-height:1.05}
+#celebrate .cnum{font-family:var(--font-display);font-size:2.8rem;font-weight:800;color:#606E69;direction:ltr}
+#celebrate .cprize{display:flex;align-items:center;gap:1.2rem;background:color-mix(in srgb,var(--c) 12%,#FFFFFF);
+  border-radius:2rem;padding:1.4rem 2.6vw}
+#celebrate .cprize span{font-size:2.1rem;color:#606E69;font-weight:700}
+#celebrate .cprize b{font-family:var(--font-display);font-size:3.2rem;font-weight:900}
+#celebrate .cprize svg{width:4.4rem;height:4.4rem}
+#celebrate .csub{font-size:1.7rem;color:#606E69;font-weight:600}
+
+/* פס "אין אינטרנט" — כששעון המכשיר לא אמין, המסך האחרון מוקפא */
+#offbar{display:none;align-items:center;justify-content:center;gap:1rem;background:var(--alert-bg);color:var(--alert);
+  border:1px solid color-mix(in srgb,var(--alert) 35%,transparent);border-radius:999px;
+  min-height:4rem;font-size:1.8rem;font-weight:800;flex-shrink:0;padding:0 2vw;text-align:center}
+#offbar.on{display:flex}
+#offbar svg{width:2.2rem;height:2.2rem;flex:none}
+.lastsync{flex-shrink:0;text-align:center;font-size:1.15rem;color:var(--ink-faint);
+  opacity:.65;letter-spacing:.02em;margin-top:.15rem;line-height:1.2}
+
+
+/* ============================================================
+   קוד גישה (15.11.2026): מסך נעילה למכשיר לא מאושר + פס זיווג בשלב א'
+   גדלים ב-vmin — לא תלויים בהתאמת המסך (--k)
+   ============================================================ */
+#pairbar{display:none;align-items:center;justify-content:center;gap:1.2rem;background:var(--card);color:var(--ink);
+  border:1px solid var(--line);border-radius:999px;min-height:4rem;font-size:1.7rem;font-weight:700;
+  flex-shrink:0;padding:0 2vw;text-align:center}
+#pairbar.on{display:flex}
+#pairbar b{font-family:var(--font-display);font-weight:800;letter-spacing:.25em;direction:ltr;unicode-bidi:isolate}
+#lockscreen{position:fixed;inset:0;z-index:80;display:none;flex-direction:column;background:var(--bg);color:var(--ink);
+  padding:5vmin 6vmin;font-family:var(--font-body)}
+#lockscreen.on{display:flex}
+#lockscreen .lk-top,#lockscreen .lk-foot{display:flex;justify-content:space-between;align-items:center;gap:3vmin}
+#lockscreen .lk-top{font-family:var(--font-display);font-size:3.6vmin}
+#lockscreen .lk-top b{font-weight:700}
+#lockscreen .lk-top span{color:var(--ink-soft)}
+#lockscreen .lk-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.4vmin;text-align:center}
+#lockscreen .lk-ico{width:11vmin;height:11vmin;border-radius:50%;background:var(--card);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center}
+#lockscreen .lk-ico svg{width:5.5vmin;height:5.5vmin}
+#lockscreen h1{font-family:var(--font-display);font-weight:700;font-size:6vmin;line-height:1.2}
+#lockscreen .lk-code{background:var(--card);border:1px solid var(--line);border-radius:3.5vmin;padding:3vmin 8vmin;
+  display:flex;flex-direction:column;align-items:center;gap:.8vmin}
+#lockscreen .lk-code.hidden{display:none}
+#lockscreen .lk-code small{font-size:3vmin;color:var(--ink-soft)}
+#lockscreen .lk-code b{font-family:var(--font-display);font-weight:800;font-size:15vmin;line-height:1;
+  letter-spacing:3vmin;padding-left:3vmin;direction:ltr;unicode-bidi:isolate}
+#lockscreen p{font-size:3.5vmin;line-height:1.5;max-width:110vmin}
+#lockscreen .lk-foot{font-size:2.6vmin;color:var(--ink-soft)}
+@media (max-width:700px){
+  #pairbar{font-size:13px;min-height:32px;gap:6px}
+  #lockscreen{padding:24px 16px}
+  #lockscreen .lk-top{font-size:17px}
+  #lockscreen h1{font-size:24px}
+  #lockscreen .lk-code b{font-size:64px;letter-spacing:12px;padding-left:12px}
+  #lockscreen .lk-code small,#lockscreen .lk-foot{font-size:14px}
+  #lockscreen p{font-size:16px}
+  #lockscreen .lk-foot{flex-direction:column;gap:4px}
+}
+
+
+/* ============================================================
+   שבת וחג — סבב עיצוב אוגוסט 2026 ("מרווה")
+   כותרת אופקית למעלה, לוח התפילות במרכז, איור שקט בתחתית.
+   הגוון נגזר כאן ולא ב-:root — מסך שבת הוא הסביבה היחידה שמשתמשת בו.
+   ============================================================ */
+body.shabbat{
+  --bg:#EEF1EC; --bg-warm:#EEF1EC; --card:#FFFFFF;
+  --ink:#18211C; --ink-soft:#66716A; --ink-faint:#949E96;
+  --line:#E0E5DF;
+  background:var(--bg);
+}
+body.shabbat.night{
+  --bg:#141B18; --bg-warm:#141B18; --card:#1C2420;
+  --ink:#E9EDE9; --ink-soft:#93A099; --ink-faint:#6E7A74;
+  --line:#293330;
+}
+
+/* --- הכותרת: פרשה מתחת לתאריך, זמנים ומזג אוויר בקצה הנגדי ---
+   ביום חול .datetext הוא display:contents, כך שהיום והתאריך מתפרסים
+   לשני קצות הסרגל. במצב שבת הם נאספים לעמודה אחת בצד ההתחלה,
+   כדי לפנות את הקצה הנגדי לזמנים ולמזג האוויר. */
+body.shabbat .datetext{display:flex;flex-direction:column;align-items:flex-start;
+  gap:.15rem;min-width:0}
+body.shabbat .datecol{flex-direction:row;align-items:baseline;gap:.5vw}
+body.shabbat .hebdate{font-size:2rem;font-weight:600;color:var(--ink-soft)}
+body.shabbat .hebdate::after{content:'·';color:var(--ink-faint);margin-inline-start:.5vw}
+body.shabbat .gregdate{font-size:2rem;margin-top:0}
+.parasha{display:none;font-size:2.1rem;font-weight:600;color:var(--ink-soft);margin-top:.15rem}
+body.shabbat .parasha{display:block}
+.sbend{display:none;flex-direction:column;align-items:flex-end;gap:.75rem;flex:0 0 auto}
+body.shabbat .sbend{display:flex}
+body.shabbat .datebar{border-bottom:0;padding-bottom:0;align-items:flex-start}
+
+.zmanim{display:flex;gap:1.1vw}
+.zmanim.hidden{display:none}
+.zc{background:var(--card);border-radius:1.4rem;padding:.75rem 1.5vw;text-align:center;
+  box-shadow:0 1px 3px rgba(22,33,30,.07)}
+.zc .zlbl{font-size:1.4rem;color:var(--ink-soft);font-weight:600}
+.zc .zval{font-family:var(--font-display);font-weight:800;font-size:4rem;line-height:1.1;
+  direction:ltr;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* מזג אוויר על מסך שבת — שורה אחת, בלי כרטיס ובלי צבע.
+   אין המלצות לבוש: הן שייכות ליום לימודים. */
+.sbwx{display:flex;align-items:baseline;gap:1.4vw;font-size:1.6rem;color:var(--ink-soft)}
+.sbwx.hidden{display:none}
+.sbwx .wxi{display:flex;align-items:baseline;gap:.45vw}
+.sbwx .wxe{font-size:1.9rem;line-height:1}
+.sbwx .wxd{font-weight:600}
+.sbwx .wxt{font-family:var(--font-display);font-weight:700;color:var(--ink);
+  direction:ltr;font-variant-numeric:tabular-nums}
+.sbwx .wxsep{color:var(--ink-faint)}
+.sbwx .wxwarn{color:var(--alert);font-weight:700}
+
+/* --- לוח התפילות --- */
+#holiday{display:none;flex:1;flex-direction:column;min-height:0}
+#holiday.on{display:flex}
+
+.prayers{display:grid;gap:0 4.2vw;flex:0 0 auto;margin-top:1.4rem}
+.prayers.hidden{display:none}
+.prayers[data-cols="1"]{grid-template-columns:minmax(0,44vw);justify-content:center}
+.prayers[data-cols="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.prayers[data-cols="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+.prayers[data-cols="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pday{display:flex;flex-direction:column;min-width:0}
+.pdayhead{display:flex;align-items:baseline;justify-content:space-between;gap:1vw;
+  margin-bottom:.6rem}
+.pdayhead .pdh{font-family:var(--font-display);font-weight:800;font-size:2.6rem;line-height:1.15}
+.ptitle{font-family:var(--font-display);font-weight:800;font-size:2.6rem;margin-bottom:.6rem}
+
+.prow{display:flex;align-items:center;gap:1.5vw;padding:.85rem 0;
+  border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:0}
+.prow .ptime{font-family:var(--font-display);font-weight:700;font-size:2.4rem;
+  min-width:8.4rem;direction:ltr;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.prow .pname{font-size:2.3rem;font-weight:600;flex:1;min-width:0}
+.prow .ploc{display:block;font-size:1.4rem;color:var(--ink-soft);font-weight:500;
+  margin-top:.1em}
+/* גלולת דיו אחת = "זה הבא" — אותה שפה בדיוק כמו בלוח היום-יום */
+.prow.pnext{background:var(--ink);color:var(--bg);border-radius:999px;
+  padding:.85rem 1.8vw;margin:0 -1.8vw;border-bottom:0}
+.prow.pnext .ploc{color:var(--bg);opacity:.72}
+.prow.ppast{opacity:.4}
+
+/* --- איור קווי + פוטר --- */
+.sbart{flex:1;min-height:0;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:.6rem}
+.sbart svg{width:48%;max-height:100%;stroke:var(--ink);fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round;opacity:.14}
+body.shabbat.night .sbart svg{opacity:.2}
+.sbfoot{flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;
+  gap:2vw;font-size:1.6rem;color:var(--ink-soft)}
+.sbfoot .greet{font-weight:700;color:var(--ink)}
+.cnote{font-size:1.6rem;color:var(--ink-soft);text-align:center;flex:1;min-width:0}
+.cnote.hidden{display:none}
+.pdaynote{font-size:1.35rem;color:var(--ink-soft);margin-top:.6rem;
+  padding-top:.6rem;border-top:1px dashed var(--line);line-height:1.35}
+
+#err{position:fixed;bottom:0;inset-inline:0;background:#8B2020;color:#fff;
+  font-size:1.8rem;padding:.8rem 2vw;display:none;z-index:50;text-align:center}
+#err.on{display:block}
+
+/* כפתור מעבר לבקרה — מופיע רק בטלפון, לעולם לא על הצג בבית */
+#gotoControl{display:none;position:fixed;bottom:16px;inset-inline-end:16px;
+  background:var(--ink);color:var(--bg);border:none;border-radius:30px;
+  padding:13px 22px;font-size:15px;font-weight:700;font-family:var(--font-body);
+  box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:60;cursor:pointer;
+  text-decoration:none}
+/* עיגול הנקודות — בצד השני מלחצן "היום", אותה שפה (כהה ביום, בהיר בלילה) */
+#gotoPoints{display:none;position:fixed;bottom:12px;inset-inline-start:16px;width:54px;height:54px;
+  border-radius:50%;background:var(--ink);align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:60;text-decoration:none}
+#gotoPoints svg{width:34px;height:34px}
+#gotoPoints.hidden{display:none!important}
+
+/* טלפון / מסך צר */
+@media (max-aspect-ratio:1/1){
+  html{font-size:1vh}
+  body{overflow:auto;height:auto}
+  body.kiosk{cursor:auto}
+  body.kiosk #gotoControl,body.kiosk #gotoPoints,body.kiosk #gotoPoints *,
+  body.kiosk #celebrate,body.kiosk #celebrate *{pointer-events:auto!important}
+  #app{padding:14px 4vw;gap:12px;min-height:auto;padding-bottom:80px}
+
+  .datebar{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .datetext{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+  .dayname{font-size:26px}
+  .hebdate{font-size:22px}
+  .gregdate{font-size:14px}
+
+  .toprow{flex-direction:column;gap:10px}
+  /* תחזית בטלפון: עמודות צרות — אייקון בגד בלבד; המלצת היום במילים עוברת לשורת הסיכום */
+  .fc{padding:10px 8px;border-radius:16px}
+  .fchead{flex-direction:column;align-items:flex-start;gap:4px}
+  .fcsum .s1{font-size:17px}.fcsum .s2{font-size:13px}
+  .fcsum .s3{display:inline;font-size:13px;font-weight:800;color:var(--ink)}
+  .fcleg{display:none}
+  .fcday .dl{font-size:12px;white-space:normal;text-align:center;line-height:1.15;max-width:100%}.fcday .dd{font-size:10px}.fcday .ic{font-size:20px}
+  .fcchart{height:100px}
+  .fclbl{font-size:15px}.fclbl.lo{font-size:13px}.fclbl.big{font-size:17px}
+  .fcpt{width:9px;height:9px;border-width:2px}.fcpt.big{width:12px;height:12px}
+  .wxchip{font-size:12px;padding:2px 6px;gap:1px}.wxchip svg{width:12px;height:12px}
+  .wxchip.big{font-size:12px}.wxchip .w{display:none}
+  .fcbase{font-size:10px}
+  .wear{font-size:11px;padding:0;flex-direction:column;gap:0}.wear .wt{display:none}.wear .wi{font-size:18px}
+  .ptcard{width:auto;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:10px;padding:12px}
+  .ptcard svg.jar{height:70px}
+  .ptcard .pth{font-size:15px;width:100%}.ptcard .ptn{font-size:22px}.ptcard .ptp{font-size:13px}
+  .ptextra{width:100%;margin:0;padding-top:8px}
+  .ptkid .xn{font-size:16px}.ptkid .xv{font-size:14px}.ptkid .xs{font-size:12px}.ptkid .stars svg{width:16px;height:16px}
+  .ptstrip{grid-template-columns:1fr 1fr;gap:10px}.ptstrip .ptkid{padding:10px 12px;border-radius:14px}.ptstrip .ptkid .xn{font-size:17px}
+  .kpts .kpt{font-size:12px}.kbar{height:8px}
+  .goaltag{font-size:12px}
+  #celebrate .cbox{max-width:90vw;padding:24px 18px}
+  #celebrate .cbig{font-size:30px}#celebrate .cnum{font-size:18px}
+  #celebrate .cprize b{font-size:22px}#celebrate .cprize span{font-size:14px}
+  #offbar{font-size:12px;min-height:30px}
+  .kidcards{grid-template-columns:1fr;gap:10px}
+  .kidname{font-size:20px}.kidgrade{font-size:12px}
+  .lsubj{font-size:16px}.ltime{font-size:13px;min-width:44px}
+  .mealchip .mv{font-size:14px}.mealchip .ml{font-size:11px}
+  .schedtitle .sysday{font-size:19px}.schedtitle .sublabel{font-size:14px}
+  .schednote{font-size:12px}
+  .wcard{padding:12px 14px}
+  .wlabel{font-size:13px}.wicon{font-size:30px}.wtemp{font-size:28px}
+  .wrange{font-size:13px}.wtip{font-size:14px}
+  .shirtbox{padding:14px;border-width:4px;box-shadow:0 0 0 3px var(--bg)}
+  .shirtbox svg{height:70px}
+  .shirtcap{font-size:18px}.shirtreason{font-size:15px}
+
+  .note{font-size:15px;padding:10px 12px}
+
+
+  .chtitle{font-size:15px}
+  table.chtab th{font-size:12px}
+  table.chtab td{font-size:14px;padding:7px 3px}
+
+  .lastsync{font-size:9px}
+
+  .parasha{font-size:15px}
+  body.shabbat .hebdate{font-size:15px}
+  body.shabbat .gregdate{font-size:15px}
+  body.shabbat .datebar{flex-direction:column;align-items:flex-start;gap:10px}
+  .sbend{align-items:flex-start;gap:8px}
+  .zmanim{gap:8px}
+  .zc{padding:8px 12px;border-radius:12px}
+  .zc .zlbl{font-size:11px}.zc .zval{font-size:24px}
+  .sbwx{font-size:13px;gap:12px}.sbwx .wxe{font-size:15px}
+  .prayers{gap:0 14px;margin-top:12px}
+  .prayers[data-cols="1"],.prayers[data-cols="2"],
+  .prayers[data-cols="3"],.prayers[data-cols="4"]{grid-template-columns:1fr}
+  /* בעמודה אחת הימים נערמים זה מתחת לזה — צריך אוויר ביניהם */
+  .pday+.pday{margin-top:14px}
+  .pdayhead .pdh,.ptitle{font-size:17px}
+  .prow{padding:8px 0;gap:10px}
+  .prow .ptime{font-size:16px;min-width:52px}
+  .prow .pname{font-size:16px}.prow .ploc{font-size:12px}
+  .prow.pnext{padding:8px 12px;margin:0 -12px}
+  .sbart svg{width:70%}
+  .sbfoot{font-size:12px}
+  .cnote{font-size:12px}
+  .pdaynote{font-size:11px;margin-top:6px;padding-top:6px}
+  #gotoControl{display:block}
+  #gotoPoints{display:flex}
+}
+
+/* ---- שורת מזג אוויר קומפקטית + קצר/ארוך בולט (13.11.2026, מוקאפ שאושר) ----
+   מסך רחב בלבד: בלי שורת סיכום/מקרא ובלי שורת חיצים לכל יום — התג של
+   היום המודגש יושב בפינת העמודה שלו. בטלפון (max-aspect-ratio:1/1) נשאר כמו קודם. */
+@media (min-aspect-ratio:1/1){
+  .fc{padding:.5rem .7vw;gap:0}
+  .fchead,#fcdelta{display:none}
+  .fcbg>div.focus{background:color-mix(in srgb,var(--wx-cold) 9%,var(--card));
+    border:.3rem solid var(--wx-cold);box-shadow:none}
+  .fcday{flex-direction:row;justify-content:center;gap:.5vw;padding-top:.6rem;min-height:3.4rem}
+  .fcday .dl{font-size:1.9rem}
+  .fcday .dd{display:none}
+  .fcday .ic{font-size:1.9rem;line-height:1}
+  .fcday.focus{justify-content:space-between;padding:.7rem .8vw 0}
+  .fcday.focus .dl{font-size:1.8rem}
+  .fcday.focus .ic{display:none}
+  .fdelta{font-size:1.6rem;padding:.15rem .9rem}
+  .fdelta svg{width:1.7rem;height:1.7rem}
+  .fdelta.big{font-size:1.6rem}
+  #fcwear{padding:.2rem 0 .7rem}
+}
+.fdelta{display:none}
+@media (min-aspect-ratio:1/1){.fdelta{display:inline-flex}}
+.wear.sl{font-family:var(--font-display);font-weight:800;font-size:2rem;padding:.15rem 1.1rem;border-radius:1rem}
+.wear.sl .wi{font-size:1.9rem}
+.wear.sl.short{background:#FFE9C7;color:#7A4300}
+.wear.sl.long{background:#D6E6FA;color:#0C447C}
+.wear.sl.big{font-size:3.6rem;font-weight:900;padding:.1rem 2rem;border-radius:1.3rem;color:#FFFFFF}
+.wear.sl.big .wi{font-size:3.2rem}
+.wear.sl.big.long{background:#1F5FA8}
+.wear.sl.big.short{background:#B4561C}
+.wear.sl .wr{font-size:.85em}
+.wear.sl.severe{box-shadow:0 0 0 .3rem var(--alert)}
+
+/* ---- טיפות גשם ביום המודגש (15.11.2026) — מאחורי המספרים ---- */
+.fcbg>div.focus.rainy{position:relative;overflow:hidden;
+  background:color-mix(in srgb,#4A6E96 28%,var(--card))}
+.drops{position:absolute;inset:0;pointer-events:none}
+.drops i{position:absolute;top:-3.5rem;width:1.9rem;height:2.6rem;opacity:.85;
+  animation-name:rainfall;animation-timing-function:linear;animation-iteration-count:infinite}
+.drops svg{width:100%;height:100%;display:block}
+#fcchart,#fcdays,#fcwear{position:relative;z-index:1}
+.fcwrap-rain .fclbl.big{text-shadow:0 0 .5rem #D3DDE8,0 0 .5rem #D3DDE8,0 0 1rem #D3DDE8}
+@keyframes rainfall{from{transform:translateY(0)}to{transform:translateY(30rem)}}
+@media (prefers-reduced-motion:reduce){.drops i{animation:none;top:auto}}
+/* ---- צנצנת קטנה יותר (13.11.2026) ---- */
+@media (min-aspect-ratio:1/1){
+  .ptcard{width:10.5vw;padding:.7rem .6vw;gap:.2rem}
+  .ptcard .pth{font-size:1.45rem}
+  .ptcard svg.jar{height:6rem}
+  .ptcard .ptn{font-size:2.2rem}
+  .ptcard .ptp{font-size:1.25rem}
+  .ptextra{margin-top:.2rem;padding-top:.4rem;gap:.5rem}
+  .ptcard .ptkid .xn{font-size:1.6rem}
+  .ptcard .ptkid .xv{font-size:1.4rem}
+  .ptcard .ptkid .xs{font-size:1.2rem}
+  .ptcard .ptkid .stars svg{width:1.45rem;height:1.45rem}
+}
+
+/* ---- מערכת שעות והודעה על כל המסך — כתב גדול יותר (13.11.2026) ---- */
+@media (min-aspect-ratio:1/1){
+  .kidname{font-size:3.4rem;line-height:1.15}
+  .kidgrade{font-size:1.8rem}
+  .kidem{font-size:1.9rem;width:3rem;height:3rem}
+  .endchip{font-size:1.9rem}
+  .endchip .ev{color:var(--ink);font-weight:800}
+  .ltime{font-size:2.6rem;font-weight:700;color:var(--ink);min-width:7rem}
+  .lsubj{font-size:3rem}
+  .lem{font-size:2.2rem}
+  .lesson{padding:.45rem 0}
+  .covermsg,.covertitle{font-size:4.9rem}
+  .coverlist li{font-size:3.3rem;padding-inline-start:2.4rem}
+  .covertext.long .covertitle{font-size:3.9rem}
+  .covertext.long .coverlist li{font-size:2.7rem}
+  #fullcover.withimg .covermsg,#fullcover.withimg .covertitle{font-size:3.4rem}
+  #fullcover.withimg .coverlist li{font-size:2.6rem}
+}
+/* טלפון: הצ'יפ קצר/ארוך מציג גם מילה (הכלל הישן הסתיר את .wt) */
+@media (max-aspect-ratio:1/1){
+  .wear.sl .wt{display:inline}
+  .wear.sl,.wear.sl.big{font-size:12px;padding:1px 6px;flex-direction:row;gap:2px}
+  .wear.sl.big.long{color:#FFFFFF}.wear.sl.big.short{color:#FFFFFF}
+  .wear.sl .wi,.wear.sl.big .wi{font-size:13px}
+  .wear.sl .wsep{display:none}
+  .wbase{visibility:hidden}
+  .fclbl.big,.fclbl.lo.big{font-size:17px}
+}
+
+/* ============================================================
+   סבב 16.11.2026 (מוקאפ שאושר): מזג אוויר אתמול/היום/מחר,
+   "היום קיבלתי ⭐" לכל ילד, מסך נקודות מלא, הדגשות וחוגים גדולים יותר
+   ============================================================ */
+.ptcard,.ptstrip{display:none!important}
+/* --- מזג אוויר: אתמול (אפור מפוספס) · היום (רחב) · מחר (צר) --- */
+.wx3{flex:0 0 44vw;display:flex;gap:.55vw;height:21rem;align-items:stretch;min-width:0}
+.wx3.hidden{display:none}
+.w3side{flex:0 0 7.3vw;border-radius:1.9rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.45rem;text-align:center;min-width:0;padding:.6rem .3vw}
+.w3y{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ink) 4%,var(--bg)) 0 1rem,color-mix(in srgb,var(--ink) 9%,var(--bg)) 1rem 2rem);
+  border:1px solid var(--line);color:var(--ink-soft);filter:grayscale(.6)}
+.w3m{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.w3lbl{font-size:1.75rem;font-weight:700;line-height:1.15}
+.w3ic{font-size:3.2rem;line-height:1}
+.w3tt{display:flex;gap:.45vw;align-items:baseline;font-family:var(--font-display);direction:ltr}
+.w3tt .hi{font-weight:800;font-size:2.9rem;color:var(--wx-hot)}
+.w3tt .lo{font-weight:700;font-size:1.9rem;color:var(--wx-cold)}
+.w3y .w3tt{opacity:.85}
+.w3sl{border-radius:1rem;padding:.15rem .8rem;font-weight:800;font-size:1.6rem;text-align:center;line-height:1.2;background:#D6E6FA;color:#0C447C}
+.w3sl.short{background:#FFE9C7;color:#7A4300}
+.w3t{flex:1 1 auto;min-width:0;position:relative;overflow:hidden;border:.3rem solid #1F4E79;border-radius:2.1rem;
+  background:color-mix(in srgb,#1F4E79 8%,var(--card));display:flex;align-items:center;gap:1vw;padding:1rem 1vw}
+.w3t.rainy{background:color-mix(in srgb,#4A6E96 28%,var(--card))}
+.w3t>*:not(.drops){position:relative;z-index:1}
+.w3a{display:flex;flex-direction:column;align-items:center;gap:.5rem;flex:none}
+.w3pill{background:var(--ink);color:var(--bg);border-radius:999px;padding:.25rem 1.3rem;font-weight:800;font-size:1.9rem;white-space:nowrap}
+.w3a .w3ic{font-size:5rem}
+.w3b{display:flex;flex-direction:column;align-items:center;flex:none}
+.w3big{font-family:var(--font-display);font-weight:900;font-size:6.8rem;line-height:.95;color:var(--wx-hot)}
+.w3low{font-family:var(--font-display);font-weight:800;font-size:3rem;color:var(--wx-cold)}
+.w3t.rainy .w3big,.w3t.rainy .w3low{text-shadow:0 0 .6rem #DCE3EC,0 0 .6rem #DCE3EC}
+.w3chg{margin-top:.5rem;color:#FFFFFF;border-radius:999px;padding:.25rem 1.1rem;font-weight:800;font-size:1.6rem;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:.3rem;background:var(--wx-chip-down)}
+.w3chg svg{width:1.6rem;height:1.6rem}
+.w3chg.up{background:var(--wx-chip-up)}
+.w3chg.big{background:var(--wx-chip-big)}
+.w3chg.same{background:var(--card);color:var(--ink-soft);border:2px solid var(--line)}
+.w3c{display:flex;flex-direction:column;gap:.9rem;margin-inline-start:auto;flex:none;align-items:stretch}
+.w3wear{background:#1F5FA8;color:#FFFFFF;border-radius:1.5rem;padding:.6rem 1.1vw;display:flex;align-items:center;justify-content:center;gap:.8rem}
+.w3wear.short{background:#B4561C}
+.w3wear.severe{box-shadow:0 0 0 .3rem var(--alert)}
+.w3wear .wi{font-size:3.4rem;line-height:1}
+.w3wear .wt{font-family:var(--font-display);font-weight:900;font-size:4rem;line-height:1}
+.w3umb{background:var(--card);border:2px solid #1F4E79;color:#1F4E79;border-radius:1.3rem;padding:.35rem 1rem;font-weight:800;font-size:2rem;
+  white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.w3umb bdi{direction:ltr}
+body.night .w3umb{color:#8FB4E0;border-color:#8FB4E0}
+body.night .w3t{border-color:#4A78AE}
+/* --- היום קיבלתי ⭐ — משבצת לכל ילד + הצנצנת המשפחתית --- */
+.kids4{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:.7rem;height:21rem}
+.kids4.hidden{display:none}
+.k4space{flex:1;min-height:0}
+.k4grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--k4n,4),minmax(0,1fr));gap:.55vw}
+.k4box{position:relative;background:var(--card);border:1px solid var(--line);border-top:.5rem solid var(--c);border-radius:1.7rem;
+  padding:.6rem .7vw .75rem;display:flex;flex-direction:column;gap:.1rem;min-height:0;min-width:0}
+.k4h{display:flex;justify-content:space-between;align-items:baseline;gap:.4vw;min-width:0}
+.k4n{font-family:var(--font-display);font-weight:900;font-size:2.1rem;color:var(--c);line-height:1.15;white-space:nowrap}
+.k4tag{font-size:1.2rem;color:var(--ink-soft);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k4tag.done{color:#9C6B1F;font-weight:900}
+.k4r{display:flex;justify-content:space-between;gap:.4vw;font-size:1.5rem;font-weight:700;line-height:1.3;min-width:0}
+.k4r span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k4r b{color:var(--c);white-space:nowrap;direction:ltr;unicode-bidi:isolate;font-family:var(--font-display)}
+.k4r.y{font-size:1.3rem;font-weight:600;color:var(--ink-soft)}
+.k4r.y b{color:var(--ink-soft);font-weight:600}
+.k4r.none{color:var(--ink-faint);font-weight:600}
+.k4f{margin-top:auto;display:flex;flex-direction:column;gap:.3rem;padding-top:.3rem}
+.k4p{display:flex;justify-content:space-between;gap:.4vw;font-size:1.25rem;color:var(--ink-soft);font-weight:700;min-width:0}
+.k4p span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k4p b{color:var(--ink);direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-family:var(--font-display)}
+.k4bar{position:relative;height:1rem;border-radius:1rem;background:color-mix(in srgb,var(--c) 14%,var(--card))}
+.k4bar>i{display:block;height:100%;border-radius:1rem;background:var(--c)}
+.k4box.glow{animation:k4glow 2s ease-in-out infinite}
+@keyframes k4glow{0%,100%{box-shadow:0 0 0 0 rgba(226,161,59,0)}50%{box-shadow:0 0 1.4rem .4rem rgba(226,161,59,.6)}}
+.k4fx{position:absolute;left:0;top:50%;width:0;height:0;pointer-events:none}
+.k4fx i{position:absolute;width:.65rem;height:.65rem;margin:-.32rem;border-radius:50%;opacity:0;animation:k4spark 1.4s ease-out infinite}
+@keyframes k4spark{0%{transform:translate(0,0) scale(.4);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
+.k4jar{height:3.4rem;flex:none;background:var(--card);border:1px solid var(--line);border-radius:1.4rem;display:flex;align-items:center;gap:.7vw;padding:0 1vw;min-width:0}
+.k4jar .jl{font-weight:800;font-size:1.5rem;white-space:nowrap}
+.k4jar .k4bar{flex:1;height:1.2rem;--c:#E2A13B}
+.k4jar .jn{font-family:var(--font-display);font-weight:900;font-size:1.7rem;direction:ltr;white-space:nowrap}
+.k4jar .jp{font-size:1.4rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:12vw}
+.k4jar.glow{animation:k4glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.k4box.glow,.k4jar.glow,.k4fx i{animation:none}}
+/* --- הדגשות מבקרה ← תצוגה, וחוגים גדולים יותר --- */
+body.bold-subj .lsubj{font-weight:800}
+body.bold-subj .lesson.past .lsubj{font-weight:700}
+body.bold-ch .chent .a{font-weight:800;color:var(--ink)}
+@media (min-aspect-ratio:1/1){
+  .chent{font-size:2.05rem}
+  table.chweek th{font-size:1.8rem}
+  .chtitle{font-size:2.1rem}
+  .chempty{font-size:1.7rem}
+}
+/* --- מסך הנקודות המלא (מכסה את כל הלוח בזמנים שנקבעו) --- */
+#ptscreen{position:fixed;inset:0;z-index:70;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;gap:1.5vh;
+  padding:2.4vh 2vw 2.2vh;overflow:hidden;font-family:var(--font-body)}
+#ptscreen.hidden{display:none}
+.psfx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.psfx i.st{position:absolute;top:-6vh;font-style:normal;color:#E2B93B;opacity:.45;animation:psfall linear infinite}
+@keyframes psfall{from{transform:translateY(0) rotate(0)}to{transform:translateY(112vh) rotate(180deg)}}
+.psfx .fw{position:absolute;width:0;height:0}
+.psfx .fw i{position:absolute;width:.9vh;height:.9vh;margin:-.45vh;border-radius:50%;opacity:0;animation:psburst 3.2s ease-out infinite}
+@keyframes psburst{0%{transform:translate(0,0);opacity:0}8%{opacity:1}60%{transform:translate(var(--dx),var(--dy));opacity:.9}100%{transform:translate(var(--dx),calc(var(--dy) + 4vh));opacity:0}}
+@media (prefers-reduced-motion:reduce){.psfx{display:none}}
+.pshead,.psjar,.psgrid,.psfoot{position:relative}
+.pshead{display:flex;justify-content:space-between;align-items:flex-start;gap:2vw;padding-bottom:1vh;border-bottom:2px solid var(--line)}
+.pshead .pd{display:flex;gap:1.6vw;align-items:baseline}
+.pshead .pd b{font-family:var(--font-display);font-weight:900;font-size:4.2vh}
+.pshead .pd span{font-family:var(--font-display);font-weight:900;font-size:4.2vh;color:var(--ink-soft);direction:ltr;font-variant-numeric:tabular-nums}
+.pshead .pt{font-family:var(--font-display);font-weight:900;font-size:4.6vh;white-space:nowrap}
+.pshead .ph{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.pshead .ph b{font-family:var(--font-display);font-weight:700;font-size:3.4vh}
+.pshead .ph span{font-size:1.8vh;color:var(--ink-soft)}
+.psjar{height:5vh;background:var(--card);border:1px solid var(--line);border-radius:1.6vh;display:flex;align-items:center;gap:1vw;padding:0 1.2vw}
+.psjar .jl{font-weight:800;font-size:2.1vh;white-space:nowrap}
+.psjar .jb{flex:1;height:1.6vh;border-radius:2vh;background:color-mix(in srgb,#E2A13B 18%,var(--card));overflow:hidden}
+.psjar .jb i{display:block;height:100%;background:#E2A13B}
+.psjar .jn{font-family:var(--font-display);font-weight:900;font-size:2.7vh;direction:ltr;white-space:nowrap}
+.psjar .jp{font-size:1.95vh;color:var(--ink-soft);white-space:nowrap}
+.psgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--psn,4),minmax(0,1fr));gap:1vw}
+.pscol{background:var(--cbg);border-top:.8vh solid var(--c);border-radius:2vh;padding:1.6vh 1.2vw;display:flex;flex-direction:column;gap:.8vh;min-height:0;overflow:hidden}
+body.night .pscol{background:color-mix(in srgb,var(--c) 16%,#111A17)}
+.pscol .psn{font-family:var(--font-display);font-weight:900;font-size:4.1vh;color:var(--c);line-height:1.1}
+body.night .pscol .psn{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
+.pscol .psbig{display:flex;align-items:baseline;gap:.6vw;font-family:var(--font-display);direction:ltr;justify-content:flex-end}
+.pscol .psbig b{font-weight:900;font-size:8vh;line-height:.9}
+.pscol .psbig span{font-weight:700;font-size:3.1vh;color:var(--ink-soft)}
+.pscol .psbar{height:1.7vh;border-radius:2vh;background:color-mix(in srgb,var(--ink) 8%,transparent);overflow:hidden}
+.pscol .psbar i{display:block;height:100%;background:var(--c)}
+.pscol .psleft{font-size:2.05vh;font-weight:700}
+.pscol .psleft.done{color:#9C6B1F;font-weight:900}
+.pscol .psdeeds{border-top:1px solid color-mix(in srgb,var(--ink) 12%,transparent);margin-top:.4vh;padding-top:.4vh;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.pscol .psd{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw;padding:.65vh 0;
+  border-bottom:1px solid color-mix(in srgb,var(--ink) 6%,transparent);font-size:2.4vh}
+.pscol .psd span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pscol .psd b{font-family:var(--font-display);color:var(--c);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+body.night .pscol .psd b{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
+.pscol .psnone{font-size:2vh;color:var(--ink-soft);padding-top:.6vh}
+.psfoot{text-align:center;font-size:1.7vh;color:var(--ink-soft)}
+/* --- טלפון --- */
+@media (max-aspect-ratio:1/1){
+  .wx3{flex:none;width:100%;height:auto;gap:6px}
+  .w3side{flex:0 0 21%;border-radius:14px;padding:8px 2px;gap:3px}
+  .w3lbl{font-size:12px}.w3ic{font-size:20px}
+  .w3tt .hi{font-size:17px}.w3tt .lo{font-size:12px}
+  .w3sl{font-size:11px;padding:1px 6px}
+  .w3t{border-width:2px;border-radius:16px;padding:8px;gap:8px;flex-wrap:wrap;justify-content:center}
+  .w3pill{font-size:13px;padding:2px 10px}.w3a .w3ic{font-size:30px}
+  .w3big{font-size:38px}.w3low{font-size:18px}
+  .w3chg{font-size:11px;padding:2px 7px}.w3chg svg{width:11px;height:11px}
+  .w3c{margin-inline-start:0;gap:6px}
+  .w3wear{border-radius:10px;padding:4px 10px;gap:4px}.w3wear .wi{font-size:18px}.w3wear .wt{font-size:20px}
+  .w3umb{font-size:12px;padding:2px 8px;border-width:1.5px}
+  .kids4{height:auto;gap:8px}
+  .k4grid{grid-template-columns:1fr 1fr;gap:8px}
+  .k4box{border-radius:14px;padding:8px 10px;border-top-width:4px}
+  .k4n{font-size:17px}.k4tag{font-size:10px}
+  .k4r{font-size:13px}.k4r.y{font-size:11px}.k4p{font-size:11px}
+  .k4bar{height:7px}.k4fx i{width:5px;height:5px;margin:-2.5px}
+  .k4jar{height:auto;min-height:34px;padding:6px 10px;gap:8px;border-radius:12px;flex-wrap:wrap}
+  .k4jar .jl{font-size:12px}.k4jar .jn{font-size:13px}.k4jar .jp{font-size:11px;max-width:none}
+  .k4jar .k4bar{height:8px;min-width:80px}
+  #ptscreen{overflow:auto;padding:14px 4vw 24px;gap:10px}
+  .pshead{flex-wrap:wrap;gap:6px}
+  .pshead .pd b,.pshead .pd span{font-size:22px}.pshead .pt{font-size:22px;order:3;width:100%}
+  .pshead .ph b{font-size:17px}.pshead .ph span{font-size:12px}
+  .psjar{height:auto;min-height:40px;flex-wrap:wrap;padding:6px 10px;gap:6px;border-radius:12px}
+  .psjar .jl{font-size:13px}.psjar .jn{font-size:15px}.psjar .jp{font-size:12px}.psjar .jb{height:8px;min-width:100px}
+  .psgrid{grid-template-columns:1fr 1fr;gap:8px;flex:none}
+  .pscol{padding:10px;border-radius:14px;border-top-width:5px;gap:5px}
+  .pscol .psn{font-size:19px}.pscol .psbig b{font-size:34px}.pscol .psbig span{font-size:15px}
+  .pscol .psbar{height:8px}.pscol .psleft{font-size:12px}.pscol .psd{font-size:13px;padding:4px 0}.pscol .psnone{font-size:12px}
+  .psfoot{font-size:11px}
+}
+</style>
+</head>
+<body class="kiosk">
+<div id="app">
+  <div id="offbar" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.3" fill="currentColor"/><path d="M3 3l18 18"/></svg><span id="offtext"></span></div>
+  <div id="pairbar" role="status"></div>
+  <div class="datebar">
+    <div class="datetext">
+      <div style="display:flex;align-items:baseline;gap:1.6vw">
+        <div class="dayname" id="dayname">—</div>
+        <div class="clock" id="clock">--:--</div>
+      </div>
+      <div class="datecol">
+        <span class="hebdate" id="hebdate">—</span>
+        <span class="gregdate" id="gregdate">—</span>
+      </div>
+      <div class="parasha" id="parasha"></div>
+    </div>
+    <!-- קצה הכותרת — רק במצב שבת/חג: זמני כניסה ויציאה, ומתחתם מזג אוויר שקט -->
+    <div class="sbend" id="sbend">
+      <div class="zmanim hidden" id="zmanim">
+        <div class="zc"><div class="zlbl" id="zlbl0">הדלקת נרות</div><div class="zval" id="zval0">—</div></div>
+        <div class="zc"><div class="zlbl" id="zlbl1">צאת השבת</div><div class="zval" id="zval1">—</div></div>
+      </div>
+      <div class="sbwx hidden" id="sbwx"></div>
+    </div>
+  </div>
+
+  <div id="holiday">
+    <div class="prayers hidden" id="prayers"></div>
+    <div class="sbart" id="sbart">
+      <svg viewBox="0 0 720 150" aria-hidden="true">
+        <path d="M250 135 h70 M266 135 V78 h13 v57 M292 135 V78 h13 v57"/>
+        <path d="M272 78 c0-13 -10-16 0-29 c10 13 0 16 0 29 Z"/>
+        <path d="M298 78 c0-13 -10-16 0-29 c10 13 0 16 0 29 Z"/>
+        <path d="M352 135 h68 M386 135 V108"/>
+        <path d="M358 55 h56 l-8 34 a20 20 0 0 1 -40 0 Z"/>
+        <path d="M448 124 c0-28 26-44 64-44 s64 16 64 44 c0 10 -23 15 -64 15 s-64 -5 -64 -15 Z"/>
+        <path d="M471 96 c10 -13 18 -13 28 0 M505 91 c10 -13 18 -13 28 0 M536 96 c8 -10 13 -10 21 0"/>
+      </svg>
+    </div>
+    <div class="sbfoot">
+      <div class="greet" id="greet">שבת שלום</div>
+      <div class="cnote hidden" id="cnote"></div>
+      <div class="holitags" id="holitags"></div>
+    </div>
+  </div>
+
+  <div class="toprow" id="toprow">
+    <section class="wx3 hidden" id="fc" aria-label="מזג אוויר"></section>
+    <section class="kids4 hidden" id="kids4" aria-label="היום קיבלתי"></section>
+    <section class="ptcard hidden" id="ptcard" aria-label="נקודות משפחתיות"></section>
+    <div class="shirtbox" id="shirtbox">
+      <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M34 6 L18 14 L4 30 L16 42 L24 34 L24 86 L76 86 L76 34 L84 42 L96 30 L82 14 L66 6
+                 C66 6 62 16 50 16 C38 16 34 6 34 6 Z"
+              fill="#FFFFFF" stroke="#2A2A2E" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M34 6 C34 6 38 16 50 16 C62 16 66 6 66 6"
+              fill="none" stroke="#2A2A2E" stroke-width="3.5" stroke-linecap="round"/>
+      </svg>
+      <div class="shirtcap">חולצה לבנה</div>
+      <div class="shirtreason" id="shirtreason"></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note hidden" id="parentnote"></div>
+  </div>
+
+  <!-- כיסוי מלא של הלוח: יושב מתחת להערת ההורים, במקום מערכת השעות -->
+  <div id="fullcover" class="hidden">
+    <img id="coverimg" alt="">
+    <div class="covertext" id="covertext"></div>
+  </div>
+
+  <div class="schedwrap" id="schedwrap">
+    <div class="schedhead">
+      <div class="schedtitle" id="schedtitle">—</div>
+      <div class="schednote hidden" id="schednote"></div>
+      <div class="stalenote hidden" id="stalenote"></div>
+    </div>
+    <div class="kidcards" id="kidcards"></div>
+  </div>
+
+  <div class="ptstrip hidden" id="ptstrip" aria-label="נקודות"></div>
+
+  <div class="chugim hidden" id="chugim">
+    <div class="chtitle" id="chtitle">חוגים — השבוע</div>
+    <table class="chweek"><tbody id="chlist"></tbody></table>
+  </div>
+
+  <div class="lastsync" id="lastsync"></div>
+</div>
+<a id="gotoControl" href="daily.html">היום</a>
+<a id="gotoPoints" href="points.html" aria-label="נקודות"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M50 22l18 44h-14L36 22z" fill="#EE719E"/><path d="M64 22l16 40 16-40z" fill="#7A5FA8"/><path d="M110 22l-18 44h14l18-44z" fill="#2E7D52"/><circle cx="80" cy="98" r="40" fill="#E2A13B"/><path d="M80 78l6 12 13 1.5-9.5 9 2.5 13-12-6.5-12 6.5 2.5-13-9.5-9 13-1.5z" fill="#FFFFFF"/></svg></a>
+<div id="ptscreen" class="hidden" aria-label="הנקודות שלנו"></div>
+<div id="celebrate" class="hidden" role="dialog" aria-label="הגעה ליעד"></div>
+<div id="lockscreen" role="dialog" aria-modal="true" aria-labelledby="lktitle">
+  <div class="lk-top"><b>לוח משפחת כהן</b><span id="lkclock"></span></div>
+  <div class="lk-mid">
+    <div class="lk-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+    <h1 id="lktitle">המכשיר ממתין לאישור הורה</h1>
+    <div class="lk-code" id="lkcodebox"><small>קוד המכשיר</small><b id="lkcode">----</b></div>
+    <p id="lktext"></p>
+  </div>
+  <div class="lk-foot"><span id="lkexp"></span><span id="lkhint">לא צריך להקליד כלום בשלט</span></div>
+</div>
+<div id="err"></div>
+
+<script type="module">
+/* ============================================================
+   הגדרות — לשינוי כאן בלבד
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL:'https://ghnvkgufqtbwfmsaassx.supabase.co',
+  SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobnZrZ3VmcXRid2Ztc2Fhc3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NDgzODEsImV4cCI6MjEwMTUyNDM4MX0.483IfREbtaqxKi1SQUE2Xw2Eh6xlPwDZDvUcDXzZXz0',
+  LAT:32.0702, LON:35.0542, TIMEZONE:'Asia/Jerusalem',
+  SWITCH_HOUR:12, REFRESH_MIN:1,
+  SHABBAT_START_HOUR:12,        // מסך שבת/חג נכנס ב-12:00 בערב שבת/חג
+  RAIN_DROPS_PCT:50,            // מעל אחוז זה (או גשם בינוני ומעלה) — טיפות יורדות ביום המודגש (15.11.2026)
+  RAIN_ALERT_PCT:30,            // אחוז סיכוי לגשם שמעליו מוצגת התראה
+  SHORT_FROM:26,                // מקסימום יומי (מעוגל) שממנו כותבים "קצר"; מתחתיו "ארוך" (13.11.2026)
+};
+
+let KIDS=[];   // נטען מטבלת kids
+const CLOCK_FMT=new Intl.DateTimeFormat('he-IL',
+  {timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false});
+function tickClock(){
+  const e=$('clock'); if(!e) return;
+  e.textContent = clockIsFrozen() ? '--:--' : CLOCK_FMT.format(nowDate());
+  rememberTrustedTime();
+}
+
+/* ============================================================
+   שעון אמין (10.11.2026)
+   ל-TV Stick אין סוללת שעון: אחרי הפסקת חשמל בלי אינטרנט השעון שלו
+   חוזר לתאריך ישן, והלוח הציג יום/מערכת שגויים. מעכשיו:
+   - בכל רענון קוראים את השעה מכותרת Date של השרת שלנו (אותו דומיין,
+     ולכן מותר לקרוא אותה) ומחשבים תיקון לשעון המכשיר.
+   - שומרים את "הזמן האמיתי האחרון שראינו" במכשיר.
+   - אם אין אינטרנט ושעון המכשיר מוקדם מהזמן הזה — לא סומכים עליו:
+     מקפיאים את המסך על הזמן האחרון הידוע ומציגים פס "אין אינטרנט".
+   - כשהרשת חוזרת, השעה מתוקנת מהשרת גם אם שעון המכשיר עדיין שגוי.
+   ============================================================ */
+const CLOCK_KEY='fd_clock_v1';
+let CLOCK_OFFSET=null;      // ms להוספה לשעון המכשיר; ידוע רק אחרי סנכרון מוצלח בהפעלה הנוכחית
+let CLOCK_FROZEN_AT=null;   // ms; כששעון המכשיר לא אמין ועדיין אין סנכרון
+function readClockStore(){ try{ return JSON.parse(localStorage.getItem(CLOCK_KEY)||'null'); }catch(e){ return null; } }
+function writeClockStore(ms){ try{ localStorage.setItem(CLOCK_KEY,JSON.stringify({serverMs:ms})); }catch(e){} }
+function nowMs(){
+  if(CLOCK_OFFSET!==null) return Date.now()+CLOCK_OFFSET;
+  if(CLOCK_FROZEN_AT!==null) return CLOCK_FROZEN_AT;
+  return Date.now();
+}
+function nowDate(){ return new Date(nowMs()); }
+function clockIsFrozen(){ return CLOCK_OFFSET===null && CLOCK_FROZEN_AT!==null; }
+/* שעון שחזר אחורה ביותר מ-10 דקות מהזמן האמיתי האחרון = שעון שאיבד את עצמו */
+function evaluateClockTrust(){
+  if(CLOCK_OFFSET!==null){ CLOCK_FROZEN_AT=null; return; }
+  const s=readClockStore();
+  CLOCK_FROZEN_AT=(s&&s.serverMs&&Date.now()<s.serverMs-10*60*1000)?s.serverMs:null;
+}
+/* שומרים את הזמן האמיתי רק כשהוא באמת אמין (אחרי סנכרון), פעם בדקה לכל היותר */
+let lastRemember=0;
+function rememberTrustedTime(){
+  if(CLOCK_OFFSET===null) return;
+  const t=nowMs(); if(t-lastRemember<60000) return;
+  lastRemember=t; writeClockStore(t);
+}
+async function syncClock(){
+  try{
+    const t0=Date.now();
+    const r=await fetch('manifest.json?clock='+t0,{method:'HEAD',cache:'no-store'});
+    const t1=Date.now();
+    const h=r.headers.get('date'); const server=h?Date.parse(h):NaN;
+    if(isNaN(server)) return false;
+    let off=server+500+(t1-t0)/2-t1;          // כותרת Date ברזולוציה של שנייה
+    if(Math.abs(off)<3000) off=0;             // שעון תקין — לא מזיזים אותו בשניות
+    CLOCK_OFFSET=off; CLOCK_FROZEN_AT=null;
+    lastRemember=0; rememberTrustedTime();
+    return true;
+  }catch(e){ return false; }
+}
+function renderOffbar(){
+  const bar=$('offbar'); if(!bar) return;
+  if(!clockIsFrozen()){ bar.classList.remove('on'); return; }
+  const d=new Date(CLOCK_FROZEN_AT);
+  const day=new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',weekday:'long'}).format(d);
+  $('offtext').textContent=`אין אינטרנט · מוצג המצב מ-${CLOCK_FMT.format(d)}, ${day} · יתעדכן לבד כשהחיבור יחזור`;
+  bar.classList.add('on');
+}
+
+/* ============================================================
+   מצב לילה — ברירת מחדל 22:30–05:45 (Asia/Jerusalem), ניתן
+   לשינוי או לכיבוי מפאנל ההורים דרך טבלת settings:
+     night_mode_enabled = '1' / '0'   (חסר = כבוי — מ-10.11.2026 ברירת המחדל היא בלי מצב לילה)
+     night_start        = 'HH:MM'     (חסר = 22:30)
+     night_end          = 'HH:MM'     (חסר = 05:45)
+   ============================================================ */
+const NIGHT_DEFAULTS = {enabled:false, startMin:22*60+30, endMin:5*60+45};
+let NIGHT = {...NIGHT_DEFAULTS};
+
+/* 'HH:MM' -> דקות מחצות. כל קלט לא תקין מחזיר null כדי שנפול לברירת המחדל. */
+function hhmmToMin(v){
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(v||'').trim());
+  if(!m) return null;
+  const h=+m[1], mi=+m[2];
+  if(h>23||mi>59) return null;
+  return h*60+mi;
+}
+function applyNightSettings(settingsRows){
+  const get=k=>{ const r=(settingsRows||[]).find(s=>s.key===k); return r?String(r.value??'').trim():''; };
+  const en=get('night_mode_enabled');
+  const st=hhmmToMin(get('night_start'));
+  const en2=hhmmToMin(get('night_end'));
+  NIGHT = {
+    enabled: en==='' ? NIGHT_DEFAULTS.enabled : !(en==='0'||en==='false'),
+    startMin: st===null ? NIGHT_DEFAULTS.startMin : st,
+    endMin:   en2===null ? NIGHT_DEFAULTS.endMin  : en2,
+  };
+  applyNightMode();
+}
+function isNightNow(){
+  if(!NIGHT.enabled) return false;
+  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
+  /* חלון שחוצה חצות (22:30→05:45) מול חלון רגיל באותו יום (13:00→15:00) */
+  return NIGHT.startMin > NIGHT.endMin
+    ? (mins>=NIGHT.startMin || mins<NIGHT.endMin)
+    : (mins>=NIGHT.startMin && mins<NIGHT.endMin);
+}
+function applyNightMode(){ document.body.classList.toggle('night', isNightNow()); }
+
+/* תפוגת הערת ההורים.
+   תואם אחורה לשני הפורמטים:
+     'YYYY-MM-DD'            — פג בסוף אותו יום (התנהגות ישנה, נשמרת)
+     'YYYY-MM-DDTHH:MM'      — פג ברגע המדויק הזה בשעון ישראל
+   ריק = לא פג לעולם. */
+function noteHasExpired(untilStr){
+  const s=String(untilStr||'').trim();
+  if(!s) return false;
+  const n=israelNow();
+  const m=/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(s);
+  if(!m) return isoDate(n) > s;                 // תאריך בלבד
+  const today=isoDate(n);
+  if(today !== m[1]) return today > m[1];       // יום אחר — משווים תאריכים
+  return (n.getHours()*60+n.getMinutes()) >= (+m[2]*60 + +m[3]);
+}
+
+/* הבהוב עדין (מחזור 2 שניות) על כרטיס החולצה הלבנה, רק 05:45–08:00 —
+   שעת ההכנות לבית הספר. מחוץ לחלון הזה הכרטיס סטטי. */
+const SHIRT_PULSE_START_MIN = 5*60+45, SHIRT_PULSE_END_MIN = 8*60;
+function isShirtPulseWindow(){
+  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
+  return mins>=SHIRT_PULSE_START_MIN && mins<SHIRT_PULSE_END_MIN;
+}
+function applyShirtPulse(){
+  const e=$('shirtbox'); if(e) e.classList.toggle('pulse', isShirtPulseWindow());
+}
+
+const DAYS=['א','ב','ג','ד','ה','ו','ש'];
+const DAY_FULL={'א':'ראשון','ב':'שני','ג':'שלישי','ד':'רביעי','ה':'חמישי','ו':'שישי','ש':'שבת'};
+const $=id=>document.getElementById(id);
+function showErr(m){const e=$('err');e.textContent=m;e.classList.add('on');}
+function hideErr(){const e=$('err'); if(e){e.textContent=''; e.classList.remove('on');}}
+
+/* ---- נתונים אחרונים שנטענו בהצלחה (לשימוש כשהשרת דוחה בקשה) ---- */
+const LASTGOOD_KEY='fd_lastgood_v1';
+function saveLastGood(obj){
+  try{ localStorage.setItem(LASTGOOD_KEY,JSON.stringify({ts:nowMs(),data:obj})); }catch(e){}
+}
+function loadLastGood(){
+  try{ const r=localStorage.getItem(LASTGOOD_KEY); return r?JSON.parse(r):null; }catch(e){ return null; }
+}
+function hhmmOf(ts){
+  return new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(ts));
+}
+
+/* ---- הסרת ניקוד וטעמים (משאיר גרש/גרשיים) ---- */
+const stripNikud = s => s.replace(/[\u0591-\u05BD\u05BF-\u05C7]/g,'');
+
+/* ============================================================
+   המרה לגימטריה — אותיות בלבד, בלי ספרות
+   ============================================================ */
+const GEM=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק'],[90,'צ'],[80,'פ'],[70,'ע'],
+           [60,'ס'],[50,'נ'],[40,'מ'],[30,'ל'],[20,'כ'],[10,'י'],
+           [9,'ט'],[8,'ח'],[7,'ז'],[6,'ו'],[5,'ה'],[4,'ד'],[3,'ג'],[2,'ב'],[1,'א']];
+
+function gematriya(n){
+  let out='';
+  let rest=n;
+  while(rest>0){
+    // 15 ו-16 נכתבים ט״ו וט״ז ולא בצירוף השם
+    if(rest===15){ out+='טו'; break; }
+    if(rest===16){ out+='טז'; break; }
+    const [val,ltr]=GEM.find(([v])=>v<=rest);
+    out+=ltr; rest-=val;
+  }
+  // גרשיים לפני האות האחרונה, או גרש למילה בת אות אחת
+  if(out.length===1) return out+'׳';
+  return out.slice(0,-1)+'״'+out.slice(-1);
+}
+
+/* שליפת יום/חודש/שנה עבריים מהדפדפן, והמרה לאותיות בעצמנו */
+const HEB_PARTS = new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn',
+  {day:'numeric',month:'long',year:'numeric'});
+
+function hebDateString(d){
+  const parts=HEB_PARTS.formatToParts(d);
+  const get=t=>(parts.find(p=>p.type===t)||{}).value||'';
+  const day=parseInt(get('day'),10);
+  const month=stripNikud(get('month')).replace(/^ב/,'');   // "באב" → "אב"
+  let year=parseInt(get('year').replace(/\D/g,''),10);
+  if(year>1000) year=year%1000;                             // 5786 → 786
+  return `${gematriya(day)} ${month} ${gematriya(year)}`;
+}
+
+/* ============================================================
+   חולצה לבנה — שלושה מקורות, לפי סדר עדיפות:
+   1. תאריך בודד שהוזן ידנית
+   2. כלל יום קבוע בשבוע
+   3. כלל ראש חודש
+   ============================================================ */
+function whiteShirtReason(date,singles,rules){
+  // 1. תאריך בודד — הכי ספציפי, גובר על הכל
+  const one=singles.find(s=>s.date===isoDate(date));
+  if(one) return one.reason;
+
+  const active=rules.filter(r=>r.active!==false);
+
+  // 2. יום קבוע בשבוע
+  const wd=active.find(r=>r.rule_type==='weekday' && r.weekday===date.getDay());
+  if(wd) return wd.reason;
+
+  // 3. ראש חודש
+  const rc=active.find(r=>r.rule_type==='rosh_chodesh');
+  if(rc && isRoshChodesh(date)) return rc.reason;
+
+  return null;
+}
+
+/* ---- ראש חודש: יום 1 או 30 בחודש העברי ---- */
+const HEB_DAY = new Intl.DateTimeFormat('en-u-ca-hebrew-nu-latn',{day:'numeric'});
+function isRoshChodesh(d){
+  const n=parseInt(HEB_DAY.format(d),10);
+  return n===1||n===30;
+}
+
+/* ============================================================
+   כל לוגיקת היום נשענת על שעון ישראל במפורש, לא על שעון המכשיר.
+   הקיוסק רץ על TV Stick — אם המכשיר יאותחל לאזור זמן שגוי,
+   מעבר ה-12:00, מצב הלילה והתמונה היומית עדיין יהיו נכונים.
+   ============================================================ */
+/* תאריך ISO מתוך אובייקט Date שכבר מייצג שעון ישראל */
+function isoOf(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+    +`-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function israelNow(){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(nowDate());
+  const g=t=>+p.find(x=>x.type===t).value;
+  return new Date(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'));
+}
+
+function displayDate(){
+  const now=israelNow(), d=new Date(now);
+  const isTomorrow=now.getHours()>=CONFIG.SWITCH_HOUR;
+  if(isTomorrow) d.setDate(d.getDate()+1);
+  return {date:d,isTomorrow};
+}
+
+/* ============================================================
+   כותרת המערכת — "מערכת היום" / "מערכת למחר" / "מערכת לחזרה ללימודים".
+   "מחר" מופיע רק כשיום הלימודים המוצג הוא באמת מחר.
+   ============================================================ */
+function daysBetween(a,b){
+  const x=new Date(a.getFullYear(),a.getMonth(),a.getDate());
+  const y=new Date(b.getFullYear(),b.getMonth(),b.getDate());
+  return Math.round((y-x)/86400000);
+}
+/* יום הלימודים הבא: מדלג על ימים בלי מערכת (שבת, ולפי הנתונים גם שישי)
+   ועל תאריכים שסומנו כחופש לכל הילדים ב-schedule_overrides. */
+function nextSchoolDate(start,scheduleRows,overrides){
+  for(let i=0;i<21;i++){
+    const d=new Date(start); d.setDate(d.getDate()+i);
+    const iso=isoDate(d);
+    const letter=DAYS[d.getDay()];
+    const hasLessons=scheduleRows.some(r=>r.day===letter && r.subject && r.subject.trim());
+    /* יום שיש עליו הערה מכסה הוא יעד תקין — ההערה היא מה שצריך להופיע.
+       הגרסה הקודמת דילגה עליו, ולכן הערות מכסות לכל הילדים לא הופיעו לעולם. */
+    const covered=(overrides||[]).some(o=>!o.kid && o.date===iso);
+    if(covered) return d;
+    /* חופשה מלוח משרד החינוך — מדלגים, גם אם יש מערכת ליום הזה בשבוע */
+    if(isVacationDate(iso)) continue;
+    if(hasLessons) return d;
+  }
+  return start;
+}
+
+function scheduleLabel(date,isTomorrow){
+  const gap=daysBetween(israelNow(),date);
+  if(gap<=0) return 'מערכת היום';
+  if(gap===1) return 'מערכת למחר';
+  return 'מערכת לחזרה ללימודים';
+}
+/* שורת הסבר קטנה על הימים המדולגים — מופיעה רק כשלא מדובר במחר.
+   כשהדילוג נובע מחופשה בלוח משרד החינוך, מציינים את שם החופשה
+   במקום לפרט את כל שמות הימים. */
+function skippedDaysNote(date){
+  const gap=daysBetween(israelNow(),date);
+  if(gap<=1) return '';
+  const vacNames=[];
+  for(let i=0;i<gap;i++){
+    const d=israelNow(); d.setDate(d.getDate()+i);
+    const iso=isoDate(d);
+    if(i===0 && israelNow().getHours()<CONFIG.SWITCH_HOUR) continue;
+    calRowsCovering(iso).filter(r=>r.kind==='vacation').forEach(r=>{
+      if(r.event && !vacNames.includes(r.event)) vacNames.push(r.event);
+    });
+  }
+  if(vacNames.length){
+    return 'חופשת '+vacNames.join(' ו')+' — אין לימודים';
+  }
+  const names=[];
+  for(let i=0;i<gap;i++){
+    const d=israelNow(); d.setDate(d.getDate()+i);
+    if(i===0 && israelNow().getHours()<CONFIG.SWITCH_HOUR) continue;
+    names.push(DAY_FULL[DAYS[d.getDay()]]);
+  }
+  if(!names.length) return '';
+  const list = names.length===1 ? names[0]
+             : names.slice(0,-1).join(', ')+' ו'+names[names.length-1];
+  return list+' — אין לימודים';
+}
+const gregString=d=>d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'});
+const isoDate=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+/* ---- חגים: ספרייה אופציונלית, לא חוסמת ---- */
+let hebcal=null;
+async function loadHebcal(){
+  try{ hebcal=await import('https://esm.sh/@hebcal/core@5'); }
+  catch(e){ console.warn('hebcal unavailable — Shabbat only'); }
+}
+/* Hebcal מרנדר שנה עברית בספרות ("ראש השנה 5787") — ממירים לגימטריה */
+function hebNameGematria(name){
+  return String(name||'').replace(/\d{3,4}/g, m=>{
+    let y=parseInt(m,10);
+    if(y>1000) y=y%1000;
+    return gematriya(y);
+  });
+}
+
+function greetFor(n){
+  if(n.includes('פסח'))return'חג פסח שמח';
+  if(n.includes('סוכות'))return'חג סוכות שמח';
+  if(n.includes('שבועות'))return'חג שבועות שמח';
+  if(n.includes('ראש השנה'))return'שנה טובה';
+  if(n.includes('כיפור'))return'גמר חתימה טובה';
+  return'חג שמח';
+}
+function iconFor(n){
+  if(n.includes('פסח'))return'🍷';
+  if(n.includes('סוכות'))return'🌿';
+  if(n.includes('ראש השנה'))return'🍎';
+  if(n.includes('כיפור'))return'🕊️';
+  return'🕯️';
+}
+
+/* ============================================================
+   לוח חופשות שנה"ל (טבלת school_calendar) — מקור אחד לשני דברים:
+   ימי חופשה שהלוח מדלג עליהם, וימים עם יציאה מוקדמת שדורסים
+   את שעת הסיום הנגזרת. טבלה ריקה/חסרה = התנהגות כמו קודם.
+     kind: 'vacation' | 'study_day' | 'early_dismissal'
+   ============================================================ */
+let SCHOOL_CAL=[];
+
+function calRowsCovering(iso){
+  return SCHOOL_CAL.filter(r=>{
+    const s=String(r.start_date||'').trim();
+    const e=String(r.end_date||'').trim()||s;
+    return s && iso>=s && iso<=e;
+  });
+}
+function isVacationDate(iso){
+  return calRowsCovering(iso).some(r=>r.kind==='vacation');
+}
+/* 'HH:MM' ליציאה מוקדמת באותו יום, או null */
+function earlyDismissalFor(iso){
+  const r=calRowsCovering(iso).find(x=>x.kind==='early_dismissal' && x.early_time);
+  return r?String(r.early_time).slice(0,5):null;
+}
+/* תגית ליום שאינו חופשה אבל מצוין (סיגד, יום זיכרון) */
+function studyDayNote(iso){
+  const r=calRowsCovering(iso).find(x=>x.kind==='study_day');
+  return r?(r.event||''):'';
+}
+
+/* שעת סיום היום לילד: תחילת השיעור האחרון + אורך שיעור (45 דק׳),
+   אלא אם היום מסומן כיציאה מוקדמת — ואז הזמן מהלוח גובר כמו שהוא.
+   מחזיר null אם אין ממה לגזור. */
+const LESSON_MIN=45;
+function endOfDayFor(items,iso){
+  const early=earlyDismissalFor(iso);
+  if(early) return {time:early, forced:true};
+  const lessons=items.filter(x=>x.type==='lesson' && x.t);
+  if(!lessons.length) return null;
+  const start=hhmmToMin(lessons[lessons.length-1].t);
+  if(start===null) return null;
+  const end=Math.min(start+LESSON_MIN, 23*60+59);
+  const hh=String(Math.floor(end/60)).padStart(2,'0');
+  const mm=String(end%60).padStart(2,'0');
+  return {time:`${hh}:${mm}`, forced:false};
+}
+
+/* ============================================================
+   שכבת שליטה ידנית מעל Hebcal (סדר עדיפות מלמעלה למטה):
+     1. manual_windows source='force'  — "הצג עכשיו", גובר על הכל
+     2. manual_windows source='manual' — אירוע מתוזמן שהוגדר ידנית
+     3. zmanim_overrides               — דריסת שעת כניסה/יציאה לתאריך מסוים
+     4. Hebcal                         — ברירת המחדל, כמו עד היום
+   שלוש הראשונות נטענות מ-Supabase; אם הטבלאות ריקות/חסרות,
+   ההתנהגות זהה לחלוטין למה שהיה לפני השינוי.
+   ============================================================ */
+let ZMANIM_OVERRIDES=[];   // [{date:'YYYY-MM-DD', candle_time:'HH:MM', havdalah_time:'HH:MM'}]
+let MANUAL_WINDOWS=[];     // [{name, start_at, end_at, source}]
+
+/* 'HH:MM' על תאריך נתון → Date אמיתי, לפי שעון ישראל ולא לפי שעון המכשיר.
+   קריטי: הקיוסק הוא TV stick שעלול לחזור מאיפוס באזור זמן שגוי, ולכן
+   דריסה של "18:20" חייבת להיות 18:20 בישראל בכל מקרה. */
+/* 'YYYY-MM-DD' של רגע נתון לפי שעון ישראל */
+function israelIsoOf(at){
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit'}).format(at);
+  return p;
+}
+function israelOffsetMs(at){  const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(at);
+  const g=t=>+p.find(x=>x.type===t).value;
+  const asUTC=Date.UTC(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'));
+  return asUTC-at.getTime();
+}
+function atTimeOn(baseDate,hhmm){
+  const m=hhmmToMin(hhmm);
+  if(m===null) return null;
+  /* התאריך נלקח לפי שעון ישראל של baseDate, לא לפי המכשיר */
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',
+    year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(baseDate);
+  const g=t=>+p.find(x=>x.type===t).value;
+  const wall=Date.UTC(g('year'),g('month')-1,g('day'),Math.floor(m/60),m%60,0);
+  /* היפוך: מנחשים ומתקנים לפי ההיסט בפועל באותו רגע (עמיד למעבר שעון קיץ) */
+  let t=new Date(wall-israelOffsetMs(new Date(wall)));
+  t=new Date(wall-israelOffsetMs(t));
+  return t;
+}
+
+/* מחיל דריסות זמנים על החלונות שכבר חושבו מ-Hebcal.
+   הדריסה מזוהה לפי התאריך של הדלקת הנרות (כניסה) או של ההבדלה (יציאה),
+   כך שאפשר לדרוס רק צד אחד ולהשאיר את השני אוטומטי. */
+function applyZmanimOverrides(){
+  for(const w of SHABBAT_WINDOWS){
+    /* שומרים את הערכים האוטומטיים פעם אחת, וכל הרצה נגזרת מהם מחדש —
+       כך שהסרת דריסה בפאנל באמת מחזירה את הזמן האוטומטי. */
+    if(!w._auto){
+      w._auto={candles:new Date(w.candles),havdala:new Date(w.havdala),end:new Date(w.end)};
+    }
+    w.candles=new Date(w._auto.candles);
+    w.havdala=new Date(w._auto.havdala);
+    w.end=new Date(w._auto.end);
+    w.manualStart=false; w.manualEnd=false;
+
+    /* התאריך שאליו הדריסה משויכת נקבע לפי שעון ישראל, לא לפי המכשיר */
+    const candleIso=israelIsoOf(w.candles), havIso=israelIsoOf(w.havdala);
+    const ovStart=ZMANIM_OVERRIDES.find(o=>o.date===candleIso && o.candle_time);
+    const ovEnd  =ZMANIM_OVERRIDES.find(o=>o.date===havIso    && o.havdalah_time);
+    if(ovStart){
+      const t=atTimeOn(w._auto.candles,ovStart.candle_time);
+      if(t){ w.candles=t; w.manualStart=true; }
+    }
+    if(ovEnd){
+      const t=atTimeOn(w._auto.havdala,ovEnd.havdalah_time);
+      if(t){ w.havdala=t; w.end=new Date(t.getTime()+30*60*1000); w.manualEnd=true; }
+    }
+  }
+}
+
+/* חלון ידני פעיל כרגע — force קודם, אחר כך אירוע מתוזמן.
+   תוכן התצוגה תמיד נגזר מחלון שבת/חג אמיתי של Hebcal, לעולם לא משעות
+   ההפעלה הידנית עצמן (שהן שרירותיות — "עוד שעתיים" וכו'). הבחירה:
+     1. target_date מפורש — החלון שמכיל אותו תאריך (תצוגה מקדימה מכוונת)
+     2. אין target_date — החלון האמיתי הקרוב ביותר: זה שפעיל כרגע אם יש,
+        אחרת הבא בתור. זה מה ש"הצג מסך שבת/חג עכשיו" תמיד אמור להביא.
+   משך ההצגה בפועל (מתי המסך דלוק) עדיין נשלט לגמרי ע"י start_at/end_at.
+   רק אם אין שום חלון אמיתי ידוע (Hebcal לא נטען) נופלים לשעות הידניות. */
+function nearestRealWindow(now){
+  if(!SHABBAT_WINDOWS.length) return null;
+  const active=SHABBAT_WINDOWS.find(x=>now>=x.start && now<x.end);
+  if(active) return active;
+  const upcoming=SHABBAT_WINDOWS.filter(x=>x.start>=now)
+    .sort((a,b)=>a.start-b.start);
+  if(upcoming.length) return upcoming[0];
+  /* אין קדימה — לוקחים את האחרון שהיה, עדיף מלוח ריק */
+  return [...SHABBAT_WINDOWS].sort((a,b)=>b.start-a.start)[0]||null;
+}
+function activeManualWindow(){
+  const now=nowDate();
+  const inRange=r=>{
+    const s=new Date(r.start_at), e=new Date(r.end_at);
+    return !isNaN(s) && !isNaN(e) && now>=s && now<e;
+  };
+  const pick=MANUAL_WINDOWS.filter(inRange);
+  if(!pick.length) return null;
+  const forced=pick.find(r=>r.source==='force');
+  const r=forced||pick[0];
+  const s=new Date(r.start_at), e=new Date(r.end_at);
+
+  let rw=null;
+  if(r.target_date){
+    rw=SHABBAT_WINDOWS.find(x=>windowDates(x).includes(r.target_date))||null;
+    if(!rw) console.warn('manual_windows target_date לא נמצא בחלונות Hebcal הידועים:',r.target_date);
+  }
+  if(!rw) rw=nearestRealWindow(now);
+
+  if(rw){
+    return {start:rw.start, end:rw.end, names:rw.names,
+            candles:rw.candles, havdala:rw.havdala,
+            manual:true, forced:r.source==='force',
+            previewDate:r.target_date||null};
+  }
+
+  /* מוצא אחרון: אין נתוני Hebcal בכלל */
+  return {start:s, end:e, names:r.name?[r.name]:[],
+          candles:s, havdala:e, manual:true, forced:r.source==='force'};
+}
+
+/* ============================================================
+   חלונות שבת/חג — זמנים אמיתיים מ-Hebcal (כניסה/יציאה),
+   כולל מיזוג שרשראות רצופות וכלל "שבת מוקדמת" (≥17:00 → 16:00 קבוע)
+   מחושב פעם ביום קדימה ~45 יום, ונשמר בזיכרון כדי שהמסך ימשיך
+   לעבוד גם בלי אינטרנט בזמן השבת/חג עצמם.
+   ============================================================ */
+let SHABBAT_WINDOWS=[];      // [{start:Date, end:Date, names:[...]}]
+let windowsBuiltForDay=null;
+
+async function buildShabbatWindows(){
+  if(!hebcal){ SHABBAT_WINDOWS=[]; return; }
+  try{
+    const {HebrewCalendar,Location,flags}=hebcal;
+    const loc=new Location(CONFIG.LAT,CONFIG.LON,true,CONFIG.TIMEZONE,'Custom','IL');
+    const start=nowDate(); start.setDate(start.getDate()-3);
+    const end=nowDate(); end.setDate(end.getDate()+45);
+    const events=HebrewCalendar.calendar({start,end,location:loc,il:true,candlelighting:true});
+
+    // שלב 1: זוגות התחלה/סוף לפי סוג האירוע ולא לפי דגלים.
+    // חשוב: בשבת רגילה ההבדלה נושאת את הדגל LIGHT_CANDLES_TZEIS (שנראה כמו "התחלה"),
+    // ורק בחג היא נושאת YOM_TOV_ENDS. לכן הסתמכות על דגלים משאירה את חלון
+    // השבת פתוח עד החג הבא. getDesc() חד-משמעי: Candle lighting / Havdalah.
+    const raw=[];
+    let openStart=null;
+    for(const ev of events){
+      const t=ev.eventTime;
+      if(!t) continue;
+      const desc=ev.getDesc();
+      if(desc==='Candle lighting'){
+        if(openStart===null) openStart=t;
+      }else if(desc==='Havdalah'){
+        if(openStart!==null){ raw.push({start:openStart,end:t}); openStart=null; }
+      }
+    }
+
+    // שלב 2: שמות חג אמיתיים — רק אירועי-יום עם דגל CHAG (לא הדלקת נרות/הבדלה,
+    // ולא ראש חודש — לראש חודש אין דגל CHAG, נשאר רק כתגית נפרדת)
+    const chagEvents=events
+      .filter(ev=>!ev.eventTime && flags.CHAG && (ev.getFlags() & flags.CHAG))
+      .map(ev=>({date:ev.getDate().greg(), name:hebNameGematria(stripNikud(ev.render('he')||''))}));
+
+    // מיזוג שרשראות רצופות (פער קטן מ-שעה = המשך)
+    raw.sort((a,b)=>a.start-b.start);
+    const merged=[];
+    for(const w of raw){
+      const last=merged[merged.length-1];
+      if(last && (w.start-last.end)<60*60*1000){ last.end=w.end; }
+      else{ merged.push({start:w.start,end:w.end}); }
+    }
+
+    // חלון תצוגה בפועל: שעה לפני הדלקת נרות, אלא אם ≥17:00 → 16:00 קבוע.
+    // מסתיים 30 דק' אחרי סוף השרשרת (לא נוגעים בזה — נשאר כמו שהיה).
+    SHABBAT_WINDOWS=merged.map(w=>{
+      // כניסה קבועה ב-12:00 ביום של הדלקת הנרות (ערב שבת/חג)
+      const winStart=new Date(w.start);
+      winStart.setHours(CONFIG.SHABBAT_START_HOUR,0,0,0);
+      const candles=new Date(w.start);   // זמן הדלקת נרות אמיתי
+      const havdala=new Date(w.end);     // זמן צאת השבת/חג אמיתי
+      const winEnd=new Date(w.end.getTime()+30*60*1000);
+      const names=chagEvents.filter(c=>c.date>=w.start && c.date<w.end)
+                             .map(c=>c.name)
+                             .filter((n,i,arr)=>n && arr.indexOf(n)===i);
+      return {start:winStart,end:winEnd,names,candles,havdala};
+    });
+  }catch(e){
+    console.warn('שגיאה בחישוב חלונות שבת/חג — נופל חזרה למצב ללא Hebcal',e);
+    SHABBAT_WINDOWS=[];
+  }
+}
+
+/* החלון הפעיל כרגע, אם יש — חלון ידני גובר על החישוב האוטומטי */
+function activeShabbatWindow(){
+  const manual=activeManualWindow();
+  if(manual) return manual;
+  const now=nowDate();
+  return SHABBAT_WINDOWS.find(w=>now>=w.start && now<w.end)||null;
+}
+
+/* תגית תצוגה לחלון: "שבת קודש", שמות חג/ים, וראש חודש — כל מה שרלוונטי יחד */
+function windowTags(w){
+  const tags=[];
+  let hasShabbat=false;
+  for(let d=new Date(w.start);d<w.end;d.setDate(d.getDate()+1)){
+    if(d.getDay()===6) hasShabbat=true;
+    if(isRoshChodesh(d) && !tags.includes('ראש חודש')) tags.push('ראש חודש');
+  }
+  if(hasShabbat) tags.unshift('שבת קודש');
+  w.names.forEach(n=>{ if(n && !tags.includes(n)) tags.push(n); });
+  return tags.length?tags:['שבת קודש'];
+}
+function windowDisplay(w){
+  const tags=windowTags(w);
+  const chagName=w.names[0]||'';
+  const greet = chagName ? greetFor(chagName) : 'שבת שלום';
+  const icon  = chagName ? iconFor(chagName)  : '🕯️';
+  return {greet,icon,label:tags.join(' • ')};
+}
+
+/* ============================================================
+   לו"ז תפילות + הודעת קהילה — נשלף מ-Supabase לפי החלון הפעיל.
+   שלושה סוגי לו"ז נפרדים לחלוטין, בלי ירושה ביניהם:
+   regular_shabbat / holiday / shabbat_holiday
+   ============================================================ */
+
+/* סוג הלו"ז של החלון: שבת בלבד / חג בלבד / שבת+חג */
+function scheduleTypeFor(w){
+  let hasShabbat=false;
+  for(let d=new Date(w.start);d<w.end;d.setDate(d.getDate()+1)){
+    if(d.getDay()===6){ hasShabbat=true; break; }
+  }
+  const hasChag=(w.names&&w.names.length>0);
+  if(hasShabbat&&hasChag) return 'shabbat_holiday';
+  if(hasChag) return 'holiday';
+  return 'regular_shabbat';
+}
+
+/* התאריכים שהחלון נוגע בהם — הלו"ז מתויג לאחד מהם */
+function windowDates(w){
+  const out=[];
+  const d=new Date(w.start); d.setHours(0,0,0,0);
+  const last=new Date(w.end);
+  while(d<=last){ out.push(isoDate(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+
+/* פרשת השבוע — מחושב מ-Hebcal, לא נשמר בבסיס הנתונים */
+function parashaFor(w){
+  if(!hebcal) return '';
+  try{
+    const {HebrewCalendar,Location}=hebcal;
+    const loc=new Location(CONFIG.LAT,CONFIG.LON,true,CONFIG.TIMEZONE,'Custom','IL');
+    const start=new Date(w.start); start.setHours(0,0,0,0);
+    const end=new Date(w.end); end.setDate(end.getDate()+1);
+    const evs=HebrewCalendar.calendar({start,end,location:loc,il:true,sedrot:true,noHolidays:true});
+    for(const ev of evs){
+      const t=stripNikud(ev.render('he')||'');
+      if(t.includes('פרשת')) return t;
+    }
+  }catch(e){ console.warn('parasha unavailable',e); }
+  return '';
+}
+
+const PRAYER_CACHE_KEY='prayerCache';
+
+/* שמירה מקומית — כדי שהמסך ימשיך לעבוד בשבת גם בלי אינטרנט */
+function cachePrayers(key,payload){
+  try{ localStorage.setItem(PRAYER_CACHE_KEY,JSON.stringify({key,payload})); }catch(e){}
+}
+function readPrayerCache(key){
+  try{
+    const raw=localStorage.getItem(PRAYER_CACHE_KEY);
+    if(!raw) return null;
+    const o=JSON.parse(raw);
+    return (o&&o.key===key)?o.payload:null;
+  }catch(e){ return null; }
+}
+
+const hhmm=t=>String(t||'').slice(0,5);
+
+/* ---- זמני כניסה/יציאה — חלון קטן ועדין מעל לוח התפילות ---- */
+const TIME_FMT=new Intl.DateTimeFormat('he-IL',
+  {timeZone:CONFIG.TIMEZONE,hour:'2-digit',minute:'2-digit',hour12:false});
+function renderZmanim(w){
+  const box=$('zmanim');
+  if(!w||!w.candles||!w.havdala){ box.classList.add('hidden'); return; }
+  const isChag=(w.names||[]).length>0;
+  let hasShabbat=false;
+  for(const iso of windowDates(w)){
+    if(new Date(iso+'T12:00:00').getDay()===6){ hasShabbat=true; break; }
+  }
+  $('zlbl0').textContent='הדלקת נרות';
+  $('zlbl1').textContent = (isChag&&!hasShabbat) ? 'צאת החג'
+                         : (isChag? 'צאת השבת והחג' : 'צאת השבת');
+  $('zval0').textContent=TIME_FMT.format(w.candles);
+  $('zval1').textContent=TIME_FMT.format(w.havdala);
+  box.classList.remove('hidden');
+}
+
+/* ---- כותרת יום בתוך בלוק שבת/חג ---- */
+const DAY_FULL_LIST=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+function dayHeading(iso, w){
+  const d=new Date(iso+'T12:00:00');
+  const dow=d.getDay();
+  const chagNames=(w.names||[]);
+  // האם יום זה עצמו הוא יום חג (כל יום בחלון מלבד ערב החג הראשון)
+  const dates=windowDates(w);
+  const isFirst=(iso===dates[0]);
+  const isSat=(dow===6);
+  // ערב: היום הראשון בחלון כשהוא אינו שבת בעצמו
+  if(isFirst && !isSat){
+    return chagNames.length ? 'ערב חג' : 'ערב שבת';
+  }
+  const parts=[];
+  if(isSat) parts.push('שבת קודש');
+  if(chagNames.length){
+    // מתאימים שם חג לפי סדר ימי החג בתוך החלון (ללא הערב הראשון)
+    const chagDays=dates.filter((x,i)=>!(i===0 && new Date(x+'T12:00:00').getDay()!==6));
+    const idx=chagDays.indexOf(iso);
+    const nm=chagNames[idx>=0?Math.min(idx,chagNames.length-1):0];
+    if(nm && !parts.includes(nm)) parts.push(nm);
+  }
+  if(!parts.length) parts.push('יום '+DAY_FULL_LIST[dow]);
+  return parts.join(' · ');
+}
+
+/* ---- הפריט הקרוב: הראשון שזמנו עוד לא עבר ---- */
+function nextPrayerId(rows){
+  const now=israelNow();
+  let best=null,bestT=Infinity;
+  for(const r of rows){
+    const t=new Date(r.date+'T'+String(r.time||'00:00:00').slice(0,8)).getTime();
+    if(isNaN(t)) continue;
+    if(t>=now.getTime() && t<bestT){ bestT=t; best=r; }
+  }
+  return best?best.id:null;
+}
+
+/* מועד שורת תפילה — בדיוק אותו חישוב כמו nextPrayerId, כדי ש"עבר" ו"הבא"
+   לעולם לא יסתרו זה את זה. שעון קיר ישראלי, לא שעון המכשיר. */
+function prayerInstant(r){
+  if(!r||!r.date||!r.time) return null;
+  const t=new Date(r.date+'T'+String(r.time||'00:00:00').slice(0,8)).getTime();
+  return isNaN(t)?null:t;
+}
+
+/* ---- ציור: מקובץ לפי יום, עמודה ליום, הדגשה לפריט הקרוב ---- */
+/* מציג לוח תפילות מקובץ לפי יום; notesByDate={iso:[טקסטים]} — הודעת קהילה
+   ליום הספציפי הזה (לא הודעה גלובלית אחת למסך כולו, כדי שכמה ימים עם
+   הודעות שונות באותו חלון יוצגו כולם, כל אחד תחת היום הנכון שלו) */
+function renderPrayerRows(box,rows,w,notesByDate){
+  notesByDate=notesByDate||{};
+  const sorted=[...rows].sort((a,b)=>
+    String(a.date).localeCompare(String(b.date)) ||
+    (a.display_order||0)-(b.display_order||0));
+
+  const byDay=new Map();
+  for(const r of sorted){
+    if(!byDay.has(r.date)) byDay.set(r.date,[]);
+    byDay.get(r.date).push(r);
+  }
+  // ימים שיש להם רק הודעת קהילה בלי אף שורת תפילה — עדיין מקבלים עמודה
+  for(const iso of Object.keys(notesByDate)){
+    if(!byDay.has(iso)) byDay.set(iso,[]);
+  }
+  const entries=[...byDay.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+
+  const nextId=nextPrayerId(sorted);
+
+  // מספר העמודות נגזר ממספר הימים בפועל, כדי שחג ארוך לא יישבר
+  box.dataset.cols=String(Math.min(entries.length,4));
+  box.innerHTML='';
+
+  const nowT=israelNow().getTime();
+  // מעמעמים שורות שעברו רק כל עוד יש עוד משהו לפנינו. אחרי הפריט האחרון
+  // אין "הבא", וללא התנאי הזה כל הלוח היה נצבע חיוור ונראה שבור.
+  const dimPast=(nextId!==null);
+
+  for(const [iso,list] of entries){
+    const col=document.createElement('div');
+    col.className='pday';
+
+    if(entries.length===1){
+      const head=document.createElement('div');
+      head.className='ptitle';
+      head.textContent='זמני תפילות';
+      col.appendChild(head);
+    }else{
+      const head=document.createElement('div');
+      head.className='pdayhead';
+      const h=document.createElement('div');
+      h.className='pdh'; h.textContent=dayHeading(iso,w);
+      head.appendChild(h);
+      col.appendChild(head);
+    }
+
+    for(const r of list){
+      const row=document.createElement('div');
+      const isNext=(nextId!==null&&r.id===nextId);
+      // שורה שכבר עברה מעומעמת — בשבת אחה"צ חצי הלוח כבר לא רלוונטי
+      const t=prayerInstant(r);
+      const isPast=(dimPast && !isNext && t!==null && t<nowT);
+      row.className='prow'+(isNext?' pnext':'')+(isPast?' ppast':'');
+
+      const tm=document.createElement('span');
+      tm.className='ptime'; tm.textContent=hhmm(r.time);
+
+      const nm=document.createElement('span');
+      nm.className='pname'; nm.textContent=r.title||'';
+      if(r.location){
+        const lc=document.createElement('span');
+        lc.className='ploc'; lc.textContent=r.location;
+        nm.appendChild(lc);
+      }
+
+      row.appendChild(tm); row.appendChild(nm);
+      col.appendChild(row);
+    }
+
+    const noteTexts=notesByDate[iso];
+    if(noteTexts&&noteTexts.length){
+      const nd=document.createElement('div');
+      nd.className='pdaynote';
+      nd.textContent=noteTexts.join(' · ');
+      col.appendChild(nd);
+    }
+
+    box.appendChild(col);
+  }
+}
+
+/* שליפה + הצגה. לא ממציא לו"ז: אם אין נתונים לתאריך — לא מוצג כלום.
+   הודעות קהילה מוצגות לפי היום שלהן (community_notes.date), לא כהודעה
+   גלובלית אחת — כך שכמה אירועים בימים שונים (או אפילו באותו יום) בתוך
+   אותו חלון שבת/חג מוצגים כולם, כל אחד תחת היום הנכון שלו. */
+async function renderPrayers(w){
+  const box=$('prayers');
+  const type=scheduleTypeFor(w);
+  const dates=windowDates(w);
+  const key=type+'|'+dates.join(',');
+
+  let rows=null, notes=null;
+  if(db){
+    try{
+      const [pRes,nRes]=await Promise.all([
+        db.from('prayer_schedule').select('*')
+          .eq('schedule_type',type).in('date',dates).order('display_order'),
+        db.from('community_notes').select('*').in('date',dates),
+      ]);
+      if(!pRes.error) rows=pRes.data||[];
+      if(!nRes.error) notes=nRes.data||[];
+      if(rows) cachePrayers(key,{rows,notes:notes||[]});
+    }catch(e){ console.warn('prayer schedule unavailable',e); }
+  }
+  if(rows===null){                       // אין רשת — נופלים למטמון
+    const cached=readPrayerCache(key);
+    if(cached){ rows=cached.rows; notes=cached.notes; }
+  }
+
+  const notesByDate={};
+  for(const n of (notes||[])){
+    if(!n||!n.text||!n.date) continue;
+    (notesByDate[n.date]||(notesByDate[n.date]=[])).push(n.text);
+  }
+
+  if((rows&&rows.length)||Object.keys(notesByDate).length){
+    renderPrayerRows(box,rows||[],w,notesByDate);
+    box.classList.remove('hidden');
+  }else{
+    box.innerHTML=''; box.classList.add('hidden');
+  }
+}
+
+/* ---- מזג אוויר ---- */
+const WCODE={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌦️',
+ 61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'🌨️',80:'🌧️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+/* המלצת לבוש — לפי הטמפרטורה המעוגלת שמוצגת על המסך בלבד.
+   גשם לא משנה את הבגד; הוא רק מוסיף ☂️ + אחוז (ראו rainSuffix). */
+function clothingFor(max){
+  const t=Math.round(max);
+  if(t>=30) return {icon:'👕🧢',   text:'חם מאוד — קצרים וכובע'};
+  if(t>=25) return {icon:'👕',     text:'נעים — קצרים'};
+  if(t>=18) return {icon:'🧥',     text:'מומלץ סווטשירט'};
+  if(t>=12) return {icon:'🧥🧣',   text:'קריר — מעיל קל'};
+  return          {icon:'🧥🧤🧣', text:'קר — מעיל חם'};
+}
+/* טיפות גשם ביום המודגש (15.11.2026): סיכוי ≥ RAIN_DROPS_PCT, או גשם בינוני ומעלה
+   (גשם 63/65, גשם קפוא 67, ממטרים 81/82, סופת רעמים 95/96/99) */
+const HEAVY_RAIN=[63,65,67,81,82,95,96,99];
+function isRainyDay(c){
+  return (c.rain!==null && c.rain>=CONFIG.RAIN_DROPS_PCT) || HEAVY_RAIN.includes(c.code);
+}
+const DROP_SVG='<svg viewBox="0 0 22 30"><path d="M11 1C11 1 2 13 2 19a9 9 0 0 0 18 0C20 13 11 1 11 1Z" fill="#2F6BB0"/><ellipse cx="7.5" cy="19" rx="2" ry="3.5" fill="#fff" opacity=".7"/></svg>';
+function rainDrops(){
+  let h='<span class="drops" aria-hidden="true">';
+  for(let i=0;i<20;i++){
+    const x=(i*37+11)%92+2, dur=(3.2+((i*7)%10)/6).toFixed(2), del=(-((i*13)%40)/10).toFixed(2);
+    h+=`<i style="right:${x}%;animation-duration:${dur}s;animation-delay:${del}s">${DROP_SVG}</i>`;
+  }
+  return h+'</span>';
+}
+/* קצר/ארוך ללוח הראשי (13.11.2026) — לפי המקסימום היומי המעוגל בלבד */
+function sleeveFor(max){
+  return Math.round(max)>=CONFIG.SHORT_FROM
+    ? {cls:'short',icon:'👕',text:'קצר'}
+    : {cls:'long', icon:'🧥',text:'ארוך'};
+}
+function rainSuffix(p){
+  return (p!==null && p!==undefined && p>=CONFIG.RAIN_ALERT_PCT)
+    ? ` · ☂️ ${Math.round(p)}%` : '';
+}
+/* ---- רצועת התחזית (10.11.2026) — אתמול + היום + 3 ימים ----
+   הדגשה נודדת: "היום" עד 17:00, ומ-17:00 "מחר" (כמו הכרטיסים הקודמים). */
+const WEATHER_FOCUS_HOUR=17;
+const WX_CACHE_KEY='fd_wx_v1';
+let WX_RAW=null;            // תשובת open-meteo האחרונה (daily) — גם מהמטמון כשאין רשת
+let WX_BY_DATE={};          // תחזית לפי תאריך — מסך שבת משתמש בזה
+const ARROW_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg>';
+const ARROW_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg>';
+
+function wxDayLabel(iso,rel){
+  /* "היום שלישי", "מחר רביעי", "אתמול שני", ושאר הימים בשמם (בקשת שים, 10.11.2026) */
+  const d=new Date(iso+'T12:00:00');
+  const name=DAY_FULL[DAYS[d.getDay()]];
+  if(rel===-1) return 'אתמול '+name;
+  if(rel===0) return 'היום '+name;
+  if(rel===1) return 'מחר '+name;
+  return name;
+}
+/* "ביום חמישי" / "מחר" / "בשבת" — לשורת הסיכום */
+function wxDayPhrase(iso,rel){
+  if(rel===1) return 'מחר';
+  const name=DAY_FULL[DAYS[new Date(iso+'T12:00:00').getDay()]];
+  return name==='שבת'?'בשבת':'ביום '+name;
+}
+/* ההפרש בין שני ימים לפי המקסימום המעוגל — אותו מספר שמוצג על המסך */
+function wxDelta(a,b){ return Math.round(b.max)-Math.round(a.max); }
+
+function wxColumns(){
+  if(!WX_RAW||!WX_RAW.time) return null;
+  const today=isoDate(israelNow());
+  const t=WX_RAW.time.indexOf(today);
+  if(t<0) return null;                       // מטמון מיום אחר לגמרי — לא מציגים תחזית שגויה
+  const from=Math.max(0,t-1), cols=[];
+  for(let i=from;i<WX_RAW.time.length && cols.length<5;i++){
+    cols.push({iso:WX_RAW.time[i], rel:i-t, code:WX_RAW.weather_code[i],
+      max:WX_RAW.temperature_2m_max[i], min:WX_RAW.temperature_2m_min[i],
+      rain:(WX_RAW.precipitation_probability_max||[])[i]??null});
+  }
+  return cols.length>=2?cols:null;
+}
+
+/* ---- מזג אוויר (16.11.2026, מוקאפ שאושר): אתמול · היום · מחר ----
+   אתמול צר ואפור (נקודת השוואה), היום רחב ומודגש, מחר צר. */
+function renderForecast(){
+  const box=$('fc');
+  const cols=wxColumns();
+  const T=cols?cols.find(c=>c.rel===0):null;
+  if(!T){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const Y=cols.find(c=>c.rel===-1), M=cols.find(c=>c.rel===1);
+  const dayName=c=>DAY_FULL[DAYS[new Date(c.iso+'T12:00:00').getDay()]];
+  const temps=c=>`<div class="w3tt"><span class="hi">${Math.round(c.max)}°</span><span class="lo">${Math.round(c.min)}°</span></div>`;
+  let h='';
+  if(Y) h+=`<div class="w3side w3y" data-d="y"><div class="w3lbl">אתמול<br>${dayName(Y)}</div>`+
+    `<div class="w3ic">${WCODE[Y.code]||'🌡️'}</div>${temps(Y)}</div>`;
+  /* היום */
+  const wet=isRainyDay(T), w=sleeveFor(T.max), sev=SEVERE.includes(T.code);
+  let chg='';
+  if(Y){
+    const d=wxDelta(Y,T), a=Math.abs(d);
+    chg = a<=1 ? `<span class="w3chg same">= כמו אתמול</span>`
+      : `<span class="w3chg ${a>=4?'big':(d>0?'up':'down')}">${d>0?ARROW_UP:ARROW_DOWN}<span>${d>0?'חם':'קר'} יותר מאתמול ב־<bdi dir="ltr">${a}°</bdi></span></span>`;
+  }
+  const umb=(T.rain!==null && T.rain>=CONFIG.RAIN_ALERT_PCT)
+    ? `<div class="w3umb">☂️ מטרייה · <bdi dir="ltr">${Math.round(T.rain)}%</bdi></div>` : '';
+  h+=`<div class="w3t${wet?' rainy':''}" data-d="t">${wet?rainDrops():''}`+
+    `<div class="w3a"><span class="w3pill">היום ${dayName(T)}</span><span class="w3ic">${WCODE[T.code]||'🌡️'}</span></div>`+
+    `<div class="w3b"><div class="w3big">${Math.round(T.max)}°</div><div class="w3low">${Math.round(T.min)}°</div>${chg}</div>`+
+    `<div class="w3c"><div class="w3wear ${w.cls}${sev?' severe':''}"><span class="wi">${sev?'⚠️':''}${w.icon}</span><span class="wt">${w.text}</span></div>${umb}</div></div>`;
+  if(M){
+    const mw=sleeveFor(M.max);
+    const mr=(M.rain!==null && M.rain>=CONFIG.RAIN_ALERT_PCT)?` · ☂️${Math.round(M.rain)}%`:'';
+    h+=`<div class="w3side w3m" data-d="m"><div class="w3lbl">מחר<br>${dayName(M)}</div>`+
+      `<div class="w3ic">${WCODE[M.code]||'🌡️'}</div>${temps(M)}<span class="w3sl ${mw.cls}">${mw.icon} ${mw.text}${mr}</span></div>`;
+  }
+  box.innerHTML=h;
+  box.classList.remove('hidden');
+}
+
+async function loadWeather(){
+  let daily=null;
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.LAT}&longitude=${CONFIG.LON}`
+      +`&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
+      +`&timezone=${encodeURIComponent(CONFIG.TIMEZONE)}&past_days=1&forecast_days=4`;
+    const j=await (await fetch(url)).json();
+    if(j&&j.daily&&j.daily.time){ daily=j.daily; try{ localStorage.setItem(WX_CACHE_KEY,JSON.stringify(daily)); }catch(e){} }
+  }catch(e){ console.warn('weather failed'); }
+  if(!daily){ try{ daily=JSON.parse(localStorage.getItem(WX_CACHE_KEY)||'null'); }catch(e){} }
+  if(!daily) return;
+  WX_RAW=daily;
+  const rainArr=daily.precipitation_probability_max||[];
+  WX_BY_DATE={};
+  for(let i=0;i<(daily.time||[]).length;i++){
+    WX_BY_DATE[daily.time[i]]={code:daily.weather_code[i],
+      max:daily.temperature_2m_max[i],min:daily.temperature_2m_min[i],
+      rain:(rainArr[i]==null?null:rainArr[i])};
+  }
+  renderForecast();
+  if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
+}
+
+/* ---- מזג אוויר על מסך שבת: שורה אחת, יום אחד לכל יום בחלון ---- */
+const SEVERE=[65,75,82,95,96,99];
+let LAST_WIN=null;
+
+function renderShabbatWeather(w){
+  const box=$('sbwx');
+  if(!box) return;
+  const dates=w?windowDates(w):[];
+  const parts=[];
+  for(const iso of dates.slice(0,3)){
+    const wx=WX_BY_DATE[iso];
+    if(!wx) continue;
+    const label=shortDayLabel(iso,w);
+    const warn=SEVERE.includes(wx.code)?' wxwarn':'';
+    parts.push(`<span class="wxi${warn}"><span class="wxe">${WCODE[wx.code]||'🌡️'}</span>`
+      +`<span class="wxd">${label}</span>`
+      +`<span class="wxt">${Math.round(wx.max)}°</span></span>`);
+  }
+  if(!parts.length){ box.innerHTML=''; box.classList.add('hidden'); return; }
+  box.innerHTML=parts.join('<span class="wxsep">·</span>');
+  box.classList.remove('hidden');
+}
+
+/* תווית קצרה ליום בתוך רצועת מזג האוויר — "היום" כשזה באמת היום */
+function shortDayLabel(iso,w){
+  const today=israelNow();
+  const todayIso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`
+    +`-${String(today.getDate()).padStart(2,'0')}`;
+  if(iso===todayIso) return 'היום';
+  const d=new Date(iso+'T12:00:00');
+  return d.getDay()===6 ? 'שבת' : 'יום '+DAY_FULL_LIST[d.getDay()];
+}
+
+/* ---- מערכת שעות — כרטיס לכל ילד ---- */
+const SPORT_RE=/(חינוך\s*גופני|חנ["׳״”’']?ג|ספורט|התעמלות|שחי[יה]ה)/;
+
+function buildSchedule(periods,rows,overrides,meals,isToday,targetIso){
+  const wrap=$('kidcards'); wrap.innerHTML='';
+  overrides = overrides || [];
+  meals = meals || {};
+  const allOv = overrides.find(o=>!o.kid);
+  const kidOv = {}; overrides.forEach(o=>{ if(o.kid) kidOv[o.kid]=o; });
+
+  // חופש לכולם — הודעה אחת במקום שלושת הכרטיסים
+  if(allOv){
+    wrap.innerHTML=`<div class="dayoff">${allOv.note||'חופש'}</div>`;
+    return;
+  }
+
+  const map={}; KIDS.forEach(k=>map[k.name]={});
+  rows.forEach(r=>{ if(map[r.kid]) map[r.kid][r.period]=r.subject; });
+
+  // כל השורות (שיעורים+הפסקות) לפי סדר, בלי תאי "סיים"
+  const allOrdered=[...periods].sort((a,b)=>a.order_index-b.order_index);
+
+  const nowMin=(()=>{ const n=israelNow(); return n.getHours()*60+n.getMinutes(); })();
+  // "עכשיו" מסומן רק אם היום המוצג הוא באמת היום — לא רק לפי השעה
+  const showingToday = !!isToday;
+
+  KIDS.forEach(k=>{
+    const ov=kidOv[k.name];
+    const hasSport=rows.some(r=>r.kid===k.name && r.subject && SPORT_RE.test(r.subject));
+
+    let inner='';
+    let endInfo=null;
+    if(ov){
+      inner=`<div class="dayoff small">${ov.note||'חופש'}</div>`;
+    }else{
+      // בונים רשימת פריטים (שיעור/הפסקה) לפי הסדר האמיתי, כולל הפסקות בין שיעורים שקיימים בפועל
+      let items=allOrdered.map(p=>{
+        if(p.label.trim()==='הפסקה'){
+          return {type:'break', t:p.start_time?p.start_time.slice(0,5):''};
+        }
+        const num=parseInt(p.label,10);
+        const subj=map[k.name][num];
+        if(subj && subj.trim()) return {type:'lesson', t:p.start_time?p.start_time.slice(0,5):'', subj, num};
+        return null;
+      }).filter(Boolean);
+      // הפסקה לא תיפתח/תיסגר את הכרטיס, ולא תופיע כפולה
+      while(items.length && items[0].type==='break') items.shift();
+      while(items.length && items[items.length-1].type==='break') items.pop();
+      items=items.filter((it,i)=> !(it.type==='break' && items[i-1] && items[i-1].type==='break'));
+
+      // "עכשיו"/"עבר" מחושבים רק על פריטי שיעור
+      let nowIdx=-1;
+      if(showingToday){
+        items.forEach((x,i)=>{
+          if(x.type!=='lesson' || !x.t) return;
+          const [hh,mm]=x.t.split(':').map(Number);
+          if(hh*60+mm<=nowMin) nowIdx=i;
+        });
+      }
+      const firstLessonIdx=items.findIndex(x=>x.type==='lesson');
+
+      inner=items.map((x,i)=>{
+        if(x.type==='break') return `<div class="brk-a"><span>הפסקה · ${x.t}</span></div>`;
+        let cls='lesson';
+        let tag='';
+        if(showingToday){
+          if(i===nowIdx) cls+=' now';
+          else if(i<nowIdx) cls+=' past';
+        }else if(i===firstLessonIdx){ cls+=' first'; tag='<span class="ltag">מתחילים</span>'; }
+        const shoe=(x.subj && SPORT_RE.test(x.subj))?'<span class="lem">👟</span>':'';
+        return `<div class="${cls}"><span class="ltime">${x.t}</span>`+
+               `<span class="lsubj">${x.subj}</span>${shoe}${tag}</div>`;
+      }).join('');
+      endInfo=endOfDayFor(items, targetIso||'');
+      if(!inner) inner='<div class="nosched">אין מערכת מעודכנת</div>';
+    }
+
+    const m=(k.show_food!==false)?meals[k.name]:null;
+    const mealHtml = m
+      ? `<div class="mealchip"><span class="ml">ארוחת עשר</span><span class="mv">${m.text}`+
+        (m.note?`<span class="fx">${m.note}</span>`:'')+`</span></div>`
+      : '';
+
+    /* שעת סיום — נגזרת מהשיעור האחרון, או מיציאה מוקדמת בלוח החופשות */
+    const endHtml = endInfo
+      ? `<div class="endchip${endInfo.forced?' early':''}">`+
+        `<span class="el">${endInfo.forced?'סיום מוקדם':'סיום'}</span>`+
+        `<span class="ev">${endInfo.time}</span></div>`
+      : '';
+
+    const pts=kidPoints(k);
+    wrap.insertAdjacentHTML('beforeend',
+      `<div class="kidcard${pts.reached?' reached':''}" style="--c:${k.color};--cbg:${k.bg}">
+         <div class="kidhead">
+           <span class="kidname">${k.name}</span>
+           ${k.grade?`<span class="kidgrade">${k.grade}</span>`:''}
+           ${hasSport?'<span class="kidem">👟</span>':''}
+           ${pts.tag}
+           ${endHtml}
+         </div>
+         <div class="lessons">${inner}</div>
+         ${mealHtml}
+         ${pts.html}
+       </div>`);
+  });
+}
+
+let ALL_KIDS=[];
+/* אוכל ליום המוצג: רשומה לתאריך גוברת על תבנית שבועית קבועה */
+function mealsForDay(all,date,dayLetter){
+  const iso=isoDate(date), out={};
+  const approved=all.filter(m=>m.status!=='pending'&&m.status!=='rejected');
+  const label=m=>(m.food_types&&m.food_types.name)||m.custom_text||'';
+
+  approved.filter(m=>m.is_recurring&&m.weekday===dayLetter)
+    .forEach(m=>{ const t=label(m); if(t) out[m.kid]={text:t,note:m.note}; });
+  approved.filter(m=>m.date===iso)
+    .forEach(m=>{ const t=label(m); if(t) out[m.kid]={text:t,note:m.note}; });
+  return out;
+}
+
+function buildChugim(list){
+  const box=$('chugim'),out=$('chlist');
+  if(!list.length){box.classList.add('hidden');return;}
+  // היום הנוכחי כאן נמדד מחצות עד חצות — בשונה מכלל ה-12:00
+  const nowDay=DAYS[israelNow().getDay()];
+  const WEEK=['א','ב','ג','ד','ה','ו'];
+
+  const head='<tr>'+WEEK.map(d=>
+    `<th class="${d===nowDay?'chnow':''}"><span>${DAY_FULL[d]}</span></th>`).join('')+'</tr>';
+
+  const body='<tr>'+WEEK.map(d=>{
+    const items=list.filter(c=>c.day===d)
+      .sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
+    if(!items.length) return `<td class="${d===nowDay?'chnow':''}"><span class="chempty">—</span></td>`;
+    const inner=items.map(c=>{
+      const k=ALL_KIDS.find(x=>x.name===c.kid);
+      const col=k?k.color:'var(--ink-soft)';
+      return `<div class="chent">
+        ${c.time?`<span class="t">${c.time.slice(0,5)}</span>`:''}
+        <span class="k" style="--c:${col}">${c.kid}</span>
+        <span class="a"> ${c.activity}</span>
+        ${c.location?`<span class="loc">· ${c.location}</span>`:''}
+      </div>`;
+    }).join('');
+    return `<td class="${d===nowDay?'chnow':''}">${inner}</td>`;
+  }).join('')+'</tr>';
+
+  out.innerHTML=head+body;
+  box.classList.remove('hidden');
+}
+
+/* ============================================================
+   נקודות (10.11.2026)
+   כל ההגדרות (מעשים, יעדים, פרסים, תצוגה, חגיגה, הצגה/הסתרה) מגיעות
+   מהמסד ונערכות באפליקציית "נקודות" — שינוי שם מופיע כאן תוך דקה,
+   בלי העלאת גרסה. הלוח רק קורא; כל כתיבה נעשית באפליקציה.
+   ============================================================ */
+const PRIZE_ICONS={
+  icecream:'<svg viewBox="0 0 24 24" fill="none" stroke="#C2406F" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M7.5 10.5 12 22l4.5-11.5"/></svg>',
+  film:'<svg viewBox="0 0 24 24" fill="none" stroke="#7A5FA8" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>',
+  game:'<svg viewBox="0 0 24 24" fill="none" stroke="#2E6F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/></svg>',
+  pizza:'<svg viewBox="0 0 24 24" fill="none" stroke="#C9871F" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 22 3 5c6-3 12-3 18 0z"/><circle cx="10" cy="9" r="1.2"/><circle cx="14" cy="12" r="1.2"/><circle cx="11.5" cy="15" r="1.2"/></svg>',
+  ball:'<svg viewBox="0 0 24 24" fill="none" stroke="#2E7D52" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
+  gift:'<svg viewBox="0 0 24 24" fill="none" stroke="#9C3D0C" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="1.5"/><path d="M3 13h18M12 9v12M12 9c-2-4-6-4-6-1.5S9 9 12 9zM12 9c2-4 6-4 6-1.5S15 9 12 9z"/></svg>',
+};
+const MEDAL_SVG='<svg viewBox="0 0 160 160" aria-hidden="true"><path d="M50 22l18 44h-14L36 22z" fill="#EE719E"/><path d="M110 22l-18 44h14l18-44z" fill="#2E7D52"/><circle cx="80" cy="96" r="40" fill="#FFFFFF"/><path d="M80 76l6 12 13 1.5-9.5 9 2.5 13-12-6.5-12 6.5 2.5-13-9.5-9 13-1.5z" fill="#C9871F"/></svg>';
+const TROPHY_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" style="width:11rem;height:11rem"><path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#E2A13B"/><path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4" fill="none" stroke="#C9871F" stroke-width="1.6"/><path d="M10 13h4l-.5 4h-3z" fill="#C9871F"/><rect x="8" y="17" width="8" height="3" rx="1" fill="#9C6B1F"/><path d="M12 4.5l.9 1.9 2 .2-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.2z" fill="#FFFFFF"/></svg>';
+const starSvg=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21.1l1.5-7L2 9.3l7-.8z" fill="${on?'#E2A13B':'var(--line)'}"/></svg>`;
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const PTS_CACHE_KEY='fd_pts_v1';
+let PTS={show:false, goals:[], events:[], settings:{}, kids:[]};
+
+/* התקדמות ליעד: נקודות שנצברו מאז שהיעד התחיל + עודף שהועבר אליו.
+   reachedAt = רגע הנקודה שחצתה את היעד (לחגיגה). */
+function goalProgress(g){
+  const start=new Date(g.started_at).getTime();
+  /* צנצנת משפחתית: כל נקודה שניתנה נשארת בה — גם של ילד שהוצא אחר כך מהנקודות (10.11.2026) */
+  const evs=PTS.events.filter(e=>!e.undone_at && (g.kid_id==null || e.kid_id===g.kid_id) && new Date(e.created_at).getTime()>=start)
+                      .sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  let sum=g.carry_in||0, reachedAt=sum>=g.target?start:null;
+  for(const e of evs){ sum+=e.points; if(reachedAt===null && sum>=g.target) reachedAt=new Date(e.created_at).getTime(); }
+  return {sum, reachedAt, reached:sum>=g.target};
+}
+function goalOf(kidId){ return PTS.goals.find(g=>g.status==='active' && (kidId==null ? g.kid_id==null : g.kid_id===kidId)); }
+
+async function loadPoints(settingsRows){
+  const get=k=>{ const r=(settingsRows||[]).find(x=>x.key===k); return r?String(r.value??'').trim():''; };
+  PTS.settings={show:get('points_show_kiosk')!=='0', mode:get('points_celebration')||'once',
+                secs:parseInt(get('points_celebration_seconds'),10)||60};
+  PTS.raw={}; (settingsRows||[]).forEach(r=>{ PTS.raw[r.key]=r.value==null?'':String(r.value); });
+  PTS.show=true;   /* 16.11 סבב 2: המתג הראשי הוחלף בארבעה מתגים — ראו partOn() */
+  PTS.kids=ALL_KIDS;
+  if(!db) return;
+  try{
+    const [g,a]=await Promise.all([
+      db.from('point_goals').select('*').eq('status','active'),
+      db.from('point_actions').select('id,title'),
+    ]);
+    if(g.error) throw g.error;
+    const goals=g.data||[];
+    /* אירועים: מתחילת היעד הוותיק + 8 ימים אחורה (אתמול ושבוע מיום ראשון) */
+    const back=new Date(nowMs()-8*86400000).toISOString();
+    const since=[back,...goals.map(x=>x.started_at)].sort()[0];
+    const e=await db.from('point_events').select('id,kid_id,points,created_at,undone_at,action_id,reason').gte('created_at',since);
+    if(e.error) throw e.error;
+    PTS.goals=goals; PTS.events=e.data||[];
+    if(a&&!a.error) PTS.actions=a.data||[];
+    try{ localStorage.setItem(PTS_CACHE_KEY,JSON.stringify({goals:PTS.goals,events:PTS.events,actions:PTS.actions||[]})); }catch(_){}
+  }catch(err){
+    try{ const c=JSON.parse(localStorage.getItem(PTS_CACHE_KEY)||'null'); if(c){ PTS.goals=c.goals||[]; PTS.events=c.events||[]; PTS.actions=c.actions||[]; } }catch(_){}
+  }
+}
+
+/* שורת "★ 28 / 40" + פס, או כוכבים לילד קטן */
+function pointsLine(k,g,p){
+  const togo=g.target-p.sum;
+  const prize=esc(g.prize||'');
+  const label = g.needs_setup ? 'יעד חדש בקרוב'
+    : p.reached ? `${prize} מחכה לך!`
+    : `עוד ${togo} ל${prize}`;
+  const extra = p.reached && p.sum>g.target ? ` <span style="color:var(--c)"><bdi>+${p.sum-g.target}</bdi> לבא</span>` : '';
+  if(k.points_display==='stars' && g.target<=20){
+    let st=''; for(let i=0;i<g.target;i++) st+=starSvg(i<Math.min(p.sum,g.target));
+    return `<div class="kpt"><span class="togo">${label}</span></div><div class="stars">${st}</div>`;
+  }
+  const pct=g.needs_setup?0:Math.min(100,Math.round(p.sum/g.target*100));
+  return `<div class="kpt"><span>★ <b>${p.sum}</b> / ${g.needs_setup?'—':g.target}${extra}</span><span class="togo">${label}</span></div>`+
+         `<div class="kbar"><span style="width:${pct}%"></span></div>`;
+}
+/* מה buildSchedule מוסיף לכרטיס של ילד */
+function kidPoints(k){
+  if(!PTS.show || k.points_enabled===false) return {html:'',reached:false,tag:''};
+  const g=goalOf(k.id); if(!g) return {html:'',reached:false,tag:''};
+  const p=goalProgress(g);
+  const reached=p.reached && !g.needs_setup;
+  return {html:partOn('bars')?`<div class="kpts">${pointsLine(k,g,p)}</div>`:'', reached,
+          tag:reached?`<span class="goaltag">${MEDAL_SVG}הגעתי ליעד!</span>`:''};
+}
+
+function ptKidHtml(k){
+  const g=goalOf(k.id), p=goalProgress(g);
+  const stars=k.points_display==='stars' && g.target<=20;
+  let body='';
+  if(stars){ for(let i=0;i<g.target;i++) body+=starSvg(i<Math.min(p.sum,g.target)); body=`<div class="stars">${body}</div>`; }
+  else body=`<div class="kbar"><span style="width:${Math.min(100,Math.round(p.sum/g.target*100))}%"></span></div>`;
+  const msg=g.needs_setup?'יעד חדש בקרוב':p.reached?`${esc(g.prize)} מחכה לך!`:`עוד ${g.target-p.sum} ל${esc(g.prize)}`;
+  return `<div class="ptkid" style="--c:${k.color}"><div class="pkh"><span class="xn">${esc(k.name)}</span>`+
+    `<span class="xv">${Math.min(p.sum,g.target)}/${g.target}${stars?' ★':''}</span></div>${body}`+
+    `<div class="xs${p.reached?' done':''}">${msg}</div></div>`;
+}
+/* ============================================================
+   היום קיבלתי ⭐ (16.11.2026) — משבצת לכל ילד בשורה העליונה:
+   מה קיבל היום ואתמול, פס התקדמות לפרס, והצנצנת המשפחתית מתחת.
+   ============================================================ */
+const IL_DAY=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem'});
+const ilIso=t=>IL_DAY.format(new Date(t));
+function evTitle(e){ const a=(PTS.actions||[]).find(x=>x.id===e.action_id); return e.reason||(a?a.title:'נקודות'); }
+/* קיבוץ לפי מעשה: [{t,n,pts}] — הכי הרבה קודם */
+function groupDeeds(evs){
+  const m=new Map();
+  for(const e of evs){ const t=evTitle(e); const g=m.get(t)||{t,n:0,pts:0,last:0}; g.n++; g.pts+=e.points; g.last=Math.max(g.last,new Date(e.created_at).getTime()); m.set(t,g); }
+  return [...m.values()].sort((x,y)=>y.n-x.n||y.last-x.last);
+}
+function kidEvents(kidId,fromIso,toIso){
+  return PTS.events.filter(e=>!e.undone_at && e.kid_id===kidId && (()=>{ const d=ilIso(e.created_at); return d>=fromIso && (!toIso||d<=toIso); })());
+}
+const isStarsKid=(k,g)=>k&&k.points_display==='stars' && g && g.target<=20;
+function ptsText(k,g,n){ return isStarsKid(k,g) ? '★'.repeat(Math.min(n,5))+(n>5?'+':'') : '+'+n; }
+function deedLabel(d){ return d.n>1?`${d.t} ×${d.n}`:d.t; }
+/* אפקט ביעד: 2h = זיקוקים שעתיים ואז זוהר · always = זיקוקים עד המימוש · off = בלי */
+function goalFx(p){
+  const mode=PSC?PSC.goalEffectOf(PTS.raw&&PTS.raw.points_goal_effect):'2h';
+  if(!p.reached || mode==='off') return {sparks:false,glow:false};
+  if(mode==='always') return {sparks:true,glow:true};
+  return {sparks:nowMs()-p.reachedAt<2*3600*1000, glow:true};
+}
+const SPARK_COLS=['#E2A13B','#E8603C','#7A5FA8','#2E6F8E','#2E8B57'];
+function sparksHtml(){
+  let h='<span class="k4fx" aria-hidden="true">';
+  for(let i=0;i<10;i++){
+    const ang=i/10*Math.PI*2;
+    h+=`<i style="background:${SPARK_COLS[i%5]};--dx:${(Math.cos(ang)*2.6).toFixed(2)}rem;--dy:${(Math.sin(ang)*2.6).toFixed(2)}rem;animation-delay:${(-(i%5)*.25).toFixed(2)}s"></i>`;
+  }
+  return h+'</span>';
+}
+function k4Box(k){
+  const g=goalOf(k.id), p=goalProgress(g);
+  const today=isoDate(israelNow());
+  const yd=new Date(israelNow()); yd.setDate(yd.getDate()-1); const yIso=isoDate(yd);
+  const tg=groupDeeds(kidEvents(k.id,today,today)), yg=groupDeeds(kidEvents(k.id,yIso,yIso));
+  const reached=p.reached && !g.needs_setup, fx=goalFx({...p,reached});
+  let rows='';
+  if(!tg.length) rows+=`<div class="k4r none"><span>היום עוד לא</span></div>`;
+  else if(tg.length<=2) rows+=tg.map(d=>`<div class="k4r"><span>${esc(deedLabel(d))}</span><b>${ptsText(k,g,d.pts)}</b></div>`).join('');
+  else{
+    const restN=tg.slice(1).reduce((a,d)=>a+d.pts,0);
+    rows+=`<div class="k4r"><span>${esc(deedLabel(tg[0]))}</span><b>${ptsText(k,g,tg[0].pts)}</b></div>`+
+          `<div class="k4r"><span>ועוד ${tg.length-1} מעשים</span><b>${ptsText(k,g,restN)}</b></div>`;
+  }
+  if(yg.length){
+    const ypts=yg.reduce((a,d)=>a+d.pts,0);
+    const ylab=yg.length===1?deedLabel(yg[0]):`${deedLabel(yg[0])} ועוד`;
+    rows+=`<div class="k4r y"><span>אתמול · ${esc(ylab)}</span><b>${ptsText(k,g,ypts)}</b></div>`;
+  }
+  const stars=isStarsKid(k,g);
+  const pct=g.needs_setup?0:Math.min(100,Math.round(p.sum/g.target*100));
+  const prog=g.needs_setup?'—':`${stars?'★ ':''}${Math.min(p.sum,g.target)} / ${g.target}`;
+  const prize=g.needs_setup?'יעד חדש בקרוב':esc(g.prize||'');
+  return `<div class="k4box${fx.glow?' glow':''}" style="--c:${k.color}" data-kid="${k.id}">`+
+    `<div class="k4h"><span class="k4n">${esc(k.name)}</span><span class="k4tag${reached?' done':''}">${reached?'הגעתי ליעד! 🎉':'היום קיבלתי ⭐'}</span></div>`+
+    rows+
+    `<div class="k4f"><div class="k4p"><span>${prize}</span><b>${prog}</b></div>`+
+    `<div class="k4bar"><i style="width:${pct}%"></i>${fx.sparks?sparksHtml():''}</div></div></div>`;
+}
+/* האם חלק מוצג עכשיו (משבצות/צנצנת/פסים/מסך מלא) — לפי המתגים והשעון */
+function partOn(part){
+  if(!PSC) return part!=='screen' && part!=='boxes' ? true : part==='boxes';
+  return PSC.partState(part,PTS.raw||{},nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')}).on;
+}
+let K4_SIG='';
+function kids4Tick(){ const sig=partOn('boxes')+'|'+partOn('jar'); if(sig!==K4_SIG) renderKids4(); }
+function renderKids4(){
+  const box=$('kids4');
+  const showBoxes=partOn('boxes'), showJar=partOn('jar');
+  K4_SIG=showBoxes+'|'+showJar;
+  if(!PTS.show || document.body.classList.contains('shabbat') || (!showBoxes && !showJar)){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
+  const fam=showJar?goalOf(null):null;
+  if(!(showBoxes&&kids.length) && !fam){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  let h='';
+  if(showBoxes && kids.length) h+=`<div class="k4grid" style="--k4n:${kids.length}">${kids.map(k4Box).join('')}</div>`;
+  else h+=`<div class="k4space" aria-hidden="true"></div>`;   /* מקום פנוי לשימוש עתידי */
+  if(fam){
+    const p=goalProgress(fam), reached=p.reached&&!fam.needs_setup, fx=goalFx({...p,reached});
+    const pct=fam.needs_setup?0:Math.min(100,Math.round(p.sum/fam.target*100));
+    h+=`<div class="k4jar${fx.glow?' glow':''}"><span class="jl">הצנצנת המשפחתית</span>`+
+      `<div class="k4bar"><i style="width:${pct}%"></i>${fx.sparks?sparksHtml():''}</div>`+
+      `<span class="jn">${Math.min(p.sum,fam.target)} / ${fam.target}</span>`+
+      `<span class="jp">${reached?'הגענו! ':''}${esc(fam.prize||'')}</span></div>`;
+  }
+  box.innerHTML=h;
+  box.classList.remove('hidden');
+}
+/* נשמר בשם הישן — render() קורא לו */
+function renderPointsCard(){ $('ptcard').classList.add('hidden'); $('ptstrip').classList.add('hidden'); renderKids4(); }
+
+/* ============================================================
+   מסך הנקודות המלא (16.11.2026) — מכסה את כל הלוח רק כשמפעילים:
+   "הצג עכשיו" מהאפליקציה/מ"היום", או חלון קבוע. לא בשבת ובחג.
+   נבדק כל 10 שניות; ההגדרות מתעדכנות בכל רענון (דקה).
+   ============================================================ */
+let PSC=null;
+let PS_SIG='';
+function weekStartIso(){ const d=new Date(israelNow()); d.setDate(d.getDate()-d.getDay()); return isoDate(d); }
+function psEffectHtml(mode){
+  if(mode==='off') return '';
+  let h='<div class="psfx" aria-hidden="true">';
+  if(mode==='stars'){
+    for(let i=0;i<18;i++) h+=`<i class="st" style="right:${(i*41+7)%96+1}%;font-size:${(2+((i*5)%16)/10).toFixed(1)}vh;animation-duration:${9+(i*7)%8}s;animation-delay:${-((i*13)%90)/10}s">★</i>`;
+  }else{
+    for(let b=0;b<5;b++){
+      h+=`<span class="fw" style="right:${12+b*18}%;top:${18+((b*29)%45)}%">`;
+      for(let i=0;i<12;i++){ const ang=i/12*Math.PI*2; h+=`<i style="background:${SPARK_COLS[(i+b)%5]};--dx:${(Math.cos(ang)*9).toFixed(1)}vh;--dy:${(Math.sin(ang)*9).toFixed(1)}vh;animation-delay:${(b*.65).toFixed(2)}s"></i>`; }
+      h+='</span>';
+    }
+  }
+  return h+'</div>';
+}
+function psCol(k,from){
+  const g=goalOf(k.id), p=goalProgress(g), stars=isStarsKid(k,g);
+  const reached=p.reached&&!g.needs_setup;
+  const pct=g.needs_setup?0:Math.min(100,Math.round(p.sum/g.target*100));
+  const deeds=groupDeeds(kidEvents(k.id,from,null));
+  const MAX=7;
+  let list=deeds.slice(0,MAX).map(d=>`<div class="psd"><span>${esc(deedLabel(d))}</span><b>${ptsText(k,g,d.pts)}</b></div>`).join('');
+  if(deeds.length>MAX) list+=`<div class="psd"><span>ועוד ${deeds.length-MAX}</span><b></b></div>`;
+  if(!deeds.length) list=`<div class="psnone">השבוע עוד לא — זה הזמן!</div>`;
+  const left=g.needs_setup?'יעד חדש בקרוב':reached?`הגעת ליעד! ${esc(g.prize)} 🎉`:`עוד ${g.target-p.sum} ← ${esc(g.prize)}`;
+  return `<div class="pscol" style="--c:${k.color};--cbg:${k.bg||'var(--card)'}">`+
+    `<div class="psn">${esc(k.name)}</div>`+
+    `<div class="psbig"><b>${Math.min(p.sum,g.target)}</b><span>/ ${g.needs_setup?'—':g.target}${stars?' ★':''}</span></div>`+
+    `<div class="psbar"><i style="width:${pct}%"></i></div>`+
+    `<div class="psleft${reached?' done':''}">${left}</div>`+
+    `<div class="psdeeds">${list}</div></div>`;
+}
+function renderPtScreen(){
+  const el=$('ptscreen');
+  if(!PSC || !PTS.raw || isLockedView()){ el.classList.add('hidden'); el.innerHTML=''; PS_SIG=''; return; }
+  const st=PSC.partState('screen',PTS.raw,nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')});
+  if(!st.on || clockIsFrozen()){ el.classList.add('hidden'); el.innerHTML=''; PS_SIG=''; return; }
+  const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
+  const fam=goalOf(null);
+  const fx=PSC.effectOf(PTS.raw.points_screen_effect);
+  const from=weekStartIso();
+  const today=israelNow();
+  const until=CLOCK_FMT.format(new Date(st.untilMs));
+  let jar='';
+  if(fam){
+    const p=goalProgress(fam), pct=fam.needs_setup?0:Math.min(100,Math.round(p.sum/fam.target*100));
+    jar=`<div class="psjar"><span class="jl">הצנצנת המשפחתית</span><div class="jb"><i style="width:${pct}%"></i></div>`+
+      `<span class="jn">${Math.min(p.sum,fam.target)} / ${fam.target}</span><span class="jp">${esc(fam.prize||'')} · השבוע מיום ראשון</span></div>`;
+  }
+  const body=`<div class="pshead"><div class="pd"><b>יום ${DAY_FULL[DAYS[today.getDay()]]}</b><span class="psclock">${CLOCK_FMT.format(nowDate())}</span></div>`+
+    `<div class="pt">הנקודות שלנו ⭐</div>`+
+    `<div class="ph"><b>${hebDateString(today)}</b><span>${gregString(today)}</span></div></div>`+
+    jar+
+    `<div class="psgrid" style="--psn:${Math.max(1,kids.length)}">${kids.map(k=>psCol(k,from)).join('')}</div>`+
+    `<div class="psfoot">מוצג עכשיו עד ${until} · ההגדרה באפליקציית הנקודות</div>`;
+  /* מציירים מחדש רק כשמשהו השתנה — כדי שהאנימציה לא תתאפס כל 10 שניות */
+  const sig=fx+'|'+body.replace(/<span class="psclock">[^<]*<\/span>/,'');
+  if(sig!==PS_SIG){ el.innerHTML=psEffectHtml(fx)+body; PS_SIG=sig; }
+  else { const c=el.querySelector('.psclock'); if(c) c.textContent=CLOCK_FMT.format(nowDate()); }
+  el.classList.remove('hidden');
+}
+/* הדגשות מבקרה ← תצוגה */
+function applyBoardPrefs(){
+  const r=PTS.raw||{};
+  document.body.classList.toggle('bold-subj',String(r.board_bold_subjects||'')==='1');
+  document.body.classList.toggle('bold-ch',String(r.board_bold_chugim||'')==='1');
+}
+
+/* חגיגה: מסך מלא (ברירת מחדל: פעם אחת) כשיעד מושג. נזכר במכשיר שכבר הוצג.
+   בלי אחסון במכשיר לא מציגים מסך מלא בכלל (התג בכרטיס עדיין מופיע) — כדי
+   שלא יקפוץ שוב בכל רענון. בשבת/חג לא מוצג; מוצג במוצאי שבת. */
+let celebrateTimer=null;
+function storageOk(){ try{ localStorage.setItem('fd_t','1'); localStorage.removeItem('fd_t'); return true; }catch(e){ return false; } }
+function maybeCelebrate(inShabbat){
+  const box=$('celebrate');
+  if(!PTS.show || inShabbat || PTS.settings.mode==='tag' || !storageOk() || !box.classList.contains('hidden')) return;
+  const now=nowMs(), iso=isoDate(israelNow());
+  for(const g of PTS.goals){
+    if(g.status!=='active' || g.needs_setup) continue;
+    const kid=g.kid_id==null?null:PTS.kids.find(k=>k.id===g.kid_id);
+    if(g.kid_id!=null && (!kid || kid.points_enabled===false)) continue;
+    const p=goalProgress(g);
+    if(!p.reached || now-p.reachedAt>96*3600*1000) continue;
+    const onceKey='fd_cele_'+g.id;
+    let key=null;
+    if(!localStorage.getItem(onceKey)) key=onceKey;
+    else if(PTS.settings.mode==='daily' && israelNow().getHours()>=7 && !localStorage.getItem(onceKey+'_'+iso)) key=onceKey+'_'+iso;
+    if(!key) continue;
+    localStorage.setItem(key,'1'); localStorage.setItem(onceKey,'1');
+    const color=kid?kid.color:'#E2A13B';
+    const title=kid?`כל הכבוד ${esc(kid.name)}!`:'כל הכבוד משפחה!';
+    box.innerHTML=`<div class="cbox" style="--c:${color}">${TROPHY_SVG}
+      <div class="cbig">${title}</div>
+      <div class="cnum">${Math.min(p.sum,g.target)} / ${g.target}</div>
+      <div class="cprize"><span>${kid?'הגעת ליעד! הפרס:':'הגענו ליעד המשפחתי! הפרס:'}</span>${PRIZE_ICONS[g.prize_icon]||''}<b>${esc(g.prize)}</b></div>
+      <div class="csub">מחכה למימוש — אבא או אמא יסמנו "מומש"</div></div>`;
+    box.classList.remove('hidden');
+    clearTimeout(celebrateTimer);
+    celebrateTimer=setTimeout(()=>box.classList.add('hidden'),Math.max(5,PTS.settings.secs)*1000);
+    box.onclick=()=>box.classList.add('hidden');
+    return;   // אחת בכל פעם — הבאה ברענון הבא
+  }
+}
+
+/* ============================================================
+   התאמה אוטומטית למסך — מבטיח שכלום לא נחתך
+   ============================================================ */
+/* ---- טקסט הכיסוי: הופך טקסט חופשי לכותרת + רשימה כשצריך ----
+   הכלל שההורים מקלידים לפיו:
+     שורה ראשונה שנגמרת בנקודתיים  ->  כותרת
+     כל שורה אחריה                 ->  פריט ברשימה
+   שורה אחת, או טקסט בלי נקודתיים  ->  הודעה גדולה רגילה, כמו קודם.
+   תבליט שהוקלד ידנית בתחילת שורה מוסר כדי שלא יופיע פעמיים. */
+function parseCoverNote(raw){
+  const text=String(raw==null?'':raw).replace(/\r/g,'').trim();
+  if(!text) return {kind:'empty'};
+  const lines=text.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(lines.length>1 && /:$/.test(lines[0])){
+    const items=lines.slice(1).map(s=>s.replace(/^[-\u2013\u2022*]\s*/,'')).filter(Boolean);
+    if(items.length) return {kind:'list',title:lines[0],items:items};
+  }
+  return {kind:'text',text:lines.join('\n')};
+}
+
+function renderCoverNote(el,raw){
+  const p=parseCoverNote(raw);
+  el.textContent='';
+  el.classList.remove('long');
+  if(p.kind==='empty') return;
+  if(p.kind==='text'){
+    const d=document.createElement('div');
+    d.className='covermsg'; d.textContent=p.text;
+    el.appendChild(d);
+    return;
+  }
+  const h=document.createElement('div');
+  h.className='covertitle'; h.textContent=p.title;
+  el.appendChild(h);
+  const ul=document.createElement('ul');
+  ul.className='coverlist';
+  p.items.forEach(function(t){
+    const li=document.createElement('li');
+    li.textContent=t;
+    ul.appendChild(li);
+  });
+  el.appendChild(ul);
+  if(p.items.length>6) el.classList.add('long');
+}
+
+function fitToScreen(){
+  if(window.innerWidth <= window.innerHeight) return;   // בטלפון מותרת גלילה
+
+  const root=document.documentElement, app=$('app');
+
+  // בדיקה: האם משהו חורג — בגובה, ברוחב, או תא שנחתך
+  const overflows=()=>{
+    if(app.scrollHeight > window.innerHeight+1) return true;
+    if(app.scrollWidth  > window.innerWidth +1) return true;
+    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li,.wear,.wxchip,.w3t,.w3m,.kpts .kpt,.ptcard .ptp,.goaltag,.ptkid .xs,.ptkid .xn')){
+      if(el.scrollHeight > el.clientHeight+2) return true;   // טקסט נחתך לגובה
+      if(el.scrollWidth  > el.clientWidth +2) return true;   // טקסט נחתך לרוחב
+    }
+    return false;
+  };
+
+  // חיפוש בינארי על מקדם קנה המידה — מדויק ומהיר
+  let lo=0.30, hi=1.80, best=lo;
+  for(let i=0;i<18;i++){
+    const mid=(lo+hi)/2;
+    root.style.setProperty('--k',mid.toFixed(4));
+    app.offsetHeight;                    // מאלץ חישוב מחדש
+    if(overflows()){ hi=mid; } else { best=mid; lo=mid; }
+  }
+  root.style.setProperty('--k',best.toFixed(4));
+}
+
+/* מריצים שוב אחרי טעינת גופנים ותמונות — הם משנים מידות */
+/* חיווי דיסקרטי: מתי נמשכו הנתונים לאחרונה */
+function stampSync(){
+  const el=$('lastsync'); if(!el) return;
+  el.textContent='עודכן '+CLOCK_FMT.format(nowDate())+(HEADER_BLOCKED?' · גישה: מצב חלופי':'');
+}
+
+function scheduleFit(){
+  requestAnimationFrame(()=>requestAnimationFrame(fitToScreen));
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitToScreen);
+  setTimeout(fitToScreen,400);
+  setTimeout(fitToScreen,1500);
+}
+
+/* ============================================================
+   ראשי
+   ============================================================ */
+let db=null;
+
+/* ============================================================
+   קוד גישה (15.11.2026)
+   כל מכשיר מחזיק מפתח סודי אקראי (לא ניתן לניחוש). הורה מאשר את המכשיר מהטלפון
+   לפי קוד של 4 ספרות שמוצג כאן. מכשיר מאושר שולח את המפתח בכל קריאה (x-device-token),
+   והמסד מחזיר נתונים רק אם המכשיר מאושר (או הורה/ילד מחובר).
+   שלב א' (locked=false): הלוח נשאר פתוח, ומכשיר לא מאושר מציג רק פס עם הקוד.
+   שלב ב' (locked=true): מכשיר לא מאושר מציג מסך נעילה.
+   אין אינטרנט => לעולם לא ננעלים: נשארים על המסך האחרון (כמו קודם).
+   ============================================================ */
+const DEV_KEY='fd_device_token_v1', ACC_KEY='fd_access_v1';
+const SESSION_KEY='sb-ghnvkgufqtbwfmsaassx-auth-token';
+const SUPA_MOD='https://esm.sh/@supabase/supabase-js@2';
+function makeDevToken(){
+  const a=new Uint8Array(32); crypto.getRandomValues(a);
+  return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
+}
+let DEV_TOKEN=null, DEV_STORAGE=true;
+(function(){
+  try{
+    DEV_TOKEN=localStorage.getItem(DEV_KEY);
+    if(!DEV_TOKEN || !/^[a-f0-9]{64}$/.test(DEV_TOKEN)){ DEV_TOKEN=makeDevToken(); localStorage.setItem(DEV_KEY,DEV_TOKEN); }
+    if(localStorage.getItem(DEV_KEY)!==DEV_TOKEN) throw new Error('storage');
+  }catch(e){ DEV_STORAGE=false; if(!DEV_TOKEN) DEV_TOKEN=makeDevToken(); }
+})();
+let rawDb=null, devDb=null, sessDb=null, HEADER_BLOCKED=false;
+let ACCESS={mode:'unknown',info:null};
+let accPollTimer=null, accTickTimer=null;
+function lastAccessMode(){ try{ const r=JSON.parse(localStorage.getItem(ACC_KEY)||'null'); return r&&r.mode; }catch(e){ return null; } }
+function saveAccessMode(m){ try{ localStorage.setItem(ACC_KEY,JSON.stringify({mode:m,ts:Date.now()})); }catch(e){} }
+function isNetErr(err){
+  if(!err) return false;
+  const m=String((err&&err.message)||err);
+  return err.name==='TypeError' || /fetch|network|load failed|timed? ?out|abort/i.test(m);
+}
+async function sessionViewer(){
+  let has=false; try{ has=!!localStorage.getItem(SESSION_KEY); }catch(e){}
+  if(!has) return null;
+  try{
+    if(!sessDb){
+      const {createClient}=await import(SUPA_MOD);
+      sessDb=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY,
+        {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+    }
+    const r=await sessDb.rpc('fd_role');
+    if(!r.error && r.data) return sessDb;
+  }catch(e){}
+  return null;
+}
+/* מחליט מאיזה חיבור לקרוא, והאם להציג נעילה */
+/* מכשיר חדש מבקש קוד רק אחרי שהלוח פתוח כמה שניות — כך בוטים ותצוגות מקדימות של קישורים
+   (שנכנסים ויוצאים מיד) לא תופסים מקום בתור ולא מקפיצים בקשות אצל ההורים */
+const ACC_BOOT=Date.now(), ACC_REQUEST_DELAY_MS=15000;
+async function ensureAccess(){
+  if(!rawDb) return ACCESS;
+  /* הורה/ילד מחובר באותו דפדפן — לא מבקשים קוד מכשיר בכלל */
+  const s0=await sessionViewer();
+  if(s0){ ACCESS={mode:'session',info:null}; db=s0; saveAccessMode('session'); return ACCESS; }
+  let r;
+  const fresh=(Date.now()-ACC_BOOT)<ACC_REQUEST_DELAY_MS;
+  try{
+    if(fresh){
+      r=await rawDb.rpc('fd_device_status',{p_token:DEV_TOKEN});   /* בודק בלי ליצור בקשה */
+    }else r=await rawDb.rpc('fd_device_request',{p_token:DEV_TOKEN,p_ua:String(navigator.userAgent||'').slice(0,200)});
+  }
+  catch(e){ r={error:e}; }
+  if(r.error){
+    if(isNetErr(r.error)){
+      /* אין חיבור: לא משנים כלום. מכשיר מאושר ממשיך להציג את המסך האחרון */
+      ACCESS={mode:'offline',prev:(ACCESS.mode!=='unknown'&&ACCESS.mode!=='offline')?ACCESS.mode:lastAccessMode(),info:ACCESS.info};
+      if(!db) db=devDb;
+      return ACCESS;
+    }
+    /* הפונקציה לא קיימת (למשל אחרי חזרה לאחור) — מתנהגים כמו קודם */
+    console.warn('access check unavailable',r.error);
+    ACCESS={mode:'open',info:null}; db=rawDb; return ACCESS;
+  }
+  const info=r.data||{};
+  if(info.status==='approved'){ ACCESS={mode:'device',info}; db=HEADER_BLOCKED?rawDb:devDb; }
+  else if(info.locked===false){ ACCESS={mode:'open',info}; db=rawDb; }
+  else{ ACCESS={mode:'locked',info}; db=null; }
+  saveAccessMode(ACCESS.mode);
+  return ACCESS;
+}
+function isLockedView(){ return ACCESS.mode==='locked' || (ACCESS.mode==='offline' && ACCESS.prev==='locked'); }
+function needsAccessPoll(){
+  if(ACCESS.info && ACCESS.info.status==='rejected') return false;   /* נדחה: לא מציקים, בודקים רק ברענון הרגיל */
+  if(isLockedView()) return true;
+  return ACCESS.mode==='open' && ACCESS.info && ACCESS.info.status!=='approved';
+}
+function accRemaining(){
+  const info=ACCESS.info; if(!info||!info.expires_at) return null;
+  const ms=new Date(info.expires_at).getTime()-nowMs();
+  return Math.max(0,ms);
+}
+function fmtMmSs(ms){ const t=Math.ceil(ms/1000); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
+function renderAccessUi(){
+  const lock=$('lockscreen'), bar=$('pairbar');
+  const info=ACCESS.info||{};
+  if(isLockedView()){
+    lock.classList.add('on');
+    const codeBox=$('lkcodebox');
+    let title='המכשיר ממתין לאישור הורה', text='', showCode=false, foot='';
+    if(!DEV_STORAGE){
+      title='אי אפשר לאשר את המכשיר הזה';
+      text='הדפדפן במכשיר לא שומר נתונים, ולכן האישור לא יישמר. צריך לאפשר שמירת נתונים בדפדפן.';
+    }else if(ACCESS.mode==='offline'){
+      title='אין חיבור לאינטרנט';
+      text='המכשיר עוד לא מאושר. כשהחיבור יחזור יופיע כאן קוד לאישור.';
+    }else if(info.status==='busy'){
+      title='יש כרגע יותר מדי בקשות';
+      text='נסו שוב בעוד כמה דקות. המסך ינסה שוב לבד.';
+    }else if(info.status==='pending'){
+      showCode=true;
+      text='פתחו בטלפון את ״היום״, הבקרה או הנקודות, ובדקו שהקוד זהה. לוחצים אשר והלוח נפתח לבד.';
+      $('lkcode').textContent=info.code||'----';
+      const rem=accRemaining(); foot=rem!=null?('הקוד מתחלף לבד בעוד '+fmtMmSs(rem)):'';
+    }else if(info.status==='rejected'){
+      title='הבקשה נדחתה';
+      text='הורה דחה את הבקשה של המכשיר הזה. אפשר לנסות שוב בעוד שעה.';
+    }else if(info.status==='waiting'){
+      text='מכין קוד לאישור…';
+    }else{
+      text='בודק…';
+    }
+    $('lktitle').textContent=title; $('lktext').textContent=text;
+    codeBox.classList.toggle('hidden',!showCode);
+    $('lkexp').textContent=foot;
+    $('lkclock').textContent=clockIsFrozen()?'':('יום '+DAY_FULL[DAYS[israelNow().getDay()]]+' · '+CLOCK_FMT.format(nowDate()));
+    bar.classList.remove('on');
+  }else{
+    lock.classList.remove('on');
+    if(ACCESS.mode==='open' && ACCESS.info && (ACCESS.info.status==='pending'||ACCESS.info.status==='busy') && DEV_STORAGE){
+      bar.textContent='';
+      const t=document.createElement('span');
+      if(info.status==='pending'){
+        t.append('המכשיר הזה עוד לא מאושר · קוד ');
+        const b=document.createElement('b'); b.textContent=info.code||''; t.append(b);
+        t.append(' · אשרו מהטלפון ב״היום״');
+      }else if(info.status==='busy') t.textContent='המכשיר הזה עוד לא מאושר · יש כרגע יותר מדי בקשות, ננסה שוב בקרוב';
+      else t.textContent='המכשיר הזה עוד לא מאושר';
+      bar.appendChild(t); bar.classList.add('on');
+    }else bar.classList.remove('on');
+  }
+  /* בדיקה מהירה כל 5 שניות כל עוד ממתינים לאישור — כך הלוח נפתח תוך שניות */
+  clearTimeout(accPollTimer);
+  if(needsAccessPoll()){
+    accPollTimer=setTimeout(async()=>{
+      const before=ACCESS.mode+'|'+((ACCESS.info&&ACCESS.info.code)||'')+'|'+((ACCESS.info&&ACCESS.info.status)||'');
+      await ensureAccess();
+      const after=ACCESS.mode+'|'+((ACCESS.info&&ACCESS.info.code)||'')+'|'+((ACCESS.info&&ACCESS.info.status)||'');
+      if(before!==after) await render(); else renderAccessUi();
+    },5000);
+  }
+  clearInterval(accTickTimer);
+  if(isLockedView()) accTickTimer=setInterval(()=>{
+    const rem=accRemaining();
+    if(ACCESS.info&&ACCESS.info.status==='pending'&&rem!=null) $('lkexp').textContent='הקוד מתחלף לבד בעוד '+fmtMmSs(rem);
+  },1000);
+}
+
+async function init(){
+  /* קודם כל — שעה אמינה. בלי רשת ועם שעון שאיבד את עצמו המסך מוקפא */
+  if(!(await syncClock())) evaluateClockTrust();
+  await loadHebcal();
+  await buildShabbatWindows();
+  windowsBuiltForDay=israelNow().toDateString();
+  try{
+    const {createClient}=await import(SUPA_MOD);
+    /* הלוח הציבורי לא משתמש בהתחברות שמורה כברירת מחדל. אחרת הוא יורש את הכרטיס של לוח הבקרה
+       (אותו דומיין, אותו אחסון), ואם הכרטיס פג Supabase דוחה גם קריאות פתוחות (401).
+       הכרטיס השמור משמש רק אם המכשיר עצמו לא מאושר (sessionViewer). */
+    const noAuth={persistSession:false,autoRefreshToken:false,detectSessionInUrl:false};
+    rawDb=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY,{auth:noAuth});
+    devDb=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY,
+      {auth:{...noAuth,storageKey:'fd-device-client'},global:{headers:{'x-device-token':DEV_TOKEN}}});
+    db=devDb;
+  }catch(e){ showErr('לא ניתן להתחבר למסד הנתונים'); console.error(e); }
+  try{ PSC=await import('./ptscreen.js'); }catch(e){ console.warn('points screen module unavailable',e); }
+  await loadWeather();
+  await render();
+  stampSync();
+  setInterval(async()=>{
+    // חלונות השבת/חג נטענים מחדש רק כשמתחלף היום
+    const wasFrozen=clockIsFrozen();
+    if(!(await syncClock())) evaluateClockTrust();
+    const today=israelNow().toDateString();
+    if(wasFrozen!==clockIsFrozen() || windowsBuiltForDay!==today){ await buildShabbatWindows(); windowsBuiltForDay=today; }
+    await loadWeather(); await render(); stampSync();
+  },CONFIG.REFRESH_MIN*60*1000);
+  tickClock(); applyNightMode(); applyShirtPulse();
+  setInterval(()=>{ tickClock(); applyNightMode(); applyShirtPulse(); renderPtScreen(); kids4Tick(); },10000);
+  window.addEventListener('resize',fitToScreen);
+}
+
+/* טעינת שלוש טבלאות השליטה לפני שמחליטים אם המסך במצב שבת/חג.
+   חייבות להיטען לפני activeShabbatWindow(), אחרת טריגר ידני לא ייכנס
+   לתוקף עד הרענון הבא. אופציונליות לחלוטין: טבלה חסרה/ריקה = התנהגות
+   זהה לזו שהייתה לפני התוספת. */
+async function loadControlTables(){
+  if(!db) return;
+  try{
+    const [zmOv,manWin,schoolCal]=await Promise.all([
+      db.from('zmanim_overrides').select('*'),
+      db.from('manual_windows').select('*'),
+      db.from('school_calendar').select('*'),
+    ]);
+    /* שגיאה בטעינה לא מוחקת את מה שכבר נטען */
+    if(zmOv&&!zmOv.error) ZMANIM_OVERRIDES=zmOv.data||[];
+    if(manWin&&!manWin.error) MANUAL_WINDOWS=manWin.data||[];
+    if(schoolCal&&!schoolCal.error) SCHOOL_CAL=schoolCal.data||[];
+    applyZmanimOverrides();
+  }catch(e){ console.warn('control tables unavailable',e); }
+}
+
+async function render(){
+  await ensureAccess();
+  renderAccessUi();
+  if(isLockedView()){ renderPtScreen(); scheduleFit(); return; }
+  await loadControlTables();
+  renderOffbar();
+  tickClock();          // השעה מתעדכנת מיד כשהשעון חוזר להיות אמין
+  renderForecast();
+  const {date,isTomorrow}=displayDate();
+  const dayLetter=DAYS[date.getDay()];
+
+  // הסרגל העליון נעול על היום והתאריך האמיתיים — לעולם לא על היום המוצג.
+  // רק כותרת המערכת מצביעה על היום שהמערכת שייכת לו.
+  const today=israelNow();
+  $('dayname').textContent='יום '+DAY_FULL[DAYS[today.getDay()]];
+  $('hebdate').textContent=hebDateString(today);
+  $('gregdate').textContent=gregString(today);
+
+  const win=activeShabbatWindow();
+  LAST_WIN=win||null;
+  const hol=win?windowDisplay(win):null;
+  if(hol){
+    document.body.classList.add('shabbat');
+    $('holiday').classList.add('on');
+    // הכותרת נשארת נעולה על היום האמיתי — רק שמו נאמר בשפת שבת/חג
+    $('dayname').textContent=dayHeading(isoOf(today),win);
+    $('greet').textContent=hol.greet;
+    $('holitags').textContent=hol.label;
+    $('parasha').textContent=parashaFor(win);
+    renderZmanim(win);
+    renderShabbatWeather(win);
+    await renderPrayers(win);
+    $('toprow').style.display='none';
+    $('schedwrap').style.display='none';
+    $('chugim').classList.add('hidden');
+    $('shirtbox').classList.remove('on');
+  }else{
+    document.body.classList.remove('shabbat');
+    $('holiday').classList.remove('on');
+    $('prayers').classList.add('hidden');
+    $('cnote').classList.add('hidden');
+    $('zmanim').classList.add('hidden');
+    $('sbwx').classList.add('hidden');
+    $('parasha').textContent='';
+    $('toprow').style.display='';
+    $('schedwrap').style.display='';
+  }
+
+  if(db){
+    try{
+      let [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=await Promise.all([
+        db.from('kids').select('*').order('order_index'),
+        db.from('periods').select('*'),
+        db.from('schedule').select('*'),
+        db.from('chugim').select('*'),
+        db.from('white_shirt').select('*'),
+        db.from('white_shirt_rules').select('*'),
+        db.from('schedule_overrides').select('*'),
+        db.from('meals').select('*, food_types(name)'),
+        db.from('settings').select('*'),
+      ]);
+
+      /* בקשה שנדחתה (401 וכד') לא זורקת חריגה — היא מחזירה error ו-data ריק,
+         ולכן הלוח היה מתרוקן בשקט. כאן מזהים את זה ועוברים לנתונים האחרונים שנשמרו. */
+      const RAW=['kids','periods','sched','chug','shirts','rules','overrides','meals','settings'];
+      const resList=[kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings];
+      let failed=resList.some(r=>!r||r.error) || !(kidsRes&&kidsRes.data&&kidsRes.data.length);
+      /* מכשיר מאושר שהכותרת שלו לא עוברת (CORS) — בשלב א' עוברים לחיבור הרגיל במקום להישאר בלי נתונים */
+      if(failed && ACCESS.mode==='device' && !HEADER_BLOCKED && rawDb){
+        try{
+          const probe=await rawDb.from('kids').select('id').limit(1);
+          const viaDev=await devDb.from('kids').select('id').limit(1);
+          if(!probe.error && probe.data && probe.data.length && viaDev.error && isNetErr(viaDev.error)){
+            HEADER_BLOCKED=true; db=rawDb; console.warn('x-device-token header blocked; using plain client');
+            return render();
+          }
+        }catch(e){}
+      }
+      if(failed){
+        const lg=loadLastGood();
+        if(lg&&lg.data){
+          const d=lg.data;
+          [kidsRes,periods,sched,chug,shirts,rules,overrides,mealsRes,settings]=RAW.map(k=>({data:d[k]||[]}));
+          hideErr();
+          $('stalenote').textContent='אין חיבור — נתונים מ-'+hhmmOf(lg.ts);
+          // כשהמסך מוקפא, הפס העליון כבר אומר את זה
+          $('stalenote').classList.toggle('hidden',clockIsFrozen());
+        }else{
+          $('stalenote').classList.add('hidden');
+          showErr('לא ניתן לטעון נתונים — בדוק חיבור');
+          console.error('fetch failed, no cached data',resList.map(r=>r&&r.error));
+          scheduleFit();
+          return;
+        }
+      }else{
+        const snap={}; RAW.forEach((k,i)=>{ snap[k]=resList[i].data||[]; });
+        saveLastGood(snap);
+        hideErr();
+        $('stalenote').classList.add('hidden');
+      }
+
+      const allKids=(kidsRes.data||[]);
+      KIDS=allKids.filter(k=>k.show_schedule!==false)
+                  .map(k=>({id:k.id,name:k.name,color:k.color,bg:k.bg,grade:k.grade,show_food:k.show_food,
+                           points_enabled:k.points_enabled,points_display:k.points_display}));
+      const chugimKids=allKids.filter(k=>k.show_chugim!==false).map(k=>k.name);
+      ALL_KIDS=allKids;
+
+      // הודעת הורים — נעלמת מעצמה אחרי תאריך התפוגה (parent_note_until).
+      // בלי תאריך תפוגה ההודעה נשארת עד שמחליפים אותה.
+      applyNightSettings(settings.data||[]);
+      await loadPoints(settings.data||[]);
+
+      const note=(settings.data||[]).find(s=>s.key==='parent_note');
+      const noteUntil=(settings.data||[]).find(s=>s.key==='parent_note_until');
+      const untilStr=noteUntil&&noteUntil.value?String(noteUntil.value).trim():'';
+      const noteExpired = !!untilStr && noteHasExpired(untilStr);
+      if(note&&note.value&&note.value.trim()&&!noteExpired){
+        $('parentnote').textContent=note.value;
+        $('parentnote').classList.remove('hidden');
+      }else $('parentnote').classList.add('hidden');
+
+      /* כיסוי מלא של הלוח — נבדק על היום האמיתי, לא על "יום הלימודים הבא",
+         כי הוא מחליף את כל התוכן ולא רק את מערכת השעות. */
+      /* הודעה לפי שעות (10.11.2026): start_time/end_time רשות. בלי שעות = כל היום.
+         הרענון רץ כל דקה, ולכן ההודעה מופיעה ונעלמת לבד. */
+      const nowHM=(()=>{ const n=israelNow(); return n.getHours()*60+n.getMinutes(); })();
+      const inWindow=o=>{
+        const st=o.start_time?hhmmToMin(String(o.start_time).slice(0,5)):null;
+        const en=o.end_time?hhmmToMin(String(o.end_time).slice(0,5)):null;
+        if(st!==null && nowHM<st) return false;
+        if(en!==null && nowHM>=en) return false;
+        return true;
+      };
+      const fullOv=(overrides.data||[]).find(o=>
+        o.scope==='full' && !o.kid && o.date===isoDate(israelNow()) && inWindow(o));
+      const covering=!hol && !!fullOv;
+      if(covering){
+        $('fullcover').classList.remove('hidden');
+        const img=$('coverimg');
+        const hasImg=!!fullOv.image_url;
+        if(hasImg){ img.src=fullOv.image_url; img.style.display=''; }
+        else { img.removeAttribute('src'); img.style.display='none'; }
+        $('fullcover').classList.toggle('withimg',hasImg);
+        renderCoverNote($('covertext'),fullOv.note);
+        $('schedwrap').style.display='none';
+        $('chugim').classList.add('hidden');
+        $('shirtbox').classList.remove('on');
+      }else{
+        $('fullcover').classList.add('hidden');
+      }
+
+      if(!hol && !covering){
+        // היום המוצג נקבע כאן, אחרי שיש נתונים: יום הלימודים הבא, לא סתם מחר
+        const target=nextSchoolDate(date, sched.data||[],
+          (overrides.data||[]).filter(o=>(o.scope||'schedule')==='schedule'));
+        const targetLetter=DAYS[target.getDay()];
+
+        $('schedtitle').innerHTML=`<span class="sublabel">${scheduleLabel(target,isTomorrow)}</span>`+
+          `<span class="sysdash">—</span><span class="sysday">יום ${DAY_FULL[targetLetter]}</span>`;
+        const note2=skippedDaysNote(target);
+        $('schednote').textContent=note2;
+        $('schednote').classList.toggle('hidden', !note2);
+        const isToday = isoDate(target)===isoDate(israelNow());
+        buildSchedule(periods.data||[],(sched.data||[]).filter(r=>r.day===targetLetter),
+                      (overrides.data||[]).filter(o=>o.date===isoDate(target)
+                        && (o.scope||'schedule')==='schedule'),
+                      mealsForDay(mealsRes.data||[],target,targetLetter), isToday,
+                      isoDate(target));
+        buildChugim((chug.data||[]).filter(c=>chugimKids.includes(c.kid)));
+
+        const reason=whiteShirtReason(target, shirts.data||[], rules.data||[]);
+        if(reason){
+          $('shirtbox').classList.add('on');
+          $('shirtreason').textContent=reason;
+        }else{
+          $('shirtbox').classList.remove('on');
+        }
+      }
+      /* כרטיסי ילדים מוצגים רק ביום לימודים רגיל; אחרת כל הילדים עוברים לכרטיס הנקודות */
+      const cardsShown=!hol && !covering && !document.querySelector('#kidcards .dayoff:not(.small)');
+      renderPointsCard(cardsShown?KIDS.map(k=>k.name):[]);
+      applyBoardPrefs();
+      renderPtScreen();
+      maybeCelebrate(!!hol);
+    }catch(e){ showErr('שגיאה בטעינת הנתונים'); console.error(e); }
+  }
+
+  // אחרי שכל התוכן במקום — מתאימים למסך
+  scheduleFit();
+}
+
+init();
+
+/* רישום כאפליקציה (PWA) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
