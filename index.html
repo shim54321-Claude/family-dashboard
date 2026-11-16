@@ -714,6 +714,181 @@ body.shabbat.night .sbart svg{opacity:.2}
   .wbase{visibility:hidden}
   .fclbl.big,.fclbl.lo.big{font-size:17px}
 }
+
+/* ============================================================
+   סבב 16.11.2026 (מוקאפ שאושר): מזג אוויר אתמול/היום/מחר,
+   "היום קיבלתי ⭐" לכל ילד, מסך נקודות מלא, הדגשות וחוגים גדולים יותר
+   ============================================================ */
+.ptcard,.ptstrip{display:none!important}
+/* --- מזג אוויר: אתמול (אפור מפוספס) · היום (רחב) · מחר (צר) --- */
+.wx3{flex:0 0 44vw;display:flex;gap:.55vw;height:21rem;align-items:stretch;min-width:0}
+.wx3.hidden{display:none}
+.w3side{flex:0 0 7.3vw;border-radius:1.9rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.45rem;text-align:center;min-width:0;padding:.6rem .3vw}
+.w3y{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ink) 4%,var(--bg)) 0 1rem,color-mix(in srgb,var(--ink) 9%,var(--bg)) 1rem 2rem);
+  border:1px solid var(--line);color:var(--ink-soft);filter:grayscale(.6)}
+.w3m{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.w3lbl{font-size:1.75rem;font-weight:700;line-height:1.15}
+.w3ic{font-size:3.2rem;line-height:1}
+.w3tt{display:flex;gap:.45vw;align-items:baseline;font-family:var(--font-display);direction:ltr}
+.w3tt .hi{font-weight:800;font-size:2.9rem;color:var(--wx-hot)}
+.w3tt .lo{font-weight:700;font-size:1.9rem;color:var(--wx-cold)}
+.w3y .w3tt{opacity:.85}
+.w3sl{border-radius:1rem;padding:.15rem .8rem;font-weight:800;font-size:1.6rem;text-align:center;line-height:1.2;background:#D6E6FA;color:#0C447C}
+.w3sl.short{background:#FFE9C7;color:#7A4300}
+.w3t{flex:1 1 auto;min-width:0;position:relative;overflow:hidden;border:.3rem solid #1F4E79;border-radius:2.1rem;
+  background:color-mix(in srgb,#1F4E79 8%,var(--card));display:flex;align-items:center;gap:1vw;padding:1rem 1vw}
+.w3t.rainy{background:color-mix(in srgb,#4A6E96 28%,var(--card))}
+.w3t>*:not(.drops){position:relative;z-index:1}
+.w3a{display:flex;flex-direction:column;align-items:center;gap:.5rem;flex:none}
+.w3pill{background:var(--ink);color:var(--bg);border-radius:999px;padding:.25rem 1.3rem;font-weight:800;font-size:1.9rem;white-space:nowrap}
+.w3a .w3ic{font-size:5rem}
+.w3b{display:flex;flex-direction:column;align-items:center;flex:none}
+.w3big{font-family:var(--font-display);font-weight:900;font-size:6.8rem;line-height:.95;color:var(--wx-hot)}
+.w3low{font-family:var(--font-display);font-weight:800;font-size:3rem;color:var(--wx-cold)}
+.w3t.rainy .w3big,.w3t.rainy .w3low{text-shadow:0 0 .6rem #DCE3EC,0 0 .6rem #DCE3EC}
+.w3chg{margin-top:.5rem;color:#FFFFFF;border-radius:999px;padding:.25rem 1.1rem;font-weight:800;font-size:1.6rem;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:.3rem;background:var(--wx-chip-down)}
+.w3chg svg{width:1.6rem;height:1.6rem}
+.w3chg.up{background:var(--wx-chip-up)}
+.w3chg.big{background:var(--wx-chip-big)}
+.w3chg.same{background:var(--card);color:var(--ink-soft);border:2px solid var(--line)}
+.w3c{display:flex;flex-direction:column;gap:.9rem;margin-inline-start:auto;flex:none;align-items:stretch}
+.w3wear{background:#1F5FA8;color:#FFFFFF;border-radius:1.5rem;padding:.6rem 1.1vw;display:flex;align-items:center;justify-content:center;gap:.8rem}
+.w3wear.short{background:#B4561C}
+.w3wear.severe{box-shadow:0 0 0 .3rem var(--alert)}
+.w3wear .wi{font-size:3.4rem;line-height:1}
+.w3wear .wt{font-family:var(--font-display);font-weight:900;font-size:4rem;line-height:1}
+.w3umb{background:var(--card);border:2px solid #1F4E79;color:#1F4E79;border-radius:1.3rem;padding:.35rem 1rem;font-weight:800;font-size:2rem;
+  white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.w3umb bdi{direction:ltr}
+body.night .w3umb{color:#8FB4E0;border-color:#8FB4E0}
+body.night .w3t{border-color:#4A78AE}
+/* --- היום קיבלתי ⭐ — משבצת לכל ילד + הצנצנת המשפחתית --- */
+.kids4{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:.7rem;height:21rem}
+.kids4.hidden{display:none}
+.k4grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--k4n,4),minmax(0,1fr));gap:.55vw}
+.k4box{position:relative;background:var(--card);border:1px solid var(--line);border-top:.5rem solid var(--c);border-radius:1.7rem;
+  padding:.6rem .7vw .75rem;display:flex;flex-direction:column;gap:.1rem;min-height:0;min-width:0}
+.k4h{display:flex;justify-content:space-between;align-items:baseline;gap:.4vw;min-width:0}
+.k4n{font-family:var(--font-display);font-weight:900;font-size:2.1rem;color:var(--c);line-height:1.15;white-space:nowrap}
+.k4tag{font-size:1.2rem;color:var(--ink-soft);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k4tag.done{color:#9C6B1F;font-weight:900}
+.k4r{display:flex;justify-content:space-between;gap:.4vw;font-size:1.5rem;font-weight:700;line-height:1.3;min-width:0}
+.k4r span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k4r b{color:var(--c);white-space:nowrap;direction:ltr;unicode-bidi:isolate;font-family:var(--font-display)}
+.k4r.y{font-size:1.3rem;font-weight:600;color:var(--ink-soft)}
+.k4r.y b{color:var(--ink-soft);font-weight:600}
+.k4r.none{color:var(--ink-faint);font-weight:600}
+.k4f{margin-top:auto;display:flex;flex-direction:column;gap:.3rem;padding-top:.3rem}
+.k4p{display:flex;justify-content:space-between;gap:.4vw;font-size:1.25rem;color:var(--ink-soft);font-weight:700;min-width:0}
+.k4p span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.k4p b{color:var(--ink);direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-family:var(--font-display)}
+.k4bar{position:relative;height:1rem;border-radius:1rem;background:color-mix(in srgb,var(--c) 14%,var(--card))}
+.k4bar>i{display:block;height:100%;border-radius:1rem;background:var(--c)}
+.k4box.glow{animation:k4glow 2s ease-in-out infinite}
+@keyframes k4glow{0%,100%{box-shadow:0 0 0 0 rgba(226,161,59,0)}50%{box-shadow:0 0 1.4rem .4rem rgba(226,161,59,.6)}}
+.k4fx{position:absolute;left:0;top:50%;width:0;height:0;pointer-events:none}
+.k4fx i{position:absolute;width:.65rem;height:.65rem;margin:-.32rem;border-radius:50%;opacity:0;animation:k4spark 1.4s ease-out infinite}
+@keyframes k4spark{0%{transform:translate(0,0) scale(.4);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
+.k4jar{height:3.4rem;flex:none;background:var(--card);border:1px solid var(--line);border-radius:1.4rem;display:flex;align-items:center;gap:.7vw;padding:0 1vw;min-width:0}
+.k4jar .jl{font-weight:800;font-size:1.5rem;white-space:nowrap}
+.k4jar .k4bar{flex:1;height:1.2rem;--c:#E2A13B}
+.k4jar .jn{font-family:var(--font-display);font-weight:900;font-size:1.7rem;direction:ltr;white-space:nowrap}
+.k4jar .jp{font-size:1.4rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:12vw}
+.k4jar.glow{animation:k4glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.k4box.glow,.k4jar.glow,.k4fx i{animation:none}}
+/* --- הדגשות מבקרה ← תצוגה, וחוגים גדולים יותר --- */
+body.bold-subj .lsubj{font-weight:800}
+body.bold-subj .lesson.past .lsubj{font-weight:700}
+body.bold-ch .chent .a{font-weight:800;color:var(--ink)}
+@media (min-aspect-ratio:1/1){
+  .chent{font-size:2.05rem}
+  table.chweek th{font-size:1.8rem}
+  .chtitle{font-size:2.1rem}
+  .chempty{font-size:1.7rem}
+}
+/* --- מסך הנקודות המלא (מכסה את כל הלוח בזמנים שנקבעו) --- */
+#ptscreen{position:fixed;inset:0;z-index:70;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;gap:1.5vh;
+  padding:2.4vh 2vw 2.2vh;overflow:hidden;font-family:var(--font-body)}
+#ptscreen.hidden{display:none}
+.psfx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.psfx i.st{position:absolute;top:-6vh;font-style:normal;color:#E2B93B;opacity:.45;animation:psfall linear infinite}
+@keyframes psfall{from{transform:translateY(0) rotate(0)}to{transform:translateY(112vh) rotate(180deg)}}
+.psfx .fw{position:absolute;width:0;height:0}
+.psfx .fw i{position:absolute;width:.9vh;height:.9vh;margin:-.45vh;border-radius:50%;opacity:0;animation:psburst 3.2s ease-out infinite}
+@keyframes psburst{0%{transform:translate(0,0);opacity:0}8%{opacity:1}60%{transform:translate(var(--dx),var(--dy));opacity:.9}100%{transform:translate(var(--dx),calc(var(--dy) + 4vh));opacity:0}}
+@media (prefers-reduced-motion:reduce){.psfx{display:none}}
+.pshead,.psjar,.psgrid,.psfoot{position:relative}
+.pshead{display:flex;justify-content:space-between;align-items:flex-start;gap:2vw;padding-bottom:1vh;border-bottom:2px solid var(--line)}
+.pshead .pd{display:flex;gap:1.6vw;align-items:baseline}
+.pshead .pd b{font-family:var(--font-display);font-weight:900;font-size:4.2vh}
+.pshead .pd span{font-family:var(--font-display);font-weight:900;font-size:4.2vh;color:var(--ink-soft);direction:ltr;font-variant-numeric:tabular-nums}
+.pshead .pt{font-family:var(--font-display);font-weight:900;font-size:4.6vh;white-space:nowrap}
+.pshead .ph{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.pshead .ph b{font-family:var(--font-display);font-weight:700;font-size:3.4vh}
+.pshead .ph span{font-size:1.8vh;color:var(--ink-soft)}
+.psjar{height:5vh;background:var(--card);border:1px solid var(--line);border-radius:1.6vh;display:flex;align-items:center;gap:1vw;padding:0 1.2vw}
+.psjar .jl{font-weight:800;font-size:2.1vh;white-space:nowrap}
+.psjar .jb{flex:1;height:1.6vh;border-radius:2vh;background:color-mix(in srgb,#E2A13B 18%,var(--card));overflow:hidden}
+.psjar .jb i{display:block;height:100%;background:#E2A13B}
+.psjar .jn{font-family:var(--font-display);font-weight:900;font-size:2.7vh;direction:ltr;white-space:nowrap}
+.psjar .jp{font-size:1.95vh;color:var(--ink-soft);white-space:nowrap}
+.psgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--psn,4),minmax(0,1fr));gap:1vw}
+.pscol{background:var(--cbg);border-top:.8vh solid var(--c);border-radius:2vh;padding:1.6vh 1.2vw;display:flex;flex-direction:column;gap:.8vh;min-height:0;overflow:hidden}
+body.night .pscol{background:color-mix(in srgb,var(--c) 16%,#111A17)}
+.pscol .psn{font-family:var(--font-display);font-weight:900;font-size:4.1vh;color:var(--c);line-height:1.1}
+body.night .pscol .psn{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
+.pscol .psbig{display:flex;align-items:baseline;gap:.6vw;font-family:var(--font-display);direction:ltr;justify-content:flex-end}
+.pscol .psbig b{font-weight:900;font-size:8vh;line-height:.9}
+.pscol .psbig span{font-weight:700;font-size:3.1vh;color:var(--ink-soft)}
+.pscol .psbar{height:1.7vh;border-radius:2vh;background:color-mix(in srgb,var(--ink) 8%,transparent);overflow:hidden}
+.pscol .psbar i{display:block;height:100%;background:var(--c)}
+.pscol .psleft{font-size:2.05vh;font-weight:700}
+.pscol .psleft.done{color:#9C6B1F;font-weight:900}
+.pscol .psdeeds{border-top:1px solid color-mix(in srgb,var(--ink) 12%,transparent);margin-top:.4vh;padding-top:.4vh;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.pscol .psd{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw;padding:.65vh 0;
+  border-bottom:1px solid color-mix(in srgb,var(--ink) 6%,transparent);font-size:2.4vh}
+.pscol .psd span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pscol .psd b{font-family:var(--font-display);color:var(--c);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+body.night .pscol .psd b{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
+.pscol .psnone{font-size:2vh;color:var(--ink-soft);padding-top:.6vh}
+.psfoot{text-align:center;font-size:1.7vh;color:var(--ink-soft)}
+/* --- טלפון --- */
+@media (max-aspect-ratio:1/1){
+  .wx3{flex:none;width:100%;height:auto;gap:6px}
+  .w3side{flex:0 0 21%;border-radius:14px;padding:8px 2px;gap:3px}
+  .w3lbl{font-size:12px}.w3ic{font-size:20px}
+  .w3tt .hi{font-size:17px}.w3tt .lo{font-size:12px}
+  .w3sl{font-size:11px;padding:1px 6px}
+  .w3t{border-width:2px;border-radius:16px;padding:8px;gap:8px;flex-wrap:wrap;justify-content:center}
+  .w3pill{font-size:13px;padding:2px 10px}.w3a .w3ic{font-size:30px}
+  .w3big{font-size:38px}.w3low{font-size:18px}
+  .w3chg{font-size:11px;padding:2px 7px}.w3chg svg{width:11px;height:11px}
+  .w3c{margin-inline-start:0;gap:6px}
+  .w3wear{border-radius:10px;padding:4px 10px;gap:4px}.w3wear .wi{font-size:18px}.w3wear .wt{font-size:20px}
+  .w3umb{font-size:12px;padding:2px 8px;border-width:1.5px}
+  .kids4{height:auto;gap:8px}
+  .k4grid{grid-template-columns:1fr 1fr;gap:8px}
+  .k4box{border-radius:14px;padding:8px 10px;border-top-width:4px}
+  .k4n{font-size:17px}.k4tag{font-size:10px}
+  .k4r{font-size:13px}.k4r.y{font-size:11px}.k4p{font-size:11px}
+  .k4bar{height:7px}.k4fx i{width:5px;height:5px;margin:-2.5px}
+  .k4jar{height:auto;min-height:34px;padding:6px 10px;gap:8px;border-radius:12px;flex-wrap:wrap}
+  .k4jar .jl{font-size:12px}.k4jar .jn{font-size:13px}.k4jar .jp{font-size:11px;max-width:none}
+  .k4jar .k4bar{height:8px;min-width:80px}
+  #ptscreen{overflow:auto;padding:14px 4vw 24px;gap:10px}
+  .pshead{flex-wrap:wrap;gap:6px}
+  .pshead .pd b,.pshead .pd span{font-size:22px}.pshead .pt{font-size:22px;order:3;width:100%}
+  .pshead .ph b{font-size:17px}.pshead .ph span{font-size:12px}
+  .psjar{height:auto;min-height:40px;flex-wrap:wrap;padding:6px 10px;gap:6px;border-radius:12px}
+  .psjar .jl{font-size:13px}.psjar .jn{font-size:15px}.psjar .jp{font-size:12px}.psjar .jb{height:8px;min-width:100px}
+  .psgrid{grid-template-columns:1fr 1fr;gap:8px;flex:none}
+  .pscol{padding:10px;border-radius:14px;border-top-width:5px;gap:5px}
+  .pscol .psn{font-size:19px}.pscol .psbig b{font-size:34px}.pscol .psbig span{font-size:15px}
+  .pscol .psbar{height:8px}.pscol .psleft{font-size:12px}.pscol .psd{font-size:13px;padding:4px 0}.pscol .psnone{font-size:12px}
+  .psfoot{font-size:11px}
+}
 </style>
 </head>
 <body class="kiosk">
@@ -763,19 +938,8 @@ body.shabbat.night .sbart svg{opacity:.2}
   </div>
 
   <div class="toprow" id="toprow">
-    <section class="fc hidden" id="fc" aria-label="תחזית">
-      <div class="fchead">
-        <div class="fcsum" id="fcsum"></div>
-        <div class="fcleg"><span><i style="background:var(--wx-hot)"></i>יום</span><span><i style="background:var(--wx-cold)"></i>לילה</span></div>
-      </div>
-      <div class="fcbody">
-        <div class="fcbg fcgrid" id="fcbg"></div>
-        <div class="fcgrid" id="fcdays"></div>
-        <div class="fcchart" id="fcchart"></div>
-        <div class="fcrow" id="fcdelta"></div>
-        <div class="fcrow" id="fcwear"></div>
-      </div>
-    </section>
+    <section class="wx3 hidden" id="fc" aria-label="מזג אוויר"></section>
+    <section class="kids4 hidden" id="kids4" aria-label="היום קיבלתי"></section>
     <section class="ptcard hidden" id="ptcard" aria-label="נקודות משפחתיות"></section>
     <div class="shirtbox" id="shirtbox">
       <svg viewBox="0 0 100 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -820,6 +984,7 @@ body.shabbat.night .sbart svg{opacity:.2}
 </div>
 <a id="gotoControl" href="daily.html">היום</a>
 <a id="gotoPoints" href="points.html" aria-label="נקודות"><svg viewBox="0 0 160 160" aria-hidden="true"><path d="M50 22l18 44h-14L36 22z" fill="#EE719E"/><path d="M64 22l16 40 16-40z" fill="#7A5FA8"/><path d="M110 22l-18 44h14l18-44z" fill="#2E7D52"/><circle cx="80" cy="98" r="40" fill="#E2A13B"/><path d="M80 78l6 12 13 1.5-9.5 9 2.5 13-12-6.5-12 6.5 2.5-13-9.5-9 13-1.5z" fill="#FFFFFF"/></svg></a>
+<div id="ptscreen" class="hidden" aria-label="הנקודות שלנו"></div>
 <div id="celebrate" class="hidden" role="dialog" aria-label="הגעה ליעד"></div>
 <div id="lockscreen" role="dialog" aria-modal="true" aria-labelledby="lktitle">
   <div class="lk-top"><b>לוח משפחת כהן</b><span id="lkclock"></span></div>
@@ -1792,113 +1957,41 @@ function wxColumns(){
   return cols.length>=2?cols:null;
 }
 
+/* ---- מזג אוויר (16.11.2026, מוקאפ שאושר): אתמול · היום · מחר ----
+   אתמול צר ואפור (נקודת השוואה), היום רחב ומודגש, מחר צר. */
 function renderForecast(){
   const box=$('fc');
   const cols=wxColumns();
-  if(!cols){ box.classList.add('hidden'); return; }
+  const T=cols?cols.find(c=>c.rel===0):null;
+  if(!T){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const Y=cols.find(c=>c.rel===-1), M=cols.find(c=>c.rel===1);
+  const dayName=c=>DAY_FULL[DAYS[new Date(c.iso+'T12:00:00').getDay()]];
+  const temps=c=>`<div class="w3tt"><span class="hi">${Math.round(c.max)}°</span><span class="lo">${Math.round(c.min)}°</span></div>`;
+  let h='';
+  if(Y) h+=`<div class="w3side w3y" data-d="y"><div class="w3lbl">אתמול<br>${dayName(Y)}</div>`+
+    `<div class="w3ic">${WCODE[Y.code]||'🌡️'}</div>${temps(Y)}</div>`;
+  /* היום */
+  const wet=isRainyDay(T), w=sleeveFor(T.max), sev=SEVERE.includes(T.code);
+  let chg='';
+  if(Y){
+    const d=wxDelta(Y,T), a=Math.abs(d);
+    chg = a<=1 ? `<span class="w3chg same">= כמו אתמול</span>`
+      : `<span class="w3chg ${a>=4?'big':(d>0?'up':'down')}">${d>0?ARROW_UP:ARROW_DOWN}<span>${d>0?'חם':'קר'} יותר מאתמול ב־<bdi dir="ltr">${a}°</bdi></span></span>`;
+  }
+  const umb=(T.rain!==null && T.rain>=CONFIG.RAIN_ALERT_PCT)
+    ? `<div class="w3umb">☂️ מטרייה · <bdi dir="ltr">${Math.round(T.rain)}%</bdi></div>` : '';
+  h+=`<div class="w3t${wet?' rainy':''}" data-d="t">${wet?rainDrops():''}`+
+    `<div class="w3a"><span class="w3pill">היום ${dayName(T)}</span><span class="w3ic">${WCODE[T.code]||'🌡️'}</span></div>`+
+    `<div class="w3b"><div class="w3big">${Math.round(T.max)}°</div><div class="w3low">${Math.round(T.min)}°</div>${chg}</div>`+
+    `<div class="w3c"><div class="w3wear ${w.cls}${sev?' severe':''}"><span class="wi">${sev?'⚠️':''}${w.icon}</span><span class="wt">${w.text}</span></div>${umb}</div></div>`;
+  if(M){
+    const mw=sleeveFor(M.max);
+    const mr=(M.rain!==null && M.rain>=CONFIG.RAIN_ALERT_PCT)?` · ☂️${Math.round(M.rain)}%`:'';
+    h+=`<div class="w3side w3m" data-d="m"><div class="w3lbl">מחר<br>${dayName(M)}</div>`+
+      `<div class="w3ic">${WCODE[M.code]||'🌡️'}</div>${temps(M)}<span class="w3sl ${mw.cls}">${mw.icon} ${mw.text}${mr}</span></div>`;
+  }
+  box.innerHTML=h;
   box.classList.remove('hidden');
-  const n=cols.length;
-  box.style.setProperty('--fcn',n);
-  const todayIdx=cols.findIndex(c=>c.rel===0);
-  const focusRel=(israelNow().getHours()<WEATHER_FOCUS_HOUR)?0:1;
-  let f=cols.findIndex(c=>c.rel===focusRel); if(f<0) f=todayIdx;
-
-  /* רקע: אתמול מקווקו, היום/מחר המודגש — כרטיס לבן */
-  $('fc').classList.toggle('fcwrap-rain', isRainyDay(cols[f]));
-  $('fcbg').innerHTML=cols.map((c,i)=>{
-    const wet = i===f && isRainyDay(c);
-    return `<div class="${c.rel<0?'past':''}${i===f?' focus':''}${wet?' rainy':''}">${wet?rainDrops():''}</div>`;
-  }).join('');
-
-  /* שורת הימים */
-  $('fcdays').innerHTML=cols.map((c,i)=>{
-    const d=new Date(c.iso+'T12:00:00');
-    let badge='';
-    if(i===f && f>0){                         // תג השינוי של היום המודגש — בפינת העמודה
-      const pv=cols[f-1], dd=wxDelta(pv,c), a=Math.abs(dd);
-      const than=pv.rel===-1?'מאתמול':pv.rel===0?'מהיום':'';
-      badge = a<=1 ? `<span class="wxchip same fdelta">= <span class="w">כמו ${pv.rel===-1?'אתמול':'היום'}</span></span>`
-        : `<span class="wxchip fdelta ${a>=4?'big':(dd>0?'up':'down')}">${dd>0?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span><span class="w"> ${than}</span></span>`;
-    }
-    return `<div class="fcday${c.rel<0?' past':''}${i===f?' focus':''}">`+
-      `<span class="dl">${wxDayLabel(c.iso,c.rel)}</span>`+
-      `<span class="dd">${d.getDate()}/${d.getMonth()+1}</span>`+
-      `<span class="ic">${WCODE[c.code]||'🌡️'}</span>${badge}</div>`;
-  }).join('');
-
-  /* גרף: שני קווים חלקים, אתמול מקווקו. y באחוזים מגובה האזור */
-  const all=cols.flatMap(c=>[c.max,c.min]);
-  const hi=Math.max(...all), lo=Math.min(...all), span=Math.max(1,hi-lo);
-  const yOf=t=>38+(hi-t)/span*30;           // 40%..72% — מקום למספרים הגדולים של היום המודגש
-  const xOf=i=>(i+.5)/n*100;                // אחוז מימין
-  const svgX=i=>1000-xOf(i)*10;
-  const pathFor=(key,a,b)=>{
-    let s=`M${svgX(a).toFixed(1)} ${yOf(cols[a][key]).toFixed(1)}`;
-    for(let i=a;i<b;i++){
-      const x0=svgX(i),x1=svgX(i+1),y0=yOf(cols[i][key]),y1=yOf(cols[i+1][key]),h=(x0-x1)/2;
-      s+=` C${(x0-h).toFixed(1)} ${y0.toFixed(1)} ${(x1+h).toFixed(1)} ${y1.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-    }
-    return s;
-  };
-  const p0=cols[0].rel<0?1:0;               // הקטע מאתמול להיום מקווקו
-  let svg='<svg viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">';
-  for(const [key,col] of [['max','var(--wx-hot)'],['min','var(--wx-cold)']]){
-    if(p0) svg+=`<path class="dash" d="${pathFor(key,0,1)}" style="stroke:${col}"/>`;
-    svg+=`<path d="${pathFor(key,p0,n-1)}" style="stroke:${col}"/>`;
-  }
-  svg+='</svg>';
-  let marks='';
-  cols.forEach((c,i)=>{
-    const cls=(c.rel<0?' past':'')+(i===f?' big':'');
-    const x=xOf(i).toFixed(2);
-    marks+=`<div class="fcpt${cls}" style="right:${x}%;top:${yOf(c.max).toFixed(2)}%;background:var(--wx-hot)"></div>`;
-    marks+=`<div class="fcpt${cls}" style="right:${x}%;top:${yOf(c.min).toFixed(2)}%;background:var(--wx-cold)"></div>`;
-    marks+=`<div class="fclbl hi${cls}" style="right:${x}%;top:${yOf(c.max).toFixed(2)}%;color:var(--wx-hot)">${Math.round(c.max)}°</div>`;
-    marks+=`<div class="fclbl lo${cls}" style="right:${x}%;top:${yOf(c.min).toFixed(2)}%;color:var(--wx-cold)">${Math.round(c.min)}°</div>`;
-  });
-  $('fcchart').innerHTML=svg+marks;
-
-  /* תגיות שינוי: כל יום מול היום שלפניו */
-  $('fcdelta').innerHTML=cols.map((c,i)=>{
-    if(i===0) return `<span class="fcbase">נקודת השוואה</span>`;
-    const d=wxDelta(cols[i-1],c), a=Math.abs(d);
-    if(a<=1) return `<span class="wxchip same">= <span class="w">כמו ${cols[i-1].rel===-1?'אתמול':cols[i-1].rel===0?'היום':cols[i-1].rel===1?'מחר':DAY_FULL[DAYS[new Date(cols[i-1].iso+'T12:00:00').getDay()]]}</span></span>`;
-    const up=d>0, big=a>=4;
-    return `<span class="wxchip ${big?'big':(up?'up':'down')}">${up?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span>`+
-      (big?`<span class="w">${up?' חם!':' קר!'}</span>`:(i===1&&c.rel===0?'<span class="w"> מאתמול</span>':''))+`</span>`;
-  }).join('');
-
-  /* בגדים + מטרייה לכל יום מהיום והלאה (אותם כללים כמו בכרטיסים הקודמים) */
-  $('fcwear').innerHTML=cols.map((c,i)=>{
-    if(c.rel<0) return '<span class="fcbase wbase">נקודת השוואה</span>';
-    const w=sleeveFor(c.max);
-    const rain=(c.rain!==null && c.rain>=CONFIG.RAIN_ALERT_PCT)?`<b class="wr">☂️ ${Math.round(c.rain)}%</b>`:'';
-    const sev=SEVERE.includes(c.code);
-    return `<span class="wear sl ${w.cls}${i===f?' big':''}${sev?' severe':''}"><span class="wi">${sev?'⚠️':''}${w.icon}</span>`+
-      `<span class="wt">${w.text}</span>${rain?(`<span class="wsep"> · </span>`+rain):''}</span>`;
-  }).join('');
-
-  /* משפט הסיכום — בשפה של ילדים */
-  const fc=cols[f], prev=cols[f-1];
-  const who=fc.rel===0?'היום':'מחר', than=fc.rel===0?'מאתמול':'מהיום';
-  let s1='', chip='';
-  if(prev){
-    const d=wxDelta(prev,fc), a=Math.abs(d);
-    if(a<=1) s1=`${who} בערך כמו ${fc.rel===0?'אתמול':'היום'}`;
-    else{
-      s1=`${who} ${d>0?'חם':'קריר'} יותר ${than}`;
-      chip=`<span class="wxchip ${a>=4?'big':(d>0?'up':'down')}">${d>0?ARROW_UP:ARROW_DOWN}<span class="n">${a}°</span></span>`;
-    }
-  }else s1=`${who} ${Math.round(fc.max)}°`;
-  let s2='';
-  for(let j=f+1;j<n;j++){
-    const d=wxDelta(cols[j-1],cols[j]);
-    if(Math.abs(d)>=4){ s2=`· ${wxDayPhrase(cols[j].iso,cols[j].rel)} ${d>0?'מתחמם':'מתקרר'} ל־${Math.round(cols[j].max)}°`; break; }
-  }
-  const fw=sleeveFor(fc.max);
-  const fr=(fc.rain!==null && fc.rain>=CONFIG.RAIN_ALERT_PCT)?` · ☂️ ${Math.round(fc.rain)}%`:'';
-  $('fcsum').innerHTML=`<span class="s1">${s1}</span>${chip}${s2?`<span class="s2">${s2}</span>`:''}`+
-    `<span class="s3">${fw.icon} ${fw.text}${fr}</span>`;
 }
 
 async function loadWeather(){
@@ -2148,20 +2241,27 @@ async function loadPoints(settingsRows){
   const get=k=>{ const r=(settingsRows||[]).find(x=>x.key===k); return r?String(r.value??'').trim():''; };
   PTS.settings={show:get('points_show_kiosk')!=='0', mode:get('points_celebration')||'once',
                 secs:parseInt(get('points_celebration_seconds'),10)||60};
+  PTS.raw={}; (settingsRows||[]).forEach(r=>{ PTS.raw[r.key]=r.value==null?'':String(r.value); });
   PTS.show=PTS.settings.show;
   PTS.kids=ALL_KIDS;
   if(!db) return;
   try{
-    const g=await db.from('point_goals').select('*').eq('status','active');
+    const [g,a]=await Promise.all([
+      db.from('point_goals').select('*').eq('status','active'),
+      db.from('point_actions').select('id,title'),
+    ]);
     if(g.error) throw g.error;
     const goals=g.data||[];
-    const since=goals.length?goals.map(x=>x.started_at).sort()[0]:new Date(nowMs()).toISOString();
-    const e=await db.from('point_events').select('id,kid_id,points,created_at,undone_at').gte('created_at',since);
+    /* אירועים: מתחילת היעד הוותיק + 8 ימים אחורה (אתמול ושבוע מיום ראשון) */
+    const back=new Date(nowMs()-8*86400000).toISOString();
+    const since=[back,...goals.map(x=>x.started_at)].sort()[0];
+    const e=await db.from('point_events').select('id,kid_id,points,created_at,undone_at,action_id,reason').gte('created_at',since);
     if(e.error) throw e.error;
     PTS.goals=goals; PTS.events=e.data||[];
-    try{ localStorage.setItem(PTS_CACHE_KEY,JSON.stringify({goals:PTS.goals,events:PTS.events})); }catch(_){}
+    if(a&&!a.error) PTS.actions=a.data||[];
+    try{ localStorage.setItem(PTS_CACHE_KEY,JSON.stringify({goals:PTS.goals,events:PTS.events,actions:PTS.actions||[]})); }catch(_){}
   }catch(err){
-    try{ const c=JSON.parse(localStorage.getItem(PTS_CACHE_KEY)||'null'); if(c){ PTS.goals=c.goals||[]; PTS.events=c.events||[]; } }catch(_){}
+    try{ const c=JSON.parse(localStorage.getItem(PTS_CACHE_KEY)||'null'); if(c){ PTS.goals=c.goals||[]; PTS.events=c.events||[]; PTS.actions=c.actions||[]; } }catch(_){}
   }
 }
 
@@ -2202,39 +2302,165 @@ function ptKidHtml(k){
     `<span class="xv">${Math.min(p.sum,g.target)}/${g.target}${stars?' ★':''}</span></div>${body}`+
     `<div class="xs${p.reached?' done':''}">${msg}</div></div>`;
 }
-/* הצנצנת המשפחתית + ילדים שאין להם כרטיס על הלוח (למשל שהם) */
-function renderPointsCard(cardKidNames){
-  const box=$('ptcard');
-  if(!PTS.show){ box.classList.add('hidden'); $('ptstrip').classList.add('hidden'); return; }
+/* ============================================================
+   היום קיבלתי ⭐ (16.11.2026) — משבצת לכל ילד בשורה העליונה:
+   מה קיבל היום ואתמול, פס התקדמות לפרס, והצנצנת המשפחתית מתחת.
+   ============================================================ */
+const IL_DAY=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem'});
+const ilIso=t=>IL_DAY.format(new Date(t));
+function evTitle(e){ const a=(PTS.actions||[]).find(x=>x.id===e.action_id); return e.reason||(a?a.title:'נקודות'); }
+/* קיבוץ לפי מעשה: [{t,n,pts}] — הכי הרבה קודם */
+function groupDeeds(evs){
+  const m=new Map();
+  for(const e of evs){ const t=evTitle(e); const g=m.get(t)||{t,n:0,pts:0,last:0}; g.n++; g.pts+=e.points; g.last=Math.max(g.last,new Date(e.created_at).getTime()); m.set(t,g); }
+  return [...m.values()].sort((x,y)=>y.n-x.n||y.last-x.last);
+}
+function kidEvents(kidId,fromIso,toIso){
+  return PTS.events.filter(e=>!e.undone_at && e.kid_id===kidId && (()=>{ const d=ilIso(e.created_at); return d>=fromIso && (!toIso||d<=toIso); })());
+}
+const isStarsKid=(k,g)=>k&&k.points_display==='stars' && g && g.target<=20;
+function ptsText(k,g,n){ return isStarsKid(k,g) ? '★'.repeat(Math.min(n,5))+(n>5?'+':'') : '+'+n; }
+function deedLabel(d){ return d.n>1?`${d.t} ×${d.n}`:d.t; }
+/* אפקט ביעד: 2h = זיקוקים שעתיים ואז זוהר · always = זיקוקים עד המימוש · off = בלי */
+function goalFx(p){
+  const mode=PSC?PSC.goalEffectOf(PTS.raw&&PTS.raw.points_goal_effect):'2h';
+  if(!p.reached || mode==='off') return {sparks:false,glow:false};
+  if(mode==='always') return {sparks:true,glow:true};
+  return {sparks:nowMs()-p.reachedAt<2*3600*1000, glow:true};
+}
+const SPARK_COLS=['#E2A13B','#E8603C','#7A5FA8','#2E6F8E','#2E8B57'];
+function sparksHtml(){
+  let h='<span class="k4fx" aria-hidden="true">';
+  for(let i=0;i<10;i++){
+    const ang=i/10*Math.PI*2;
+    h+=`<i style="background:${SPARK_COLS[i%5]};--dx:${(Math.cos(ang)*2.6).toFixed(2)}rem;--dy:${(Math.sin(ang)*2.6).toFixed(2)}rem;animation-delay:${(-(i%5)*.25).toFixed(2)}s"></i>`;
+  }
+  return h+'</span>';
+}
+function k4Box(k){
+  const g=goalOf(k.id), p=goalProgress(g);
+  const today=isoDate(israelNow());
+  const yd=new Date(israelNow()); yd.setDate(yd.getDate()-1); const yIso=isoDate(yd);
+  const tg=groupDeeds(kidEvents(k.id,today,today)), yg=groupDeeds(kidEvents(k.id,yIso,yIso));
+  const reached=p.reached && !g.needs_setup, fx=goalFx({...p,reached});
+  let rows='';
+  if(!tg.length) rows+=`<div class="k4r none"><span>היום עוד לא</span></div>`;
+  else if(tg.length<=2) rows+=tg.map(d=>`<div class="k4r"><span>${esc(deedLabel(d))}</span><b>${ptsText(k,g,d.pts)}</b></div>`).join('');
+  else{
+    const restN=tg.slice(1).reduce((a,d)=>a+d.pts,0);
+    rows+=`<div class="k4r"><span>${esc(deedLabel(tg[0]))}</span><b>${ptsText(k,g,tg[0].pts)}</b></div>`+
+          `<div class="k4r"><span>ועוד ${tg.length-1} מעשים</span><b>${ptsText(k,g,restN)}</b></div>`;
+  }
+  if(yg.length){
+    const ypts=yg.reduce((a,d)=>a+d.pts,0);
+    const ylab=yg.length===1?deedLabel(yg[0]):`${deedLabel(yg[0])} ועוד`;
+    rows+=`<div class="k4r y"><span>אתמול · ${esc(ylab)}</span><b>${ptsText(k,g,ypts)}</b></div>`;
+  }
+  const stars=isStarsKid(k,g);
+  const pct=g.needs_setup?0:Math.min(100,Math.round(p.sum/g.target*100));
+  const prog=g.needs_setup?'—':`${stars?'★ ':''}${Math.min(p.sum,g.target)} / ${g.target}`;
+  const prize=g.needs_setup?'יעד חדש בקרוב':esc(g.prize||'');
+  return `<div class="k4box${fx.glow?' glow':''}" style="--c:${k.color}" data-kid="${k.id}">`+
+    `<div class="k4h"><span class="k4n">${esc(k.name)}</span><span class="k4tag${reached?' done':''}">${reached?'הגעתי ליעד! 🎉':'היום קיבלתי ⭐'}</span></div>`+
+    rows+
+    `<div class="k4f"><div class="k4p"><span>${prize}</span><b>${prog}</b></div>`+
+    `<div class="k4bar"><i style="width:${pct}%"></i>${fx.sparks?sparksHtml():''}</div></div></div>`;
+}
+function renderKids4(){
+  const box=$('kids4');
+  if(!PTS.show || document.body.classList.contains('shabbat')){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
   const fam=goalOf(null);
-  let html='';
+  if(!kids.length && !fam){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  let h='';
+  if(kids.length) h+=`<div class="k4grid" style="--k4n:${kids.length}">${kids.map(k4Box).join('')}</div>`;
   if(fam){
-    const p=goalProgress(fam), frac=Math.min(1,p.sum/fam.target);
-    const fillTop=(124-100*frac).toFixed(1);   // גובה המילוי בצנצנת (24=מלאה, 124=ריקה)
-    html+=`<div class="pth">הצנצנת המשפחתית</div>
-      <svg class="jar" viewBox="0 0 104 128" role="img" aria-label="${p.sum} מתוך ${fam.target}">
-        <defs><clipPath id="jarclip"><path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z"/></clipPath></defs>
-        <rect x="30" y="4" width="44" height="12" rx="4" fill="#C9D3CE"/>
-        <path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z" fill="#F4F6F5"/>
-        <rect x="0" y="${fillTop}" width="104" height="128" fill="#E2A13B" clip-path="url(#jarclip)"/>
-        <path d="M24 18h56v8c10 6 14 14 14 26v58a14 14 0 0 1-14 14H24a14 14 0 0 1-14-14V52c0-12 4-20 14-26z" fill="none" stroke="#9AA8A2" stroke-width="3"/>
-      </svg>
-      <div class="ptn">${Math.min(p.sum,fam.target)} / ${fam.target}</div>
-      ${p.reached&&!fam.needs_setup?`<div class="ptdone">הגענו ליעד! ${esc(fam.prize)}</div>`:`<div class="ptp">${esc(fam.prize)}</div>`}`;
+    const p=goalProgress(fam), reached=p.reached&&!fam.needs_setup, fx=goalFx({...p,reached});
+    const pct=fam.needs_setup?0:Math.min(100,Math.round(p.sum/fam.target*100));
+    h+=`<div class="k4jar${fx.glow?' glow':''}"><span class="jl">הצנצנת המשפחתית</span>`+
+      `<div class="k4bar"><i style="width:${pct}%"></i>${fx.sparks?sparksHtml():''}</div>`+
+      `<span class="jn">${Math.min(p.sum,fam.target)} / ${fam.target}</span>`+
+      `<span class="jp">${reached?'הגענו! ':''}${esc(fam.prize||'')}</span></div>`;
   }
-  /* ילדים בלי כרטיס על הלוח: בדרך כלל רק שהם → בתוך כרטיס הצנצנת.
-     כשאין כרטיסים בכלל (חופש / הודעה על כל המסך) → רצועה נפרדת וגדולה לכולם. */
-  const others=PTS.kids.filter(k=>k.points_enabled!==false && !cardKidNames.includes(k.name) && goalOf(k.id));
-  const strip=$('ptstrip');
-  if(!cardKidNames.length && others.length){
-    strip.innerHTML=others.map(ptKidHtml).join('');
-    strip.classList.remove('hidden');
+  box.innerHTML=h;
+  box.classList.remove('hidden');
+}
+/* נשמר בשם הישן — render() קורא לו */
+function renderPointsCard(){ $('ptcard').classList.add('hidden'); $('ptstrip').classList.add('hidden'); renderKids4(); }
+
+/* ============================================================
+   מסך הנקודות המלא (16.11.2026) — מכסה את כל הלוח רק כשמפעילים:
+   "הצג עכשיו" מהאפליקציה/מ"היום", או חלון קבוע. לא בשבת ובחג.
+   נבדק כל 10 שניות; ההגדרות מתעדכנות בכל רענון (דקה).
+   ============================================================ */
+let PSC=null;
+let PS_SIG='';
+function weekStartIso(){ const d=new Date(israelNow()); d.setDate(d.getDate()-d.getDay()); return isoDate(d); }
+function psEffectHtml(mode){
+  if(mode==='off') return '';
+  let h='<div class="psfx" aria-hidden="true">';
+  if(mode==='stars'){
+    for(let i=0;i<18;i++) h+=`<i class="st" style="right:${(i*41+7)%96+1}%;font-size:${(2+((i*5)%16)/10).toFixed(1)}vh;animation-duration:${9+(i*7)%8}s;animation-delay:${-((i*13)%90)/10}s">★</i>`;
   }else{
-    strip.innerHTML=''; strip.classList.add('hidden');
-    if(others.length) html+='<div class="ptextra">'+others.map(ptKidHtml).join('')+'</div>';
+    for(let b=0;b<5;b++){
+      h+=`<span class="fw" style="right:${12+b*18}%;top:${18+((b*29)%45)}%">`;
+      for(let i=0;i<12;i++){ const ang=i/12*Math.PI*2; h+=`<i style="background:${SPARK_COLS[(i+b)%5]};--dx:${(Math.cos(ang)*9).toFixed(1)}vh;--dy:${(Math.sin(ang)*9).toFixed(1)}vh;animation-delay:${(b*.65).toFixed(2)}s"></i>`; }
+      h+='</span>';
+    }
   }
-  box.innerHTML=html;
-  box.classList.toggle('hidden',!html);
+  return h+'</div>';
+}
+function psCol(k,from){
+  const g=goalOf(k.id), p=goalProgress(g), stars=isStarsKid(k,g);
+  const reached=p.reached&&!g.needs_setup;
+  const pct=g.needs_setup?0:Math.min(100,Math.round(p.sum/g.target*100));
+  const deeds=groupDeeds(kidEvents(k.id,from,null));
+  const MAX=7;
+  let list=deeds.slice(0,MAX).map(d=>`<div class="psd"><span>${esc(deedLabel(d))}</span><b>${ptsText(k,g,d.pts)}</b></div>`).join('');
+  if(deeds.length>MAX) list+=`<div class="psd"><span>ועוד ${deeds.length-MAX}</span><b></b></div>`;
+  if(!deeds.length) list=`<div class="psnone">השבוע עוד לא — זה הזמן!</div>`;
+  const left=g.needs_setup?'יעד חדש בקרוב':reached?`הגעת ליעד! ${esc(g.prize)} 🎉`:`עוד ${g.target-p.sum} ← ${esc(g.prize)}`;
+  return `<div class="pscol" style="--c:${k.color};--cbg:${k.bg||'var(--card)'}">`+
+    `<div class="psn">${esc(k.name)}</div>`+
+    `<div class="psbig"><b>${Math.min(p.sum,g.target)}</b><span>/ ${g.needs_setup?'—':g.target}${stars?' ★':''}</span></div>`+
+    `<div class="psbar"><i style="width:${pct}%"></i></div>`+
+    `<div class="psleft${reached?' done':''}">${left}</div>`+
+    `<div class="psdeeds">${list}</div></div>`;
+}
+function renderPtScreen(){
+  const el=$('ptscreen');
+  if(!PSC || !PTS.raw || isLockedView()){ el.classList.add('hidden'); el.innerHTML=''; PS_SIG=''; return; }
+  const st=PSC.screenState(PTS.raw,nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')});
+  if(!st.on || clockIsFrozen()){ el.classList.add('hidden'); el.innerHTML=''; PS_SIG=''; return; }
+  const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
+  const fam=goalOf(null);
+  const fx=PSC.effectOf(PTS.raw.points_screen_effect);
+  const from=weekStartIso();
+  const today=israelNow();
+  const until=CLOCK_FMT.format(new Date(st.untilMs));
+  let jar='';
+  if(fam){
+    const p=goalProgress(fam), pct=fam.needs_setup?0:Math.min(100,Math.round(p.sum/fam.target*100));
+    jar=`<div class="psjar"><span class="jl">הצנצנת המשפחתית</span><div class="jb"><i style="width:${pct}%"></i></div>`+
+      `<span class="jn">${Math.min(p.sum,fam.target)} / ${fam.target}</span><span class="jp">${esc(fam.prize||'')} · השבוע מיום ראשון</span></div>`;
+  }
+  const body=`<div class="pshead"><div class="pd"><b>יום ${DAY_FULL[DAYS[today.getDay()]]}</b><span class="psclock">${CLOCK_FMT.format(nowDate())}</span></div>`+
+    `<div class="pt">הנקודות שלנו ⭐</div>`+
+    `<div class="ph"><b>${hebDateString(today)}</b><span>${gregString(today)}</span></div></div>`+
+    jar+
+    `<div class="psgrid" style="--psn:${Math.max(1,kids.length)}">${kids.map(k=>psCol(k,from)).join('')}</div>`+
+    `<div class="psfoot">מוצג עכשיו עד ${until} · ההגדרה באפליקציית הנקודות</div>`;
+  /* מציירים מחדש רק כשמשהו השתנה — כדי שהאנימציה לא תתאפס כל 10 שניות */
+  const sig=fx+'|'+body.replace(/<span class="psclock">[^<]*<\/span>/,'');
+  if(sig!==PS_SIG){ el.innerHTML=psEffectHtml(fx)+body; PS_SIG=sig; }
+  else { const c=el.querySelector('.psclock'); if(c) c.textContent=CLOCK_FMT.format(nowDate()); }
+  el.classList.remove('hidden');
+}
+/* הדגשות מבקרה ← תצוגה */
+function applyBoardPrefs(){
+  const r=PTS.raw||{};
+  document.body.classList.toggle('bold-subj',String(r.board_bold_subjects||'')==='1');
+  document.body.classList.toggle('bold-ch',String(r.board_bold_chugim||'')==='1');
 }
 
 /* חגיגה: מסך מלא (ברירת מחדל: פעם אחת) כשיעד מושג. נזכר במכשיר שכבר הוצג.
@@ -2327,7 +2553,7 @@ function fitToScreen(){
   const overflows=()=>{
     if(app.scrollHeight > window.innerHeight+1) return true;
     if(app.scrollWidth  > window.innerWidth +1) return true;
-    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li,.wear,.wxchip,.kpts .kpt,.ptcard .ptp,.goaltag,.ptkid .xs,.ptkid .xn')){
+    for(const el of app.querySelectorAll('td,th,.note,.chent,.wtip,.shirtcap,.shirtreason,.lsubj,.ltime,.mealchip .mv,.kidname,.schedtitle .sysday,.schednote,.covertitle,.covermsg,.coverlist li,.wear,.wxchip,.w3t,.w3m,.kpts .kpt,.ptcard .ptp,.goaltag,.ptkid .xs,.ptkid .xn')){
       if(el.scrollHeight > el.clientHeight+2) return true;   // טקסט נחתך לגובה
       if(el.scrollWidth  > el.clientWidth +2) return true;   // טקסט נחתך לרוחב
     }
@@ -2541,6 +2767,7 @@ async function init(){
       {auth:{...noAuth,storageKey:'fd-device-client'},global:{headers:{'x-device-token':DEV_TOKEN}}});
     db=devDb;
   }catch(e){ showErr('לא ניתן להתחבר למסד הנתונים'); console.error(e); }
+  try{ PSC=await import('./ptscreen.js'); }catch(e){ console.warn('points screen module unavailable',e); }
   await loadWeather();
   await render();
   stampSync();
@@ -2553,7 +2780,7 @@ async function init(){
     await loadWeather(); await render(); stampSync();
   },CONFIG.REFRESH_MIN*60*1000);
   tickClock(); applyNightMode(); applyShirtPulse();
-  setInterval(()=>{ tickClock(); applyNightMode(); applyShirtPulse(); },10000);
+  setInterval(()=>{ tickClock(); applyNightMode(); applyShirtPulse(); renderPtScreen(); },10000);
   window.addEventListener('resize',fitToScreen);
 }
 
@@ -2580,7 +2807,7 @@ async function loadControlTables(){
 async function render(){
   await ensureAccess();
   renderAccessUi();
-  if(isLockedView()){ scheduleFit(); return; }
+  if(isLockedView()){ renderPtScreen(); scheduleFit(); return; }
   await loadControlTables();
   renderOffbar();
   tickClock();          // השעה מתעדכנת מיד כשהשעון חוזר להיות אמין
@@ -2759,6 +2986,8 @@ async function render(){
       /* כרטיסי ילדים מוצגים רק ביום לימודים רגיל; אחרת כל הילדים עוברים לכרטיס הנקודות */
       const cardsShown=!hol && !covering && !document.querySelector('#kidcards .dayoff:not(.small)');
       renderPointsCard(cardsShown?KIDS.map(k=>k.name):[]);
+      applyBoardPrefs();
+      renderPtScreen();
       maybeCelebrate(!!hol);
     }catch(e){ showErr('שגיאה בטעינת הנתונים'); console.error(e); }
   }

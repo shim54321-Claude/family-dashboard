@@ -150,6 +150,19 @@ button:disabled{opacity:.45}
 .cbtns button{flex:1}
 .cbtns .no{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
 .cbtns .yes.danger{background:var(--danger);color:#fff}
+.psnow{display:flex;align-items:center;gap:10px;border-radius:12px;padding:8px 12px;margin-top:10px;background:var(--soft);font-weight:700;font-size:15px}
+.psnow.on{background:color-mix(in srgb,var(--ok) 14%,var(--card))}
+.psnow span{flex:1}
+.psnow button{flex:none;min-height:40px;padding:0 14px;background:var(--alert-bg);color:var(--alert);border:1px solid var(--alert)}
+.timerow{display:flex;gap:8px;align-items:center}.timerow input{flex:1;min-width:0}
+.win{border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px}
+.win .wt{display:flex;gap:6px;align-items:center}
+.win .wt b{flex:none;min-width:34px}
+.win .wt input{flex:1;min-width:0;padding:8px}
+.win .days{display:flex;gap:5px;margin-top:8px}
+.win .days button{flex:1;min-height:40px;padding:0;border-radius:10px;background:var(--soft);color:var(--ink);font-size:15px}
+.win .days button.on{background:var(--ink);color:var(--bg)}
+.wins-off .win{opacity:.45}
 #toast{position:fixed;bottom:18px;inset-inline-start:50%;transform:translateX(50%);background:var(--ok);color:#fff;
   padding:11px 22px;border-radius:30px;font-weight:700;opacity:0;transition:opacity .25s;pointer-events:none;z-index:110}
 #toast.on{opacity:1}
@@ -242,6 +255,45 @@ button:disabled{opacity:.45}
         <div class="hint" style="margin-top:8px">בכל מקרה, עד שמסמנים "מומש" נשאר תג "הגעתי ליעד!" בכרטיס של הילד. בשבת/חג לא מוצג.</div>
       </div>
 
+
+      <div class="card" id="psCard">
+        <h2>מסך הנקודות על הלוח</h2>
+        <div class="hint">מכסה את כל הלוח במסך נקודות גדול, ורק כשמפעילים. חוזר לבד ללוח הרגיל בסוף הזמן.</div>
+        <div class="psnow" id="psNow"></div>
+        <label>הצג עכשיו</label>
+        <div class="chips" id="psDur">
+          <button type="button" class="chip" data-m="10">10 דק׳</button>
+          <button type="button" class="chip" data-m="30">30 דק׳</button>
+          <button type="button" class="chip" data-m="60">שעה</button>
+          <button type="button" class="chip" data-m="until">עד שעה…</button>
+        </div>
+        <div class="timerow hidden" id="psUntilRow" style="margin-top:8px"><input type="time" id="psUntil" aria-label="עד שעה"><button type="button" id="psUntilGo" style="flex:none">הצג</button></div>
+      </div>
+
+      <div class="card">
+        <div class="row"><h2 style="margin:0">קבוע · חוזר כל שבוע</h2>
+          <button class="sw" type="button" role="switch" id="swWin" aria-label="חלונות קבועים"><span></span></button></div>
+        <div id="winList"></div>
+        <button type="button" class="ghost" id="winAdd" style="width:100%;margin-top:8px;border-style:dashed">+ הוסף חלון זמן</button>
+        <div class="hint" style="margin-top:8px">לא מוצג בשבת ובחג. המתג למעלה מכבה את כל החלונות; בכל חלון בוחרים ימים.</div>
+      </div>
+
+      <div class="card">
+        <h2>אפקטים</h2>
+        <label style="margin-top:0">ברקע מסך הנקודות</label>
+        <div class="seg" id="fxScreen" role="group" aria-label="אפקט ברקע מסך הנקודות">
+          <button type="button" data-v="stars">כוכבים נופלים</button>
+          <button type="button" data-v="fireworks">זיקוקים</button>
+          <button type="button" data-v="off">כבוי</button>
+        </div>
+        <label>כשילד מגיע ליעד</label>
+        <div class="seg" id="fxGoal" role="group" aria-label="אפקט בהגעה ליעד">
+          <button type="button" data-v="2h">שעתיים ואז זוהר</button>
+          <button type="button" data-v="always">תמיד</button>
+          <button type="button" data-v="off">כבוי</button>
+        </div>
+        <div class="hint" style="margin-top:8px">זיקוקים בקצה הפס במשבצת של הילד על הלוח. אחרי שעתיים נשאר זוהר עדין עד שמסמנים "מומש".</div>
+      </div>
       <div class="card">
         <div class="row"><h2 style="margin:0">קטגוריות</h2><button class="link" id="catAdd">+ קטגוריה</button></div>
         <div id="catList"></div>
@@ -337,6 +389,7 @@ const starSvg=on=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 
 
 const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
 const ACC=await import('./access.js');
+const PSC=await import('./ptscreen.js');
 const db=createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_KEY);
 let S={kids:[],cats:[],acts:[],goals:[],events:[],settings:{}};
 let sel=new Set(), freeN=2, editingAct=null, histWeek=0;
@@ -564,7 +617,7 @@ function renderSetup(){
   $('celeMode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===mode));
   $('celeSecs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===String(secs)));
 
-  renderCats(); renderActs(); renderQuick();
+  renderCats(); renderActs(); renderQuick(); renderPs();
 }
 $('swShow').onclick=async()=>{
   const on=S.settings.points_show_kiosk==='0';
@@ -573,6 +626,99 @@ $('swShow').onclick=async()=>{
 };
 $('celeMode').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ if(await setSetting('points_celebration',b.dataset.v,'celebration mode')) renderSetup(); });
 $('celeSecs').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ if(await setSetting('points_celebration_seconds',b.dataset.v,'celebration seconds')) renderSetup(); });
+
+/* ---------- מסך הנקודות על הלוח (16.11.2026) ---------- */
+const DAYN=['ראשון','שני','שלישי','רביעי','חמישי','שישי'];
+function psState(){ return PSC.screenState(S.settings,Date.now(),israelNow(),{}); }
+function renderPs(){
+  const st=psState(), box=$('psNow');
+  const shown=S.settings.points_show_kiosk!=='0';
+  if(!shown){ box.className='psnow'; box.innerHTML='<span>הנקודות מוסתרות מהלוח (המתג למעלה)</span>'; }
+  else if(st.on){
+    box.className='psnow on';
+    box.innerHTML=`<span>מוצג עכשיו על הלוח${st.why==='window'?' (חלון קבוע)':''} · עד ${hm(st.untilMs)}</span><button type="button" id="psOff">כבה</button>`;
+    $('psOff').onclick=psOff;
+  }else{ box.className='psnow'; box.innerHTML='<span>לא מוצג עכשיו</span>'; }
+  $('psDur').querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m==='until'&&!$('psUntilRow').classList.contains('hidden')));
+  const W=PSC.parseWindows(S.settings.points_screen_windows);
+  setSwitch($('swWin'),W.on);
+  $('winList').classList.toggle('wins-off',!W.on);
+  $('winList').innerHTML=W.list.length?W.list.map((w,i)=>`<div class="win" data-i="${i}">
+      <div class="wt"><b>${PSC.hhmm(w.from)<12*60?'בוקר':'ערב'}</b><input type="time" value="${esc(w.from)}" data-f="from" aria-label="מ־"><span>–</span><input type="time" value="${esc(w.to)}" data-f="to" aria-label="עד">
+        <button type="button" class="iconbtn del" data-del aria-label="מחיקת החלון">✕</button></div>
+      <div class="days">${PSC.DAY_LETTERS.map((l,d)=>`<button type="button" class="${w.days.includes(d)?'on':''}" data-d="${d}" aria-pressed="${w.days.includes(d)}" aria-label="${DAYN[d]}">${l}</button>`).join('')}</div>
+    </div>`).join(''):'<div class="hint" style="margin-top:8px">אין חלונות קבועים</div>';
+  $('winList').querySelectorAll('.win').forEach(el=>{
+    const i=+el.dataset.i;
+    el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
+      const d=+b.dataset.d, w=W.list[i], on=!w.days.includes(d);
+      if(!(await ask('שינוי ימים',`${on?'להוסיף':'להוריד'} את יום ${DAYN[d]} ${on?'ל':'מ'}חלון ${w.from}–${w.to}?`,{danger:false,yes:'שמירה'}))) return;
+      w.days=on?[...w.days,d].sort():w.days.filter(x=>x!==d);
+      await saveWins(W,'window days');
+    });
+    el.querySelectorAll('input[data-f]').forEach(inp=>inp.onchange=async()=>{
+      const w={...W.list[i]}; w[inp.dataset.f]=inp.value;
+      if(PSC.hhmm(w.from)===null||PSC.hhmm(w.to)===null||PSC.hhmm(w.from)>=PSC.hhmm(w.to)){ toast('שעת הסיום צריכה להיות אחרי ההתחלה',true); renderPs(); return; }
+      if(!(await ask('שינוי שעות',`החלון יהיה ${w.from}–${w.to}?`,{danger:false,yes:'שמירה'}))){ renderPs(); return; }
+      W.list[i]=w; await saveWins(W,'window time');
+    });
+    el.querySelector('[data-del]').onclick=async()=>{
+      const w=W.list[i];
+      if(!(await ask('מחיקת חלון',`למחוק את החלון ${w.from}–${w.to}?`,{yes:'מחיקה'}))) return;
+      W.list.splice(i,1); await saveWins(W,'window delete');
+    };
+  });
+  const fx=PSC.effectOf(S.settings.points_screen_effect), gf=PSC.goalEffectOf(S.settings.points_goal_effect);
+  $('fxScreen').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===fx));
+  $('fxGoal').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===gf));
+}
+async function saveWins(W,label){
+  if(await setSetting('points_screen_windows',JSON.stringify(W),label)) renderPs(); else renderPs();
+}
+async function psShowUntil(ms){
+  if(ms<=Date.now()){ toast('השעה כבר עברה',true); return; }
+  if(!(await ask('הצגה על הלוח',`להציג את מסך הנקודות על כל הלוח עד ${hm(ms)}?\nהלוח יחזור לבד בסוף הזמן. לא מוצג בשבת ובחג.`,{danger:false,yes:'הצג'}))) return;
+  const ok=await setSetting('points_screen_until',new Date(ms).toISOString(),'show now');
+  if(ok) await setSetting('points_screen_skip_until','','show now (clear skip)');
+  $('psUntilRow').classList.add('hidden'); renderPs();
+}
+async function psOff(){
+  const st=psState();
+  if(!(await ask('כיבוי מסך הנקודות','לכבות עכשיו את מסך הנקודות ולחזור ללוח הרגיל?',{danger:false,yes:'כבה'}))) return;
+  let ok=await setSetting('points_screen_until','','turn off');
+  if(ok && st.why==='window') ok=await setSetting('points_screen_skip_until',new Date(st.untilMs).toISOString(),'skip current window');
+  renderPs();
+}
+function ilTimeToMs(v){
+  const t=PSC.hhmm(v); if(t===null) return null;
+  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
+  return Math.floor((Date.now()+(t-mins)*60000-n.getSeconds()*1000)/60000)*60000;
+}
+$('psDur').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
+  if(b.dataset.m==='until'){ $('psUntilRow').classList.toggle('hidden'); renderPs(); if(!$('psUntilRow').classList.contains('hidden')) $('psUntil').focus(); return; }
+  psShowUntil(Date.now()+(+b.dataset.m)*60000);
+});
+$('psUntilGo').onclick=()=>{ const ms=ilTimeToMs($('psUntil').value); if(ms===null){ toast('בחרו שעה',true); return; } psShowUntil(ms); };
+$('swWin').onclick=async()=>{
+  const W=PSC.parseWindows(S.settings.points_screen_windows), on=!W.on;
+  if(!(await ask(on?'הפעלת החלונות הקבועים':'כיבוי החלונות הקבועים',on?'להציג את מסך הנקודות בכל החלונות הקבועים?':'להפסיק את כל החלונות הקבועים? אפשר עדיין "הצג עכשיו".',{danger:!on,yes:on?'הפעלה':'כיבוי'}))) return;
+  W.on=on; await saveWins(W,'windows on/off');
+};
+$('winAdd').onclick=async()=>{
+  const W=PSC.parseWindows(S.settings.points_screen_windows);
+  if(!(await ask('חלון חדש','להוסיף חלון 16:00–16:30 בימים א׳–ה׳? אחר כך אפשר לשנות שעות וימים.',{danger:false,yes:'הוספה'}))) return;
+  W.list.push({from:'16:00',to:'16:30',days:[0,1,2,3,4]}); await saveWins(W,'window add');
+};
+$('fxScreen').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+  if(b.classList.contains('on')) return;
+  if(!(await ask('אפקט ברקע',`ברקע מסך הנקודות: ${b.textContent}?`,{danger:false,yes:'שמירה'}))) return;
+  if(await setSetting('points_screen_effect',b.dataset.v,'screen effect')) renderPs();
+});
+$('fxGoal').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+  if(b.classList.contains('on')) return;
+  if(!(await ask('אפקט ביעד',`כשילד מגיע ליעד: ${b.textContent}?`,{danger:false,yes:'שמירה'}))) return;
+  if(await setSetting('points_goal_effect',b.dataset.v,'goal effect')) renderPs();
+});
 
 /* מימוש: היעד נסגר, ונפתח יעד חדש שמתחיל עכשיו עם העודף */
 async function redeem(goalId){

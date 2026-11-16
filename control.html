@@ -869,6 +869,12 @@ body.night [data-kidsurface]{background:color-mix(in srgb, var(--cbg) 14%, #111A
       <div class="hint" id="nmHint" style="margin-top:12px"></div>
       <button id="nmSave" style="margin-top:6px">שמירה</button>
     </div>
+    <div class="card">
+      <h2>הדגשה בלוח</h2>
+      <div class="hint">רק השמות מודגשים — השעות, ההפסקות והמקום נשארים רגילים.</div>
+      <label class="chk" style="width:fit-content;margin-top:10px"><input type="checkbox" id="boldSubj"> מקצועות במערכת בהדגשה</label>
+      <label class="chk" style="width:fit-content;margin-top:8px"><input type="checkbox" id="boldCh"> חוגים בהדגשה</label>
+    </div>
   </div>
 
 </div></div>
@@ -1013,6 +1019,27 @@ $('nmSave').onclick=async()=>{
     applyNightSettings(); renderNightPanel(); toast('נשמר');
   }catch(e){ toast('השמירה נכשלה',true); }
 };
+
+/* ---- טאב תצוגה: הדגשה בלוח (16.11.2026) ---- */
+const BOLD_KEYS={boldSubj:['board_bold_subjects','מקצועות במערכת'],boldCh:['board_bold_chugim','חוגים']};
+function renderBoldPanel(){
+  for(const [id,[key]] of Object.entries(BOLD_KEYS)){
+    const on=String((state.settings||{})[key]||'')==='1';
+    $(id).checked=on; $(id).closest('.chk').classList.toggle('on',on);
+  }
+}
+for(const [id,[key,label]] of Object.entries(BOLD_KEYS)){
+  $(id).onchange=async()=>{
+    const on=$(id).checked;
+    const ok=await ask('הדגשה בלוח',`${on?'להדגיש':'לבטל את ההדגשה של'} ${label} בלוח?`,{danger:false,yes:'שמירה'});
+    if(!ok){ renderBoldPanel(); return; }
+    try{
+      const {error}=await db.from('settings').upsert({key,value:on?'1':'0'});
+      if(error) throw error;
+      state.settings[key]=on?'1':'0'; renderBoldPanel(); toast('נשמר');
+    }catch(e){ toast('השמירה נכשלה',true); renderBoldPanel(); }
+  };
+}
 
 /* ============================================================
    כניסה
@@ -3262,7 +3289,7 @@ async function start(){
   await seedShabbatTemplateIfMissing();
   syncKidVars();
   applyNightSettings();
-  renderNightPanel();
+  renderNightPanel(); renderBoldPanel();
   setInterval(()=>{ applyNightMode(); renderNightPanel(); },10000);
   fillSelects();
   renderKids(); renderKidTabs(); renderSchedule(); renderLastChanged(); renderPeriods();

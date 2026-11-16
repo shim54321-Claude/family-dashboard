@@ -1,7 +1,7 @@
 /* Service Worker — מאפשר פתיחה כאפליקציה והצגה מהירה */
-const CACHE = 'family-dashboard-v3';   /* v3 (15.11.2026): קוד גישה — access.js */
+const CACHE = 'family-dashboard-v4';   /* v4 (16.11.2026): מסך נקודות — ptscreen.js */
 const SHELL = ['./', './index.html', './control.html', './daily.html', './points.html',
-               './access.js', './manifest.json', './points.webmanifest',
+               './access.js', './ptscreen.js', './manifest.json', './points.webmanifest',
                './icon-192.png', './icon-512.png', './medal-180.png', './medal-192.png', './medal-512.png',
                './fonts/rubik-var.woff2', './fonts/assistant-var.woff2'];
 
