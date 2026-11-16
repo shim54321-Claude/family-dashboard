@@ -359,19 +359,11 @@ button.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(-
       <button style="width:100%;margin-top:6px" id="foodSave">שמירה</button>
     </div>
 
+    <!-- מה מוצג על הלוח — 4 מתגים (16.11.2026, סבב 2) -->
+    <div id="boardToggles"></div>
     <!-- נקודות מהירות (10.11.2026) — 4 המעשים הנפוצים; ההגדרות באפליקציית "נקודות" -->
     <div class="card qpcard">
-      <div class="qphead"><h2>★ נקודות מהירות</h2><button type="button" class="qpshow" id="psOpen">⭐ הצג על הלוח</button></div>
-      <div class="pssheet hidden" id="psSheet">
-        <b>להציג את הנקודות על הלוח?</b>
-        <div class="hint">הלוח כולו יתחלף למסך הנקודות, ויחזור לבד בסוף הזמן.</div>
-        <div class="psdur" id="psDur">
-          <button type="button" data-m="10">10 דק׳</button><button type="button" data-m="30" class="on">30 דק׳</button><button type="button" data-m="60">שעה</button><button type="button" data-m="until">עד שעה…</button>
-        </div>
-        <input type="time" id="psUntil" class="hidden" aria-label="עד שעה">
-        <div class="psbtns"><button type="button" id="psGo">הצג 30 דקות</button><button type="button" class="ghost" id="psCancel">ביטול</button></div>
-        <div class="hint" id="psState"></div>
-      </div>
+      <div class="qphead"><h2>★ נקודות מהירות</h2></div>
       <div class="qpkids" id="qpKids"></div>
       <label id="qpLbl">הכי בשימוש</label>
       <div class="qpacts" id="qpActs"></div>
@@ -1262,43 +1254,6 @@ async function qpUndo(){
   }catch(err){ toast('הביטול נכשל',true); }
 }
 if($('qpUndo')) $('qpUndo').onclick=qpUndo;
-/* ---------- "⭐ הצג על הלוח" (16.11.2026) — מסך הנקודות המלא לזמן קצוב ---------- */
-let PSC=null; try{ PSC=await import('./ptscreen.js'); }catch(_){}
-let psMin=30;
-const psHm=t=>new Intl.DateTimeFormat('he-IL',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(t));
-function psTarget(){
-  if(psMin!=='until') return Date.now()+psMin*60000;
-  const m=/^(\d{1,2}):(\d{2})$/.exec($('psUntil').value||''); if(!m) return null;
-  const n=israelNow(); return Math.floor((Date.now()+((+m[1]*60+ +m[2])-(n.getHours()*60+n.getMinutes()))*60000-n.getSeconds()*1000)/60000)*60000;
-}
-function psRender(){
-  $('psDur').querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',String(psMin)===b.dataset.m));
-  $('psUntil').classList.toggle('hidden',psMin!=='until');
-  $('psGo').textContent=psMin==='until'?'הצג עד השעה':psMin===60?'הצג שעה':`הצג ${psMin} דקות`;
-  const st=PSC?PSC.screenState(S.settings||{},Date.now(),israelNow(),{}):null;
-  $('psState').textContent=st&&st.on?`כרגע מוצג על הלוח עד ${psHm(st.untilMs)}`:'';
-}
-if($('psOpen')){
-  $('psOpen').onclick=()=>{ $('psSheet').classList.toggle('hidden'); psRender(); };
-  $('psCancel').onclick=()=>$('psSheet').classList.add('hidden');
-  $('psDur').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ psMin=b.dataset.m==='until'?'until':+b.dataset.m; psRender(); });
-  $('psGo').onclick=async()=>{
-    const ms=psTarget();
-    if(ms===null){ toast('בחרו שעה',true); return; }
-    if(ms<=Date.now()){ toast('השעה כבר עברה',true); return; }
-    try{
-      const iso=new Date(ms).toISOString();
-      const a=await db.from('settings').upsert({key:'points_screen_until',value:iso});
-      if(a.error) throw a.error;
-      await db.from('settings').upsert({key:'points_screen_skip_until',value:''});
-      S.settings.points_screen_until=iso; S.settings.points_screen_skip_until='';
-      try{ await db.from('audit_log').insert({intent:'show points screen (daily)',entity:'settings',action:'upsert',
-        new_value:{key:'points_screen_until',value:iso},verification_result:'ok',source:'daily.html'}); }catch(_){}
-      $('psSheet').classList.add('hidden');
-      toast(`מוצג על הלוח עד ${psHm(ms)} (תוך דקה)`);
-    }catch(err){ toast('השמירה נכשלה',true); console.error(err); }
-  };
-}
 
 
 
@@ -1335,6 +1290,11 @@ async function start(){
   S.kids=k.data||[]; S.foods=f.data||[]; S.restrictions=r.data||[];
   S.meals=m.data||[]; S.shirts=w.data||[]; S.rules=ru.data||[]; S.overrides=ov.data||[];
   S.settings={}; (st.data||[]).forEach(x=>S.settings[x.key]=x.value);
+  try{
+    const BT=await import('./boardtoggles.js');
+    if(!window.__btg) window.__btg=BT.mountBoardToggles($('boardToggles'),{db,settings:()=>S.settings,ask,toast,source:'daily.html'});
+    else window.__btg.render();
+  }catch(e){ console.warn('board toggles unavailable',e); }
 
   applyNightSettings(S.settings);
   setInterval(applyNightMode,10000);

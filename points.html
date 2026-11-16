@@ -222,11 +222,7 @@ button:disabled{opacity:.45}
     <section id="v-setup" class="hidden">
       <div id="pendingBox"></div>
 
-      <div class="card">
-        <div class="row"><h2 style="margin:0">הצגה על לוח הקיוסק</h2>
-          <button class="sw" type="button" role="switch" id="swShow" aria-label="הצגת נקודות על הלוח"><span></span></button></div>
-        <div class="hint">כבוי: כל אזור הנקודות נעלם מהלוח. הצבירה ממשיכה כרגיל.</div>
-      </div>
+      <div id="boardToggles"></div>
 
       <div class="card">
         <h2>ילדים ויעדים אישיים</h2>
@@ -256,27 +252,23 @@ button:disabled{opacity:.45}
       </div>
 
 
-      <div class="card" id="psCard">
-        <h2>מסך הנקודות על הלוח</h2>
-        <div class="hint">מכסה את כל הלוח במסך נקודות גדול, ורק כשמפעילים. חוזר לבד ללוח הרגיל בסוף הזמן.</div>
-        <div class="psnow" id="psNow"></div>
-        <label>הצג עכשיו</label>
-        <div class="chips" id="psDur">
-          <button type="button" class="chip" data-m="10">10 דק׳</button>
-          <button type="button" class="chip" data-m="30">30 דק׳</button>
-          <button type="button" class="chip" data-m="60">שעה</button>
-          <button type="button" class="chip" data-m="until">עד שעה…</button>
-        </div>
-        <div class="timerow hidden" id="psUntilRow" style="margin-top:8px"><input type="time" id="psUntil" aria-label="עד שעה"><button type="button" id="psUntilGo" style="flex:none">הצג</button></div>
+      <div class="card wincard" id="wc-boxes">
+        <div class="row"><h2 style="margin:0">🕒 שעות המשבצות על הלוח</h2>
+          <button class="sw" type="button" role="switch" data-wsw aria-label="🕒 שעות המשבצות על הלוח"><span></span></button></div>
+        <div class="hint">מחוץ לשעות האלה משבצות "היום קיבלתי ⭐" לא מוצגות, והמקום נשאר פנוי.</div>
+        <div data-wlist></div>
+        <button type="button" class="ghost" data-wadd style="width:100%;margin-top:8px;border-style:dashed">+ הוסף חלון זמן</button>
       </div>
 
-      <div class="card">
-        <div class="row"><h2 style="margin:0">קבוע · חוזר כל שבוע</h2>
-          <button class="sw" type="button" role="switch" id="swWin" aria-label="חלונות קבועים"><span></span></button></div>
-        <div id="winList"></div>
-        <button type="button" class="ghost" id="winAdd" style="width:100%;margin-top:8px;border-style:dashed">+ הוסף חלון זמן</button>
-        <div class="hint" style="margin-top:8px">לא מוצג בשבת ובחג. המתג למעלה מכבה את כל החלונות; בכל חלון בוחרים ימים.</div>
+      <div class="card wincard" id="wc-screen">
+        <div class="row"><h2 style="margin:0">🕒 שעות מסך הנקודות המלא</h2>
+          <button class="sw" type="button" role="switch" data-wsw aria-label="🕒 שעות מסך הנקודות המלא"><span></span></button></div>
+        <div class="hint">בשעות האלה כל הלוח מתחלף למסך הנקודות.</div>
+        <div data-wlist></div>
+        <button type="button" class="ghost" data-wadd style="width:100%;margin-top:8px;border-style:dashed">+ הוסף חלון זמן</button>
       </div>
+
+      <div class="hint" style="margin:-4px 4px 12px">לא מוצג בשבת ובחג. המתג בכל כרטיס מכבה את כל החלונות שלו; בכל חלון בוחרים ימים. כל שינוי עם חלון אישור.</div>
 
       <div class="card">
         <h2>אפקטים</h2>
@@ -416,6 +408,7 @@ async function loadAll(){
   ]);
   S.kids=k.data||[]; S.cats=c.data||[]; S.acts=a.data||[]; S.goals=g.data||[];
   S.settings={}; (st.data||[]).forEach(x=>S.settings[x.key]=x.value);
+  if(!window.__btg){ try{ const BT=await import('./boardtoggles.js'); window.__btg=BT.mountBoardToggles($('boardToggles'),{db,settings:()=>S.settings,ask,toast,source:'points.html',onChange:()=>{ try{ renderPs(); }catch(_){} }}); }catch(e){ console.warn('board toggles unavailable',e); } }
   /* אירועים: מאז היעד הוותיק ביותר (לחישוב התקדמות) + 120 יום להיסטוריה */
   const oldest=S.goals.map(x=>x.started_at).sort()[0];
   let events=e.data||[];
@@ -578,7 +571,6 @@ function renderSetup(){
   }).join('')+`<div class="hint">אחרי הסימון: התג יורד מהלוח, והעודף עובר ליעד הבא.</div></div>`:'';
   $('pendingBox').querySelectorAll('[data-redeem]').forEach(b=>b.onclick=()=>redeem(+b.dataset.redeem));
 
-  setSwitch($('swShow'),S.settings.points_show_kiosk!=='0');
 
   $('kidsSetup').innerHTML=S.kids.map(k=>{
     const g=goalOf(k.id), on=k.points_enabled!==false;
@@ -619,96 +611,60 @@ function renderSetup(){
 
   renderCats(); renderActs(); renderQuick(); renderPs();
 }
-$('swShow').onclick=async()=>{
-  const on=S.settings.points_show_kiosk==='0';
-  if(!(await ask(on?'הצגה על הלוח':'הסתרה מהלוח',on?'להציג שוב את הנקודות על לוח הקיוסק?':'להסתיר את כל אזור הנקודות מהלוח? הצבירה ממשיכה.',{danger:!on,yes:on?'הצגה':'הסתרה'}))) return;
-  if(await setSetting('points_show_kiosk',on?'1':'0','show on kiosk')) renderSetup();
-};
 $('celeMode').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ if(await setSetting('points_celebration',b.dataset.v,'celebration mode')) renderSetup(); });
 $('celeSecs').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ if(await setSetting('points_celebration_seconds',b.dataset.v,'celebration seconds')) renderSetup(); });
 
 /* ---------- מסך הנקודות על הלוח (16.11.2026) ---------- */
 const DAYN=['ראשון','שני','שלישי','רביעי','חמישי','שישי'];
-function psState(){ return PSC.screenState(S.settings,Date.now(),israelNow(),{}); }
+const WKEYS={boxes:'board_boxes_windows',screen:'points_screen_windows'};
 function renderPs(){
-  const st=psState(), box=$('psNow');
-  const shown=S.settings.points_show_kiosk!=='0';
-  if(!shown){ box.className='psnow'; box.innerHTML='<span>הנקודות מוסתרות מהלוח (המתג למעלה)</span>'; }
-  else if(st.on){
-    box.className='psnow on';
-    box.innerHTML=`<span>מוצג עכשיו על הלוח${st.why==='window'?' (חלון קבוע)':''} · עד ${hm(st.untilMs)}</span><button type="button" id="psOff">כבה</button>`;
-    $('psOff').onclick=psOff;
-  }else{ box.className='psnow'; box.innerHTML='<span>לא מוצג עכשיו</span>'; }
-  $('psDur').querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m==='until'&&!$('psUntilRow').classList.contains('hidden')));
-  const W=PSC.parseWindows(S.settings.points_screen_windows);
-  setSwitch($('swWin'),W.on);
-  $('winList').classList.toggle('wins-off',!W.on);
-  $('winList').innerHTML=W.list.length?W.list.map((w,i)=>`<div class="win" data-i="${i}">
-      <div class="wt"><b>${PSC.hhmm(w.from)<12*60?'בוקר':'ערב'}</b><input type="time" value="${esc(w.from)}" data-f="from" aria-label="מ־"><span>–</span><input type="time" value="${esc(w.to)}" data-f="to" aria-label="עד">
-        <button type="button" class="iconbtn del" data-del aria-label="מחיקת החלון">✕</button></div>
-      <div class="days">${PSC.DAY_LETTERS.map((l,d)=>`<button type="button" class="${w.days.includes(d)?'on':''}" data-d="${d}" aria-pressed="${w.days.includes(d)}" aria-label="${DAYN[d]}">${l}</button>`).join('')}</div>
-    </div>`).join(''):'<div class="hint" style="margin-top:8px">אין חלונות קבועים</div>';
-  $('winList').querySelectorAll('.win').forEach(el=>{
-    const i=+el.dataset.i;
-    el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
-      const d=+b.dataset.d, w=W.list[i], on=!w.days.includes(d);
-      if(!(await ask('שינוי ימים',`${on?'להוסיף':'להוריד'} את יום ${DAYN[d]} ${on?'ל':'מ'}חלון ${w.from}–${w.to}?`,{danger:false,yes:'שמירה'}))) return;
-      w.days=on?[...w.days,d].sort():w.days.filter(x=>x!==d);
-      await saveWins(W,'window days');
-    });
-    el.querySelectorAll('input[data-f]').forEach(inp=>inp.onchange=async()=>{
-      const w={...W.list[i]}; w[inp.dataset.f]=inp.value;
-      if(PSC.hhmm(w.from)===null||PSC.hhmm(w.to)===null||PSC.hhmm(w.from)>=PSC.hhmm(w.to)){ toast('שעת הסיום צריכה להיות אחרי ההתחלה',true); renderPs(); return; }
-      if(!(await ask('שינוי שעות',`החלון יהיה ${w.from}–${w.to}?`,{danger:false,yes:'שמירה'}))){ renderPs(); return; }
-      W.list[i]=w; await saveWins(W,'window time');
-    });
-    el.querySelector('[data-del]').onclick=async()=>{
-      const w=W.list[i];
-      if(!(await ask('מחיקת חלון',`למחוק את החלון ${w.from}–${w.to}?`,{yes:'מחיקה'}))) return;
-      W.list.splice(i,1); await saveWins(W,'window delete');
-    };
-  });
+  if(window.__btg) window.__btg.render();
+  for(const [k,key] of Object.entries(WKEYS)) renderWinCard(k,key);
   const fx=PSC.effectOf(S.settings.points_screen_effect), gf=PSC.goalEffectOf(S.settings.points_goal_effect);
   $('fxScreen').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===fx));
   $('fxGoal').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===gf));
 }
-async function saveWins(W,label){
-  if(await setSetting('points_screen_windows',JSON.stringify(W),label)) renderPs(); else renderPs();
+function renderWinCard(k,key){
+  const card=$('wc-'+k), W=PSC.parseWindows(PSC.winRaw(k,S.settings)), list=card.querySelector('[data-wlist]');
+  const name=k==='boxes'?'המשבצות':'מסך הנקודות';
+  setSwitch(card.querySelector('[data-wsw]'),W.on);
+  list.classList.toggle('wins-off',!W.on);
+  list.innerHTML=W.list.length?W.list.map((w,i)=>`<div class="win" data-i="${i}">
+      <div class="wt"><b>${PSC.hhmm(w.from)<12*60?'בוקר':'ערב'}</b><input type="time" value="${esc(w.from)}" data-f="from" aria-label="מ־"><span>–</span><input type="time" value="${esc(w.to)}" data-f="to" aria-label="עד">
+        <button type="button" class="iconbtn del" data-del aria-label="מחיקת החלון">✕</button></div>
+      <div class="days">${PSC.DAY_LETTERS.map((l,d)=>`<button type="button" class="${w.days.includes(d)?'on':''}" data-d="${d}" aria-pressed="${w.days.includes(d)}" aria-label="${DAYN[d]}">${l}</button>`).join('')}</div>
+    </div>`).join(''):'<div class="hint" style="margin-top:8px">אין חלונות קבועים</div>';
+  const saveW=async(label)=>{ await setSetting(key,JSON.stringify(W),k+' '+label); renderPs(); };
+  list.querySelectorAll('.win').forEach(el=>{
+    const i=+el.dataset.i;
+    el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
+      const d=+b.dataset.d, w=W.list[i], on=!w.days.includes(d);
+      if(!(await ask('שינוי ימים',`${on?'להוסיף':'להוריד'} את יום ${DAYN[d]} ${on?'ל':'מ'}חלון ${w.from}–${w.to} של ${name}?`,{danger:false,yes:'שמירה'}))) return;
+      w.days=on?[...w.days,d].sort():w.days.filter(x=>x!==d);
+      await saveW('window days');
+    });
+    el.querySelectorAll('input[data-f]').forEach(inp=>inp.onchange=async()=>{
+      const w={...W.list[i]}; w[inp.dataset.f]=inp.value;
+      if(PSC.hhmm(w.from)===null||PSC.hhmm(w.to)===null||PSC.hhmm(w.from)>=PSC.hhmm(w.to)){ toast('שעת הסיום צריכה להיות אחרי ההתחלה',true); renderPs(); return; }
+      if(!(await ask('שינוי שעות',`החלון של ${name} יהיה ${w.from}–${w.to}?`,{danger:false,yes:'שמירה'}))){ renderPs(); return; }
+      W.list[i]=w; await saveW('window time');
+    });
+    el.querySelector('[data-del]').onclick=async()=>{
+      const w=W.list[i];
+      if(!(await ask('מחיקת חלון',`למחוק את החלון ${w.from}–${w.to} של ${name}?`,{yes:'מחיקה'}))) return;
+      W.list.splice(i,1); await saveW('window delete');
+    };
+  });
+  card.querySelector('[data-wsw]').onclick=async()=>{
+    const on=!W.on;
+    if(!(await ask(on?'הפעלת השעות הקבועות':'כיבוי השעות הקבועות',on?`להציג את ${name} בכל השעות הקבועות?`:`להפסיק את כל השעות הקבועות של ${name}? אפשר עדיין להדליק ידנית.`,{danger:!on,yes:on?'הפעלה':'כיבוי'}))) return;
+    W.on=on; await saveW('windows on/off');
+  };
+  card.querySelector('[data-wadd]').onclick=async()=>{
+    if(!(await ask('חלון חדש',`להוסיף ל${name} חלון 16:00–16:30 בימים א׳–ה׳? אחר כך אפשר לשנות שעות וימים.`,{danger:false,yes:'הוספה'}))) return;
+    W.list.push({from:'16:00',to:'16:30',days:[0,1,2,3,4]}); await saveW('window add');
+  };
 }
-async function psShowUntil(ms){
-  if(ms<=Date.now()){ toast('השעה כבר עברה',true); return; }
-  if(!(await ask('הצגה על הלוח',`להציג את מסך הנקודות על כל הלוח עד ${hm(ms)}?\nהלוח יחזור לבד בסוף הזמן. לא מוצג בשבת ובחג.`,{danger:false,yes:'הצג'}))) return;
-  const ok=await setSetting('points_screen_until',new Date(ms).toISOString(),'show now');
-  if(ok) await setSetting('points_screen_skip_until','','show now (clear skip)');
-  $('psUntilRow').classList.add('hidden'); renderPs();
-}
-async function psOff(){
-  const st=psState();
-  if(!(await ask('כיבוי מסך הנקודות','לכבות עכשיו את מסך הנקודות ולחזור ללוח הרגיל?',{danger:false,yes:'כבה'}))) return;
-  let ok=await setSetting('points_screen_until','','turn off');
-  if(ok && st.why==='window') ok=await setSetting('points_screen_skip_until',new Date(st.untilMs).toISOString(),'skip current window');
-  renderPs();
-}
-function ilTimeToMs(v){
-  const t=PSC.hhmm(v); if(t===null) return null;
-  const n=israelNow(), mins=n.getHours()*60+n.getMinutes();
-  return Math.floor((Date.now()+(t-mins)*60000-n.getSeconds()*1000)/60000)*60000;
-}
-$('psDur').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
-  if(b.dataset.m==='until'){ $('psUntilRow').classList.toggle('hidden'); renderPs(); if(!$('psUntilRow').classList.contains('hidden')) $('psUntil').focus(); return; }
-  psShowUntil(Date.now()+(+b.dataset.m)*60000);
-});
-$('psUntilGo').onclick=()=>{ const ms=ilTimeToMs($('psUntil').value); if(ms===null){ toast('בחרו שעה',true); return; } psShowUntil(ms); };
-$('swWin').onclick=async()=>{
-  const W=PSC.parseWindows(S.settings.points_screen_windows), on=!W.on;
-  if(!(await ask(on?'הפעלת החלונות הקבועים':'כיבוי החלונות הקבועים',on?'להציג את מסך הנקודות בכל החלונות הקבועים?':'להפסיק את כל החלונות הקבועים? אפשר עדיין "הצג עכשיו".',{danger:!on,yes:on?'הפעלה':'כיבוי'}))) return;
-  W.on=on; await saveWins(W,'windows on/off');
-};
-$('winAdd').onclick=async()=>{
-  const W=PSC.parseWindows(S.settings.points_screen_windows);
-  if(!(await ask('חלון חדש','להוסיף חלון 16:00–16:30 בימים א׳–ה׳? אחר כך אפשר לשנות שעות וימים.',{danger:false,yes:'הוספה'}))) return;
-  W.list.push({from:'16:00',to:'16:30',days:[0,1,2,3,4]}); await saveWins(W,'window add');
-};
 $('fxScreen').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
   if(b.classList.contains('on')) return;
   if(!(await ask('אפקט ברקע',`ברקע מסך הנקודות: ${b.textContent}?`,{danger:false,yes:'שמירה'}))) return;

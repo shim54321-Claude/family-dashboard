@@ -767,6 +767,7 @@ body.night .w3t{border-color:#4A78AE}
 /* --- היום קיבלתי ⭐ — משבצת לכל ילד + הצנצנת המשפחתית --- */
 .kids4{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:.7rem;height:21rem}
 .kids4.hidden{display:none}
+.k4space{flex:1;min-height:0}
 .k4grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--k4n,4),minmax(0,1fr));gap:.55vw}
 .k4box{position:relative;background:var(--card);border:1px solid var(--line);border-top:.5rem solid var(--c);border-radius:1.7rem;
   padding:.6rem .7vw .75rem;display:flex;flex-direction:column;gap:.1rem;min-height:0;min-width:0}
@@ -2242,7 +2243,7 @@ async function loadPoints(settingsRows){
   PTS.settings={show:get('points_show_kiosk')!=='0', mode:get('points_celebration')||'once',
                 secs:parseInt(get('points_celebration_seconds'),10)||60};
   PTS.raw={}; (settingsRows||[]).forEach(r=>{ PTS.raw[r.key]=r.value==null?'':String(r.value); });
-  PTS.show=PTS.settings.show;
+  PTS.show=true;   /* 16.11 סבב 2: המתג הראשי הוחלף בארבעה מתגים — ראו partOn() */
   PTS.kids=ALL_KIDS;
   if(!db) return;
   try{
@@ -2287,7 +2288,7 @@ function kidPoints(k){
   const g=goalOf(k.id); if(!g) return {html:'',reached:false,tag:''};
   const p=goalProgress(g);
   const reached=p.reached && !g.needs_setup;
-  return {html:`<div class="kpts">${pointsLine(k,g,p)}</div>`, reached,
+  return {html:partOn('bars')?`<div class="kpts">${pointsLine(k,g,p)}</div>`:'', reached,
           tag:reached?`<span class="goaltag">${MEDAL_SVG}הגעתי ליעד!</span>`:''};
 }
 
@@ -2366,14 +2367,24 @@ function k4Box(k){
     `<div class="k4f"><div class="k4p"><span>${prize}</span><b>${prog}</b></div>`+
     `<div class="k4bar"><i style="width:${pct}%"></i>${fx.sparks?sparksHtml():''}</div></div></div>`;
 }
+/* האם חלק מוצג עכשיו (משבצות/צנצנת/פסים/מסך מלא) — לפי המתגים והשעון */
+function partOn(part){
+  if(!PSC) return part!=='screen' && part!=='boxes' ? true : part==='boxes';
+  return PSC.partState(part,PTS.raw||{},nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')}).on;
+}
+let K4_SIG='';
+function kids4Tick(){ const sig=partOn('boxes')+'|'+partOn('jar'); if(sig!==K4_SIG) renderKids4(); }
 function renderKids4(){
   const box=$('kids4');
-  if(!PTS.show || document.body.classList.contains('shabbat')){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const showBoxes=partOn('boxes'), showJar=partOn('jar');
+  K4_SIG=showBoxes+'|'+showJar;
+  if(!PTS.show || document.body.classList.contains('shabbat') || (!showBoxes && !showJar)){ box.classList.add('hidden'); box.innerHTML=''; return; }
   const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
-  const fam=goalOf(null);
-  if(!kids.length && !fam){ box.classList.add('hidden'); box.innerHTML=''; return; }
+  const fam=showJar?goalOf(null):null;
+  if(!(showBoxes&&kids.length) && !fam){ box.classList.add('hidden'); box.innerHTML=''; return; }
   let h='';
-  if(kids.length) h+=`<div class="k4grid" style="--k4n:${kids.length}">${kids.map(k4Box).join('')}</div>`;
+  if(showBoxes && kids.length) h+=`<div class="k4grid" style="--k4n:${kids.length}">${kids.map(k4Box).join('')}</div>`;
+  else h+=`<div class="k4space" aria-hidden="true"></div>`;   /* מקום פנוי לשימוש עתידי */
   if(fam){
     const p=goalProgress(fam), reached=p.reached&&!fam.needs_setup, fx=goalFx({...p,reached});
     const pct=fam.needs_setup?0:Math.min(100,Math.round(p.sum/fam.target*100));
@@ -2430,7 +2441,7 @@ function psCol(k,from){
 function renderPtScreen(){
   const el=$('ptscreen');
   if(!PSC || !PTS.raw || isLockedView()){ el.classList.add('hidden'); el.innerHTML=''; PS_SIG=''; return; }
-  const st=PSC.screenState(PTS.raw,nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')});
+  const st=PSC.partState('screen',PTS.raw,nowMs(),israelNow(),{shabbat:document.body.classList.contains('shabbat')});
   if(!st.on || clockIsFrozen()){ el.classList.add('hidden'); el.innerHTML=''; PS_SIG=''; return; }
   const kids=PTS.kids.filter(k=>k.points_enabled!==false && goalOf(k.id));
   const fam=goalOf(null);
@@ -2780,7 +2791,7 @@ async function init(){
     await loadWeather(); await render(); stampSync();
   },CONFIG.REFRESH_MIN*60*1000);
   tickClock(); applyNightMode(); applyShirtPulse();
-  setInterval(()=>{ tickClock(); applyNightMode(); applyShirtPulse(); renderPtScreen(); },10000);
+  setInterval(()=>{ tickClock(); applyNightMode(); applyShirtPulse(); renderPtScreen(); kids4Tick(); },10000);
   window.addEventListener('resize',fitToScreen);
 }
 
