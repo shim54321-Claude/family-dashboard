@@ -227,6 +227,44 @@ body.kiosk{cursor:none}
   #fullcover.withimg .covermsg,#fullcover.withimg .covertitle{font-size:21px}
   #fullcover.withimg .coverlist li{font-size:16px}
 }
+/* ============================================================
+   כיסוי מוגדל (19.11.2026, מוקאפ שאושר) — מסך רחב בלבד.
+   כשיש הודעה/תמונה מכסה: שורת התאריך והפס נשארים כמו שהם,
+   מזג אוויר של היום עובר לגלולה קטנה ליד השעה, הצנצנת וכרטיסי
+   מזג האוויר מוסתרים, וההודעה תופסת את כל השטח עד שורת "עודכן".
+   גודל הטקסט נקבע במשתנה נפרד (--ck) כדי שלא ישנה את הכותרת.
+   ============================================================ */
+.wmini{display:none}
+.cimgbox{display:contents}
+@media (min-aspect-ratio:1/1){
+  body.covering .wmini{display:inline-flex;align-self:center;align-items:center;gap:.7vw;
+    font-family:var(--font-display);font-size:2.3rem;font-weight:700;color:var(--ink-soft);
+    background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:.35rem 1.1vw;white-space:nowrap;line-height:1.2}
+  body.covering .wmini.hidden{display:none}
+  .wmini .wi{font-size:1.15em;line-height:1}
+  .wmini .wt{color:var(--ink);font-weight:800;direction:ltr;unicode-bidi:isolate}
+  .wmini .wt small{font-size:.8em;color:var(--ink-soft);font-weight:700}
+  .wmini .ws{color:var(--line);font-weight:400}
+  .wmini .wl{color:var(--ink);font-weight:800}
+  .wmini .wr{color:#2F6FA8;font-weight:800}
+  body.night .wmini .wr{color:#8DB8E0}
+  body.covering #toprow,body.covering .notes,body.covering #ptstrip,
+  body.covering #schedwrap,body.covering #chugim{display:none!important}
+  body.covering #fullcover{overflow:hidden;padding:.6vh 1vw 0;gap:1.4vh;justify-content:center}
+  body.covering #fullcover .cimgbox{display:flex;flex:1 1 0;min-height:0;width:100%;
+    align-items:center;justify-content:center}
+  body.covering #fullcover .cimgbox.noimg{display:none}
+  body.covering #fullcover img{max-width:100%;max-height:100%;width:auto;height:auto}
+  body.covering #fullcover .covertext{font-size:calc(1vh * var(--ck,1));max-width:94%;gap:.25em}
+  body.covering #fullcover .covermsg{font-size:9em}
+  body.covering #fullcover .covertitle{font-size:6.4em}
+  body.covering #fullcover .coverlist li{font-size:4.4em;padding-inline-start:1.1em}
+  body.covering #fullcover.withimg .covertext{flex-shrink:0}
+  body.covering #fullcover.withimg .covermsg,
+  body.covering #fullcover.withimg .covertitle{font-size:3em;font-weight:800}
+  body.covering #fullcover.withimg .coverlist li{font-size:2.4em;line-height:1.4}
+}
 .dayoff{font-family:var(--font-display);font-size:3.4rem;font-weight:900;color:var(--ink);
   text-align:center;padding:2rem 0;background:var(--card);border-radius:1.6rem}
 .dayoff.small{font-size:2.2rem;padding:1.2rem 0;background:transparent}
@@ -912,6 +950,7 @@ body.night .pscol .psd b{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
       <div style="display:flex;align-items:baseline;gap:1.6vw">
         <div class="dayname" id="dayname">—</div>
         <div class="clock" id="clock">--:--</div>
+        <div class="wmini" id="wmini" aria-label="מזג אוויר היום"></div>
       </div>
       <div class="datecol">
         <span class="hebdate" id="hebdate">—</span>
@@ -972,7 +1011,7 @@ body.night .pscol .psd b{color:color-mix(in srgb,var(--c) 45%,#FFFFFF)}
 
   <!-- כיסוי מלא של הלוח: יושב מתחת להערת ההורים, במקום מערכת השעות -->
   <div id="fullcover" class="hidden">
-    <img id="coverimg" alt="">
+    <div class="cimgbox" id="cimgbox"><img id="coverimg" alt=""></div>
     <div class="covertext" id="covertext"></div>
   </div>
 
@@ -2006,6 +2045,20 @@ function renderForecast(){
   box.classList.remove('hidden');
 }
 
+/* מזג אוויר קטן ליד השעה — מוצג רק כשיש הודעה מכסה (19.11.2026) */
+function renderMiniWeather(){
+  const box=$('wmini'); if(!box) return;
+  const wx=WX_BY_DATE[isoDate(israelNow())];
+  if(!wx){ box.innerHTML=''; box.classList.add('hidden'); return; }
+  const sl=sleeveFor(wx.max);
+  const rain=(wx.rain!==null && wx.rain>=CONFIG.RAIN_ALERT_PCT)
+    ? `<span class="ws">|</span><span class="wr">☔ <bdi dir="ltr">${Math.round(wx.rain)}%</bdi></span>` : '';
+  box.innerHTML=`<span class="wi">${WCODE[wx.code]||'🌡️'}</span>`+
+    `<span class="wt">${Math.round(wx.max)}° <small>/ ${Math.round(wx.min)}°</small></span>`+
+    `<span class="ws">|</span><span class="wl">${sl.text}</span>${rain}`;
+  box.classList.remove('hidden');
+}
+
 async function loadWeather(){
   let daily=null;
   try{
@@ -2027,6 +2080,7 @@ async function loadWeather(){
   }
   renderForecast();
   if(document.body.classList.contains('shabbat')) renderShabbatWeather(LAST_WIN);
+  renderMiniWeather();
 }
 
 /* ---- מזג אוויר על מסך שבת: שורה אחת, יום אחד לכל יום בחלון ---- */
@@ -2595,6 +2649,15 @@ function fitToScreen(){
 
   const root=document.documentElement, app=$('app');
 
+  /* כיסוי מוגדל: הכותרת נשארת בגודל האחרון של הלוח הרגיל, וההודעה מותאמת בנפרד */
+  if(document.body.classList.contains('covering')){
+    let k=NaN; try{ k=parseFloat(localStorage.getItem(LAST_K_KEY)); }catch(e){}
+    if(!(k>=0.3 && k<=1.8)) k=1.2;
+    root.style.setProperty('--k',k.toFixed(4));
+    fitCover();
+    return;
+  }
+
   // בדיקה: האם משהו חורג — בגובה, ברוחב, או תא שנחתך
   const overflows=()=>{
     if(app.scrollHeight > window.innerHeight+1) return true;
@@ -2615,6 +2678,45 @@ function fitToScreen(){
     if(overflows()){ hi=mid; } else { best=mid; lo=mid; }
   }
   root.style.setProperty('--k',best.toFixed(4));
+  if(!document.body.classList.contains('shabbat')){
+    try{ localStorage.setItem(LAST_K_KEY,best.toFixed(4)); }catch(e){}
+  }
+}
+
+const LAST_K_KEY='fd_last_k';
+/* מגדיל את טקסט ההודעה עד שהוא ממלא את השטח בלי לחרוג. עם תמונה — הכיתוב
+   לא גדל מעבר לגודל הבסיס (הוא כיתוב, לא מתחרה בתמונה), רק קטן אם צריך. */
+function fitCover(){
+  const fc=$('fullcover'), ct=$('covertext'), app=$('app'), root=document.documentElement;
+  if(!fc || fc.classList.contains('hidden')) return;
+  const img0=$('coverimg'); if(img0){ img0.style.width=''; img0.style.height=''; }
+  const bad=()=>{
+    if(app.scrollHeight > window.innerHeight+1) return true;
+    if(fc.scrollHeight > fc.clientHeight+1) return true;
+    if(ct.scrollWidth > ct.clientWidth+2) return true;
+    for(const el of ct.querySelectorAll('.covermsg,.covertitle,.coverlist li'))
+      if(el.scrollWidth > el.clientWidth+2) return true;
+    if(fc.classList.contains('withimg')){
+      const box=$('cimgbox');
+      if(box && box.clientHeight < window.innerHeight*0.45) return true;   // התמונה נשארת הדבר הגדול
+    }
+    return false;
+  };
+  let lo=0.2, hi=fc.classList.contains('withimg')?1:1.6, best=lo;
+  for(let i=0;i<16;i++){
+    const mid=(lo+hi)/2;
+    root.style.setProperty('--ck',mid.toFixed(4));
+    app.offsetHeight;
+    if(bad()){ hi=mid; } else { best=mid; lo=mid; }
+  }
+  root.style.setProperty('--ck',best.toFixed(4));
+  /* תמונה קטנה ממסך גדול (למשל 4K) — מגדילים אותה עד גבולות האזור, בלי לעוות */
+  const box=$('cimgbox'), img=$('coverimg');
+  if(box && img && fc.classList.contains('withimg') && img.naturalWidth){
+    const s=Math.min(box.clientWidth/img.naturalWidth, box.clientHeight/img.naturalHeight);
+    img.style.width=Math.floor(img.naturalWidth*s)+'px';
+    img.style.height=Math.floor(img.naturalHeight*s)+'px';
+  }
 }
 
 /* מריצים שוב אחרי טעינת גופנים ותמונות — הם משנים מידות */
@@ -2987,12 +3089,18 @@ async function render(){
       const fullOv=(overrides.data||[]).find(o=>
         o.scope==='full' && !o.kid && o.date===isoDate(israelNow()) && inWindow(o));
       const covering=!hol && !!fullOv;
+      document.body.classList.toggle('covering',covering);
+      if(covering) renderMiniWeather();
       if(covering){
         $('fullcover').classList.remove('hidden');
         const img=$('coverimg');
         const hasImg=!!fullOv.image_url;
-        if(hasImg){ img.src=fullOv.image_url; img.style.display=''; }
+        if(hasImg){
+          if(img.getAttribute('src')!==fullOv.image_url){ img.onload=scheduleFit; img.src=fullOv.image_url; }
+          img.style.display='';
+        }
         else { img.removeAttribute('src'); img.style.display='none'; }
+        $('cimgbox').classList.toggle('noimg',!hasImg);
         $('fullcover').classList.toggle('withimg',hasImg);
         renderCoverNote($('covertext'),fullOv.note);
         $('schedwrap').style.display='none';
