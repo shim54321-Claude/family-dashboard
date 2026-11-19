@@ -90,6 +90,19 @@ button:disabled{opacity:.45}
 .act b,.pv{font-family:var(--font-display);font-size:16px;font-weight:900;background:var(--gold-bg);color:var(--gold-ink);
   border-radius:999px;padding:1px 9px;white-space:nowrap}
 .act.dim{opacity:.4}
+/* חיפוש מעשים (19.11.2026) — מוצא כל חלק בשם, לא רק את ההתחלה */
+.srchwrap{position:sticky;top:var(--navh,64px);z-index:30;background:var(--bg);padding:12px 0 2px}
+.srch{position:relative;display:flex;align-items:center}
+.srch svg{position:absolute;inset-inline-start:13px;width:20px;height:20px;color:var(--ink-soft);pointer-events:none}
+.srch input{padding-inline-start:42px;padding-inline-end:48px;border-radius:999px;border:2px solid var(--line);font-weight:700}
+.srch input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.srch.has input{border-color:var(--ink)}
+.srch .clr{position:absolute;inset-inline-end:4px;width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;background:var(--soft);color:var(--ink-soft);font-size:15px}
+.act mark{background:var(--gold-bg);color:var(--gold-ink);border-radius:4px;padding:0 2px}
+.none{text-align:center;padding:14px}
+.none .nb{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.none .nb button{width:100%}
+.none .nb .ghost{color:var(--ink)}
 .act b,.pv,.logrow .pts{direction:ltr;unicode-bidi:isolate}
 .free{display:flex;gap:8px;align-items:center}
 .free input{flex:1;min-width:0}
@@ -204,6 +217,11 @@ button:disabled{opacity:.45}
     <section id="v-give">
       <div class="grp">למי? (אפשר כמה)</div>
       <div class="kids" id="giveKids"></div>
+      <div class="srchwrap"><div class="srch" id="srchBox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="actSearch" type="search" placeholder="חיפוש מעשה (למשל: שיניים)" autocomplete="off" enterkeyhint="search" aria-label="חיפוש מעשה">
+        <button type="button" class="clr hidden" id="actSearchClr" aria-label="ניקוי החיפוש">✕</button>
+      </div></div>
       <div id="giveActs"></div>
       <div class="grp">משהו אחר</div>
       <div class="card" style="padding:10px">
@@ -474,21 +492,80 @@ function renderGive(){
   }).join('') || '<div class="hint">אין ילדים שמשתתפים בנקודות</div>';
   $('giveKids').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ const id=+b.dataset.k; sel.has(id)?sel.delete(id):sel.add(id); renderGive(); });
 
-  const groups=[...S.cats.map(c=>({id:c.id,name:c.name})),{id:null,name:'ללא קטגוריה'}];
-  let html='';
-  for(const g of groups){
-    const acts=S.acts.filter(a=>(a.category_id??null)===g.id || (g.id===null && a.category_id && !S.cats.some(c=>c.id===a.category_id)));
-    if(!acts.length) continue;
-    html+=`<div class="grp">${esc(g.name)}</div><div class="acts">`+acts.map(a=>{
-      const dim=sel.size && ![...sel].some(id=>actAllowed(a,id));
-      return `<button type="button" class="act${dim?' dim':''}" data-a="${a.id}"><span>${esc(a.title)}</span><b>+${a.points}</b></button>`;
-    }).join('')+'</div>';
-  }
-  $('giveActs').innerHTML=html||'<div class="card hint">אין עדיין מעשים — מוסיפים ב"יעדים והגדרות"</div>';
-  $('giveActs').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>giveAction(+b.dataset.a));
+  renderGiveActs();
   $('freeN').textContent=freeN;
   renderTodayLog();
 }
+/* ---------- חיפוש מעשים ---------- */
+let actQ='';
+/* נרמול: בלי ׳/״/גרשיים, רווחים כפולים, אותיות גדולות. מחזיר גם מיפוי לאינדקס המקורי לסימון. */
+function normMap(str){
+  let out='', map=[], prevSp=true;
+  for(let i=0;i<str.length;i++){
+    let ch=str[i];
+    if(/['"\u05F3\u05F4\u2018\u2019\u201C\u201D\u0591-\u05C7]/.test(ch)) continue;
+    if(/\s/.test(ch)){ if(prevSp) continue; ch=' '; prevSp=true; } else prevSp=false;
+    out+=ch.toLowerCase(); map.push(i);
+  }
+  if(out.endsWith(' ')){ out=out.slice(0,-1); map.pop(); }
+  return {out,map};
+}
+const normQ=q=>normMap(q).out;
+function hlTitle(title,nq){
+  const {out,map}=normMap(title); const i=nq?out.indexOf(nq):-1;
+  if(i<0) return esc(title);
+  const a=map[i], b=map[i+nq.length-1]+1;
+  return esc(title.slice(0,a))+'<mark>'+esc(title.slice(a,b))+'</mark>'+esc(title.slice(b));
+}
+const actBtn=(a,nq)=>{
+  const dim=sel.size && ![...sel].some(id=>actAllowed(a,id));
+  return `<button type="button" class="act${dim?' dim':''}" data-a="${a.id}"><span>${hlTitle(a.title,nq)}</span><b>+${a.points}</b></button>`;
+};
+function renderGiveActs(){
+  const nq=normQ(actQ);
+  $('srchBox').classList.toggle('has',!!actQ);
+  $('actSearchClr').classList.toggle('hidden',!actQ);
+  let html='';
+  if(nq){
+    const res=S.acts.filter(a=>normMap(a.title).out.includes(nq));
+    if(res.length) html=`<div class="grp">נמצאו ${res.length}</div><div class="acts">`+res.map(a=>actBtn(a,nq)).join('')+'</div>';
+    else html=`<div class="card none"><div class="hint">לא נמצא מעשה בשם הזה</div><div class="nb">
+      <button type="button" id="srchAdd">הוסף כמעשה קבוע ותן <bdi dir="ltr">+1</bdi></button>
+      <button type="button" class="ghost" id="srchOnce">נקודה חד-פעמית <bdi dir="ltr">+1</bdi></button></div></div>`;
+  }else{
+  const groups=[...S.cats.map(c=>({id:c.id,name:c.name})),{id:null,name:'ללא קטגוריה'}];
+  for(const g of groups){
+    const acts=S.acts.filter(a=>(a.category_id??null)===g.id || (g.id===null && a.category_id && !S.cats.some(c=>c.id===a.category_id)));
+    if(!acts.length) continue;
+    html+=`<div class="grp">${esc(g.name)}</div><div class="acts">`+acts.map(a=>actBtn(a,'')).join('')+'</div>';
+  }
+  html=html||'<div class="card hint">אין עדיין מעשים — מוסיפים ב"יעדים והגדרות"</div>';
+  }
+  $('giveActs').innerHTML=html;
+  $('giveActs').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>giveAction(+b.dataset.a));
+  if($('srchAdd')) $('srchAdd').onclick=srchAddAndGive;
+  if($('srchOnce')) $('srchOnce').onclick=srchGiveOnce;
+}
+$('actSearch').oninput=e=>{ actQ=e.target.value; renderGiveActs(); };
+$('actSearchClr').onclick=()=>{ actQ=''; $('actSearch').value=''; renderGiveActs(); $('actSearch').focus(); };
+const srchText=()=>actQ.trim().replace(/\s+/g,' ');
+async function srchAddAndGive(){
+  const title=srchText(); if(!title) return;
+  if(!sel.size){ toast('בחרו ילד',true); return; }
+  const {data,error}=await db.from('point_actions').insert({title,points:1,category_id:null,kid_ids:null,active:true,order_index:S.acts.length+1}).select().single();
+  if(error||!data){ toast('לא נשמר',true); console.error(error); return; }
+  await audit('add action (from search)','point_actions','insert',null,data); S.acts.push(data);
+  await giveAction(data.id);
+}
+async function srchGiveOnce(){
+  const why=srchText(); if(!why) return;
+  if(!sel.size){ toast('בחרו ילד',true); return; }
+  try{ await insertEvents([...sel].map(k=>({kid_id:k,points:1,reason:why,source:'app'})),why); toast(`\u2066+1\u2069 · ${why}`); renderView(); }
+  catch(e){ toast('השמירה נכשלה',true); console.error(e); }
+}
+/* השדה צמוד מתחת לסרגל העליון גם בגלילה */
+function setNavH(){ const n=document.querySelector('.navbar'); if(n) document.documentElement.style.setProperty('--navh',n.offsetHeight+'px'); }
+addEventListener('resize',setNavH); setTimeout(setNavH,0); setTimeout(setNavH,800);
 async function insertEvents(rows,label){
   const {data,error}=await db.from('point_events').insert(rows).select();
   if(error) throw error;
